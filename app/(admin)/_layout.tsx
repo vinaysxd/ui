@@ -13,7 +13,7 @@ const NAV_ITEMS = [
 function Sidebar() {
   const router = useRouter();
   const pathname = usePathname();
-
+console.log("THIS IS ADMIN ROOT INDEX")
   return (
     <View style={styles.sidebar}>
       <Text style={styles.logo}>Brothers Cleaning</Text>

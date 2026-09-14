@@ -9,6 +9,7 @@ const NAV_ITEMS = [
 ];
 
 function Sidebar() {
+  console.log("THIS IS STAFF ROOT LAYOUT")
   const router = useRouter();
   const pathname = usePathname();
 
@@ -48,6 +49,7 @@ function StackLayout() {
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="(tabs)" />
       <Stack.Screen name="site/[id]" />
+      <Stack.Screen name="profile/edit" />
     </Stack>
   );
 }

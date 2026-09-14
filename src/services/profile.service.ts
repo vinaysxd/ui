@@ -17,12 +17,15 @@ export interface ProfileMe {
   billing_address?: string | null;
   contact_person?: string | null;
   signed_avatar_url: string |null;
+  created_at?: string;
 }
 
 export interface ProfileUpdatePayload {
   full_name?: string;
   phone?: string;
   avatar_url?: string;
+  address?: string;
+  emergency_contact?: string;
 }
 
 export const getProfile = async (): Promise<ProfileMe> => {
