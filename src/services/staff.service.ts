@@ -87,3 +87,12 @@ export const inviteStaff = async (data: StaffInvitePayload): Promise<InvitedUser
     throw new Error(getErrorMessage(code));
   }
 };
+
+export const reactivateStaff = async (id: string): Promise<void> => {
+  try {
+    await api.patch(`/admin/staff/${id}/reactivate`);
+  } catch (error: any) {
+    const code = error?.response?.data?.code;
+    throw new Error(getErrorMessage(code));
+  }
+};

@@ -10,7 +10,13 @@ import {
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { getStaff, updateStaff, deactivateStaff, Staff } from "../../../src/services/staff.service";
+import {
+  getStaff,
+  updateStaff,
+  deactivateStaff,
+  reactivateStaff,
+  Staff,
+} from "../../../src/services/staff.service";
 
 const MONTHS = [
   "Jan", "Feb", "Mar", "Apr", "May", "Jun",
@@ -39,6 +45,7 @@ export default function StaffDetailScreen() {
   const [loading, setLoading] = useState<boolean>(true);
   const [saving, setSaving] = useState<boolean>(false);
   const [deactivating, setDeactivating] = useState<boolean>(false);
+  const [reactivating, setReactivating] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
 
   const applyFields = (data: Staff) => {
@@ -107,6 +114,19 @@ export default function StaffDetailScreen() {
     } catch (err: any) {
       setError(err.message);
       setDeactivating(false);
+    }
+  };
+
+  const handleReactivate = async () => {
+    setReactivating(true);
+    setError("");
+    try {
+      await reactivateStaff(id);
+      await fetchStaff();
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setReactivating(false);
     }
   };
 
@@ -180,17 +200,31 @@ export default function StaffDetailScreen() {
           <TouchableOpacity style={styles.editButton} onPress={handleEdit}>
             <Text style={styles.editButtonText}>Edit</Text>
           </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.deactivateButton}
-            onPress={handleDeactivate}
-            disabled={deactivating}
-          >
-            {deactivating ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.deactivateButtonText}>Deactivate</Text>
-            )}
-          </TouchableOpacity>
+          {staff.is_active ? (
+            <TouchableOpacity
+              style={styles.deactivateButton}
+              onPress={handleDeactivate}
+              disabled={deactivating}
+            >
+              {deactivating ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.deactivateButtonText}>Deactivate</Text>
+              )}
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity
+              style={styles.reactivateButton}
+              onPress={handleReactivate}
+              disabled={reactivating}
+            >
+              {reactivating ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.reactivateButtonText}>Reactivate</Text>
+              )}
+            </TouchableOpacity>
+          )}
         </>
       )}
     </ScrollView>
@@ -379,6 +413,16 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   deactivateButtonText: {
+    color: "#fff",
+    fontWeight: "bold",
+  },
+  reactivateButton: {
+    backgroundColor: "#16a34a",
+    padding: 16,
+    borderRadius: 8,
+    alignItems: "center",
+  },
+  reactivateButtonText: {
     color: "#fff",
     fontWeight: "bold",
   },
