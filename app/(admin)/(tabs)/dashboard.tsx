@@ -10,13 +10,8 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { getAdminDashboard, AdminDashboard } from "../../../src/services/dashboard.service";
-import { getAllSites } from "../../../src/services/sites.service";
-import { getAttendanceBySite, Attendance } from "../../../src/services/attendance.service";
+import { getRecentAttendance, Attendance } from "../../../src/services/attendance.service";
 import { logout } from "../../../src/services/auth.service";
-
-interface RecentAttendance extends Attendance {
-  site_name: string;
-}
 
 const MONTHS = [
   "Jan", "Feb", "Mar", "Apr", "May", "Jun",
@@ -36,7 +31,7 @@ const formatDateTime = (iso: string): string => {
 export default function AdminDashboardScreen() {
   const router = useRouter();
   const [stats, setStats] = useState<AdminDashboard | null>(null);
-  const [recentAttendance, setRecentAttendance] = useState<RecentAttendance[]>([]);
+  const [recentAttendance, setRecentAttendance] = useState<Attendance[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
@@ -45,27 +40,10 @@ export default function AdminDashboardScreen() {
     setError("");
     try {
       const dashboard = await getAdminDashboard();
-      const sites = await getAllSites();
-
-      const siteNameById = Object.fromEntries(sites.map((site) => [site.id, site.name]));
-
-      const attendanceBySite = await Promise.all(
-        sites.map((site) => getAttendanceBySite(site.id))
-      );
-
-      const allAttendance: RecentAttendance[] = attendanceBySite.flatMap((records, index) =>
-        records.map((record) => ({
-          ...record,
-          site_name: siteNameById[sites[index].id] ?? "Unknown site",
-        }))
-      );
-
-      allAttendance.sort(
-        (a, b) => new Date(b.clock_in).getTime() - new Date(a.clock_in).getTime()
-      );
+      const recent = await getRecentAttendance(10);
 
       setStats(dashboard);
-      setRecentAttendance(allAttendance.slice(0, 10));
+      setRecentAttendance(recent);
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -144,7 +122,7 @@ export default function AdminDashboardScreen() {
           <View key={record.id} style={styles.attendanceRow}>
             <View style={styles.attendanceInfo}>
               <Text style={styles.staffName}>{record.staff?.full_name ?? "Unknown staff"}</Text>
-              <Text style={styles.siteName}>{record.site_name}</Text>
+              <Text style={styles.siteName}>{record.site?.name ?? "Unknown site"}</Text>
               <Text style={styles.clockInText}>{formatDateTime(record.clock_in)}</Text>
             </View>
             {record.clock_out ? (

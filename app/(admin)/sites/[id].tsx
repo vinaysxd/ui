@@ -27,6 +27,7 @@ import { getAllClients, Client } from "../../../src/services/client.service";
 import { getAllStaff, Staff } from "../../../src/services/staff.service";
 import { getAttendanceBySite, Attendance } from "../../../src/services/attendance.service";
 import { getSiteNotes, SiteNote } from "../../../src/services/notes.service";
+import { showSuccess, showError } from "../../../src/utils/toast";
 
 type Tab = "details" | "staff" | "attendance" | "notes";
 
@@ -75,7 +76,6 @@ export default function SiteDetailScreen() {
 
   const [assignedStaff, setAssignedStaff] = useState<SiteStaffMember[]>([]);
   const [assignedStaffLoading, setAssignedStaffLoading] = useState<boolean>(true);
-  const [staffError, setStaffError] = useState<string>("");
   const [unassigningId, setUnassigningId] = useState<string>("");
 
   const [assignModalVisible, setAssignModalVisible] = useState<boolean>(false);
@@ -87,18 +87,15 @@ export default function SiteDetailScreen() {
   const [attendance, setAttendance] = useState<Attendance[]>([]);
   const [attendanceLoading, setAttendanceLoading] = useState<boolean>(false);
   const [attendanceLoaded, setAttendanceLoaded] = useState<boolean>(false);
-  const [attendanceError, setAttendanceError] = useState<string>("");
 
   const [notes, setNotes] = useState<SiteNote[]>([]);
   const [notesLoading, setNotesLoading] = useState<boolean>(false);
   const [notesLoaded, setNotesLoaded] = useState<boolean>(false);
-  const [notesError, setNotesError] = useState<string>("");
 
   const [loading, setLoading] = useState<boolean>(true);
   const [saving, setSaving] = useState<boolean>(false);
   const [deactivating, setDeactivating] = useState<boolean>(false);
   const [reactivating, setReactivating] = useState<boolean>(false);
-  const [error, setError] = useState<string>("");
 
   const applyFields = (data: Site) => {
     setName(data.name ?? "");
@@ -110,25 +107,23 @@ export default function SiteDetailScreen() {
   };
 
   const fetchSite = useCallback(async () => {
-    setError("");
     try {
       const data = await getSite(id);
       setSite(data);
       applyFields(data);
     } catch (err: any) {
-      setError(err.message);
+      showError(err.message);
     } finally {
       setLoading(false);
     }
   }, [id]);
 
   const fetchAssignedStaff = useCallback(async () => {
-    setStaffError("");
     try {
       const data = await getSiteStaff(id);
       setAssignedStaff(data);
     } catch (err: any) {
-      setStaffError(err.message);
+      showError(err.message);
     } finally {
       setAssignedStaffLoading(false);
     }
@@ -140,28 +135,26 @@ export default function SiteDetailScreen() {
   }, [fetchSite, fetchAssignedStaff]);
 
   const fetchAttendance = useCallback(async () => {
-    setAttendanceError("");
     setAttendanceLoading(true);
     try {
       const data = await getAttendanceBySite(id);
       setAttendance(data);
       setAttendanceLoaded(true);
     } catch (err: any) {
-      setAttendanceError(err.message);
+      showError(err.message);
     } finally {
       setAttendanceLoading(false);
     }
   }, [id]);
 
   const fetchNotes = useCallback(async () => {
-    setNotesError("");
     setNotesLoading(true);
     try {
       const data = await getSiteNotes(id);
       setNotes(data);
       setNotesLoaded(true);
     } catch (err: any) {
-      setNotesError(err.message);
+      showError(err.message);
     } finally {
       setNotesLoading(false);
     }
@@ -184,12 +177,11 @@ export default function SiteDetailScreen() {
       const data = await getAllClients();
       setClients(data.filter((client) => client.is_active));
     } catch (err: any) {
-      setError(err.message);
+      showError(err.message);
     }
   };
 
   const handleEdit = async () => {
-    setError("");
     await ensureClientsLoaded();
     setIsEditing(true);
   };
@@ -198,7 +190,6 @@ export default function SiteDetailScreen() {
     if (site) {
       applyFields(site);
     }
-    setError("");
     setIsEditing(false);
   };
 
@@ -209,10 +200,8 @@ export default function SiteDetailScreen() {
   };
 
   const handleSave = async () => {
-    setError("");
-
     if (!name.trim() || !address.trim() || !latitude.trim() || !longitude.trim() || !clientId) {
-      setError("Name, address, latitude, longitude, and client are all required");
+      showError("Name, address, latitude, longitude, and client are all required");
       return;
     }
 
@@ -220,12 +209,12 @@ export default function SiteDetailScreen() {
     const lng = parseFloat(longitude);
 
     if (Number.isNaN(lat) || lat < -90 || lat > 90) {
-      setError("Latitude must be a number between -90 and 90");
+      showError("Latitude must be a number between -90 and 90");
       return;
     }
 
     if (Number.isNaN(lng) || lng < -180 || lng > 180) {
-      setError("Longitude must be a number between -180 and 180");
+      showError("Longitude must be a number between -180 and 180");
       return;
     }
 
@@ -240,8 +229,9 @@ export default function SiteDetailScreen() {
       });
       await fetchSite();
       setIsEditing(false);
+      showSuccess("Site details saved");
     } catch (err: any) {
-      setError(err.message);
+      showError(err.message);
     } finally {
       setSaving(false);
     }
@@ -249,12 +239,12 @@ export default function SiteDetailScreen() {
 
   const handleDeactivate = async () => {
     setDeactivating(true);
-    setError("");
     try {
       await deactivateSite(id);
       await fetchSite();
+      showSuccess("Site deactivated");
     } catch (err: any) {
-      setError(err.message);
+      showError(err.message);
     } finally {
       setDeactivating(false);
     }
@@ -262,12 +252,12 @@ export default function SiteDetailScreen() {
 
   const handleReactivate = async () => {
     setReactivating(true);
-    setError("");
     try {
       await reactivateSite(id);
       await fetchSite();
+      showSuccess("Site reactivated");
     } catch (err: any) {
-      setError(err.message);
+      showError(err.message);
     } finally {
       setReactivating(false);
     }
@@ -275,19 +265,17 @@ export default function SiteDetailScreen() {
 
   const handleUnassign = async (profileId: string) => {
     setUnassigningId(profileId);
-    setStaffError("");
     try {
       await unassignStaff(id, profileId);
       setAssignedStaff((prev) => prev.filter((member) => member.id !== profileId));
     } catch (err: any) {
-      setStaffError(err.message);
+      showError(err.message);
     } finally {
       setUnassigningId("");
     }
   };
 
   const handleOpenAssignModal = async () => {
-    setStaffError("");
     setAssignModalVisible(true);
     if (allStaffLoaded) {
       return;
@@ -298,7 +286,7 @@ export default function SiteDetailScreen() {
       setAllStaff(data);
       setAllStaffLoaded(true);
     } catch (err: any) {
-      setStaffError(err.message);
+      showError(err.message);
     } finally {
       setAllStaffLoading(false);
     }
@@ -306,12 +294,11 @@ export default function SiteDetailScreen() {
 
   const handleAssign = async (profileId: string) => {
     setAssigningId(profileId);
-    setStaffError("");
     try {
       await assignStaff(id, profileId);
       await fetchAssignedStaff();
     } catch (err: any) {
-      setStaffError(err.message);
+      showError(err.message);
     } finally {
       setAssigningId("");
     }
@@ -330,17 +317,12 @@ export default function SiteDetailScreen() {
     );
   }
 
-  if (error && !site) {
+  if (!site) {
     return (
       <View style={styles.centered}>
         <BackButton onPress={() => router.back()} />
-        <Text style={styles.errorText}>{error}</Text>
       </View>
     );
-  }
-
-  if (!site) {
-    return null;
   }
 
   return (
@@ -372,8 +354,6 @@ export default function SiteDetailScreen() {
       </View>
 
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-        {error ? <Text style={styles.errorText}>{error}</Text> : null}
-
         {activeTab === "details" && (
           <>
             <Text style={styles.sectionTitle}>Site Details</Text>
@@ -493,8 +473,6 @@ export default function SiteDetailScreen() {
               </TouchableOpacity>
             </View>
 
-            {staffError ? <Text style={styles.errorText}>{staffError}</Text> : null}
-
             {assignedStaffLoading ? (
               <ActivityIndicator style={styles.staffLoading} />
             ) : assignedStaff.length === 0 ? (
@@ -534,7 +512,6 @@ export default function SiteDetailScreen() {
 
         {activeTab === "attendance" && (
           <>
-            {attendanceError ? <Text style={styles.errorText}>{attendanceError}</Text> : null}
             {attendanceLoading ? (
               <ActivityIndicator style={styles.staffLoading} />
             ) : attendance.length === 0 ? (
@@ -562,7 +539,6 @@ export default function SiteDetailScreen() {
 
         {activeTab === "notes" && (
           <>
-            {notesError ? <Text style={styles.errorText}>{notesError}</Text> : null}
             {notesLoading ? (
               <ActivityIndicator style={styles.staffLoading} />
             ) : notes.length === 0 ? (
@@ -743,10 +719,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-  },
-  errorText: {
-    color: "red",
-    marginBottom: 16,
   },
   backButton: {
     flexDirection: "row",

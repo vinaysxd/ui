@@ -19,6 +19,7 @@ import {
 } from "../../../src/services/staff.service";
 import { getAllSites, getSiteStaff, Site } from "../../../src/services/sites.service";
 import { getAttendanceBySite, Attendance } from "../../../src/services/attendance.service";
+import { showSuccess, showError } from "../../../src/utils/toast";
 
 type Tab = "details" | "sites" | "attendance";
 
@@ -64,13 +65,9 @@ export default function StaffDetailScreen() {
   const [saving, setSaving] = useState<boolean>(false);
   const [deactivating, setDeactivating] = useState<boolean>(false);
   const [reactivating, setReactivating] = useState<boolean>(false);
-  const [error, setError] = useState<string>("");
 
   const [assignedSites, setAssignedSites] = useState<Site[]>([]);
-  const [sitesError, setSitesError] = useState<string>("");
-
   const [attendance, setAttendance] = useState<Attendance[]>([]);
-  const [attendanceError, setAttendanceError] = useState<string>("");
 
   const applyFields = (data: Staff) => {
     setFullName(data.full_name ?? "");
@@ -80,19 +77,16 @@ export default function StaffDetailScreen() {
   };
 
   const fetchStaff = useCallback(async () => {
-    setError("");
     try {
       const data = await getStaff(id);
       setStaff(data);
       applyFields(data);
     } catch (err: any) {
-      setError(err.message);
+      showError(err.message);
     }
   }, [id]);
 
   const fetchAssignedSitesAndAttendance = useCallback(async () => {
-    setSitesError("");
-    setAttendanceError("");
     let assigned: Site[] = [];
     try {
       const sites = await getAllSites();
@@ -102,7 +96,7 @@ export default function StaffDetailScreen() {
       );
       setAssignedSites(assigned);
     } catch (err: any) {
-      setSitesError(err.message);
+      showError(err.message);
       return;
     }
 
@@ -114,7 +108,7 @@ export default function StaffDetailScreen() {
       records.sort((a, b) => new Date(b.clock_in).getTime() - new Date(a.clock_in).getTime());
       setAttendance(records.slice(0, 20));
     } catch (err: any) {
-      setAttendanceError(err.message);
+      showError(err.message);
     }
   }, [id]);
 
@@ -130,7 +124,6 @@ export default function StaffDetailScreen() {
   const siteNameById = Object.fromEntries(assignedSites.map((site) => [site.id, site.name]));
 
   const handleEdit = () => {
-    setError("");
     setIsEditing(true);
   };
 
@@ -138,13 +131,11 @@ export default function StaffDetailScreen() {
     if (staff) {
       applyFields(staff);
     }
-    setError("");
     setIsEditing(false);
   };
 
   const handleSave = async () => {
     setSaving(true);
-    setError("");
     try {
       const updated = await updateStaff(id, {
         full_name: fullName,
@@ -155,8 +146,9 @@ export default function StaffDetailScreen() {
       setStaff(updated);
       applyFields(updated);
       setIsEditing(false);
+      showSuccess("Staff details saved");
     } catch (err: any) {
-      setError(err.message);
+      showError(err.message);
     } finally {
       setSaving(false);
     }
@@ -164,24 +156,24 @@ export default function StaffDetailScreen() {
 
   const handleDeactivate = async () => {
     setDeactivating(true);
-    setError("");
     try {
       await deactivateStaff(id);
+      showSuccess("Staff deactivated");
       router.back();
     } catch (err: any) {
-      setError(err.message);
+      showError(err.message);
       setDeactivating(false);
     }
   };
 
   const handleReactivate = async () => {
     setReactivating(true);
-    setError("");
     try {
       await reactivateStaff(id);
       await fetchStaff();
+      showSuccess("Staff reactivated");
     } catch (err: any) {
-      setError(err.message);
+      showError(err.message);
     } finally {
       setReactivating(false);
     }
@@ -195,17 +187,12 @@ export default function StaffDetailScreen() {
     );
   }
 
-  if (error && !staff) {
+  if (!staff) {
     return (
       <View style={styles.centered}>
         <BackButton onPress={() => router.back()} />
-        <Text style={styles.errorText}>{error}</Text>
       </View>
     );
-  }
-
-  if (!staff) {
-    return null;
   }
 
   return (
@@ -237,8 +224,6 @@ export default function StaffDetailScreen() {
       </View>
 
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-        {error ? <Text style={styles.errorText}>{error}</Text> : null}
-
         {activeTab === "details" && (
           <>
             <View style={styles.section}>
@@ -323,7 +308,6 @@ export default function StaffDetailScreen() {
 
         {activeTab === "sites" && (
           <>
-            {sitesError ? <Text style={styles.errorText}>{sitesError}</Text> : null}
             {assignedSites.length === 0 ? (
               <Text style={styles.emptyText}>No sites assigned</Text>
             ) : (
@@ -343,7 +327,6 @@ export default function StaffDetailScreen() {
 
         {activeTab === "attendance" && (
           <>
-            {attendanceError ? <Text style={styles.errorText}>{attendanceError}</Text> : null}
             {attendance.length === 0 ? (
               <Text style={styles.emptyText}>No attendance history</Text>
             ) : (
@@ -467,10 +450,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-  },
-  errorText: {
-    color: "red",
-    marginBottom: 16,
   },
   backButton: {
     flexDirection: "row",

@@ -14,13 +14,13 @@ import {
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { getAllStaff, Staff } from "../../../src/services/staff.service";
+import { showError } from "../../../src/utils/toast";
 
 export default function StaffScreen() {
   const router = useRouter();
   const [staff, setStaff] = useState<Staff[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
-  const [error, setError] = useState<string>("");
 
   const [searchQuery, setSearchQuery] = useState<string>("");
 
@@ -30,12 +30,11 @@ export default function StaffScreen() {
   const animatedRotate = useRef(new Animated.Value(0)).current;
 
   const fetchStaff = useCallback(async () => {
-    setError("");
     try {
       const data = await getAllStaff();
       setStaff(data);
     } catch (err: any) {
-      setError(err.message);
+      showError(err.message);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -116,8 +115,6 @@ export default function StaffScreen() {
         </TouchableOpacity>
       </View>
 
-      {error ? <Text style={styles.errorText}>{error}</Text> : null}
-
       <View style={styles.searchBar}>
         <Ionicons name="search-outline" size={18} color="#999" />
         <TextInput
@@ -141,15 +138,13 @@ export default function StaffScreen() {
         contentContainerStyle={styles.listContent}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         ListEmptyComponent={
-          !error ? (
-            <Text style={styles.emptyText}>
-              {searchQuery.trim()
-                ? "No staff found"
-                : staff.length === 0
-                ? "No staff members found."
-                : "No active staff members."}
-            </Text>
-          ) : null
+          <Text style={styles.emptyText}>
+            {searchQuery.trim()
+              ? "No staff found"
+              : staff.length === 0
+              ? "No staff members found."
+              : "No active staff members."}
+          </Text>
         }
         renderItem={({ item }) => (
           <TouchableOpacity
@@ -243,10 +238,6 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     justifyContent: "center",
     alignItems: "center",
-  },
-  errorText: {
-    color: "red",
-    marginBottom: 16,
   },
   searchBar: {
     flexDirection: "row",

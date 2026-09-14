@@ -14,13 +14,13 @@ import {
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { getAllClients, Client } from "../../../src/services/client.service";
+import { showError } from "../../../src/utils/toast";
 
 export default function ClientsScreen() {
   const router = useRouter();
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
-  const [error, setError] = useState<string>("");
 
   const [searchQuery, setSearchQuery] = useState<string>("");
 
@@ -30,12 +30,11 @@ export default function ClientsScreen() {
   const animatedRotate = useRef(new Animated.Value(0)).current;
 
   const fetchClients = useCallback(async () => {
-    setError("");
     try {
       const data = await getAllClients();
       setClients(data);
     } catch (err: any) {
-      setError(err.message);
+      showError(err.message);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -116,8 +115,6 @@ export default function ClientsScreen() {
         </TouchableOpacity>
       </View>
 
-      {error ? <Text style={styles.errorText}>{error}</Text> : null}
-
       <View style={styles.searchBar}>
         <Ionicons name="search-outline" size={18} color="#999" />
         <TextInput
@@ -141,15 +138,13 @@ export default function ClientsScreen() {
         contentContainerStyle={styles.listContent}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         ListEmptyComponent={
-          !error ? (
-            <Text style={styles.emptyText}>
-              {searchQuery.trim()
-                ? "No clients found"
-                : clients.length === 0
-                ? "No clients found."
-                : "No active clients."}
-            </Text>
-          ) : null
+          <Text style={styles.emptyText}>
+            {searchQuery.trim()
+              ? "No clients found"
+              : clients.length === 0
+              ? "No clients found."
+              : "No active clients."}
+          </Text>
         }
         renderItem={({ item }) => (
           <TouchableOpacity
@@ -243,10 +238,6 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     justifyContent: "center",
     alignItems: "center",
-  },
-  errorText: {
-    color: "red",
-    marginBottom: 16,
   },
   searchBar: {
     flexDirection: "row",

@@ -14,6 +14,7 @@ import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { createSite } from "../../../src/services/sites.service";
 import { getAllClients, Client } from "../../../src/services/client.service";
+import { showSuccess, showError } from "../../../src/utils/toast";
 
 export default function CreateSiteScreen() {
   const router = useRouter();
@@ -27,20 +28,17 @@ export default function CreateSiteScreen() {
 
   const [clients, setClients] = useState<Client[]>([]);
   const [clientsLoading, setClientsLoading] = useState<boolean>(true);
-  const [clientsError, setClientsError] = useState<string>("");
   const [pickerVisible, setPickerVisible] = useState<boolean>(false);
 
   const [submitting, setSubmitting] = useState<boolean>(false);
-  const [error, setError] = useState<string>("");
 
   useEffect(() => {
     const fetchClients = async () => {
-      setClientsError("");
       try {
         const data = await getAllClients();
         setClients(data.filter((client) => client.is_active));
       } catch (err: any) {
-        setClientsError(err.message);
+        showError(err.message);
       } finally {
         setClientsLoading(false);
       }
@@ -55,10 +53,8 @@ export default function CreateSiteScreen() {
   };
 
   const handleSubmit = async () => {
-    setError("");
-
     if (!name.trim() || !address.trim() || !latitude.trim() || !longitude.trim() || !clientId) {
-      setError("Name, address, latitude, longitude, and client are all required");
+      showError("Name, address, latitude, longitude, and client are all required");
       return;
     }
 
@@ -66,12 +62,12 @@ export default function CreateSiteScreen() {
     const lng = parseFloat(longitude);
 
     if (Number.isNaN(lat) || lat < -90 || lat > 90) {
-      setError("Latitude must be a number between -90 and 90");
+      showError("Latitude must be a number between -90 and 90");
       return;
     }
 
     if (Number.isNaN(lng) || lng < -180 || lng > 180) {
-      setError("Longitude must be a number between -180 and 180");
+      showError("Longitude must be a number between -180 and 180");
       return;
     }
 
@@ -84,9 +80,10 @@ export default function CreateSiteScreen() {
         longitude: lng,
         client_id: clientId,
       });
+      showSuccess("Site created");
       router.back();
     } catch (err: any) {
-      setError(err.message);
+      showError(err.message);
       setSubmitting(false);
     }
   };
@@ -99,8 +96,6 @@ export default function CreateSiteScreen() {
       <BackButton onPress={() => router.back()} />
 
       <Text style={styles.title}>Add Site</Text>
-
-      {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
       <Text style={styles.label}>Name</Text>
       <TextInput style={styles.input} value={name} onChangeText={setName} editable={!submitting} />
@@ -134,8 +129,6 @@ export default function CreateSiteScreen() {
       <Text style={styles.label}>Client</Text>
       {clientsLoading ? (
         <ActivityIndicator style={styles.clientLoading} />
-      ) : clientsError ? (
-        <Text style={styles.errorText}>{clientsError}</Text>
       ) : (
         <TouchableOpacity
           style={styles.dropdown}
@@ -217,10 +210,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: "bold",
-    marginBottom: 16,
-  },
-  errorText: {
-    color: "red",
     marginBottom: 16,
   },
   label: {

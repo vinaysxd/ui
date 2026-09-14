@@ -55,6 +55,7 @@ function StackLayout() {
       <Stack.Screen name="clients/invite" />
       <Stack.Screen name="sites/[id]" />
       <Stack.Screen name="sites/create" />
+      <Stack.Screen name="settings/edit-profile" />
     </Stack>
   );
 }

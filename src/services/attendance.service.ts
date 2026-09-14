@@ -16,6 +16,12 @@ export interface AttendanceStaff {
   phone: string;
 }
 
+export interface AttendanceSite {
+  id: string;
+  name: string;
+  address: string;
+}
+
 export interface Attendance {
   id: string;
   staff_id: string;
@@ -27,12 +33,23 @@ export interface Attendance {
   clock_out_lat: number | null;
   clock_out_lng: number | null;
   staff: AttendanceStaff | null;
+  site?: AttendanceSite | null;
   photos: AttendancePhoto[];
 }
 
 export const getAttendanceBySite = async (site_id: string): Promise<Attendance[]> => {
   try {
     const response = await api.get(`/attendance/site/${site_id}`);
+    return response.data.attendance;
+  } catch (error: any) {
+    const code = error?.response?.data?.code;
+    throw new Error(getErrorMessage(code));
+  }
+};
+
+export const getRecentAttendance = async (limit: number = 10): Promise<Attendance[]> => {
+  try {
+    const response = await api.get("/attendance/recent", { params: { limit } });
     return response.data.attendance;
   } catch (error: any) {
     const code = error?.response?.data?.code;

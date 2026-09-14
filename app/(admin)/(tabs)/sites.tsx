@@ -14,6 +14,7 @@ import {
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { getAllSites, Site } from "../../../src/services/sites.service";
+import { showError } from "../../../src/utils/toast";
 
 const clientLabel = (site: Site): string => {
   if (!site.client) {
@@ -27,7 +28,6 @@ export default function SitesScreen() {
   const [sites, setSites] = useState<Site[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
-  const [error, setError] = useState<string>("");
 
   const [searchQuery, setSearchQuery] = useState<string>("");
 
@@ -37,12 +37,11 @@ export default function SitesScreen() {
   const animatedRotate = useRef(new Animated.Value(0)).current;
 
   const fetchSites = useCallback(async () => {
-    setError("");
     try {
       const data = await getAllSites();
       setSites(data);
     } catch (err: any) {
-      setError(err.message);
+      showError(err.message);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -121,8 +120,6 @@ export default function SitesScreen() {
         </TouchableOpacity>
       </View>
 
-      {error ? <Text style={styles.errorText}>{error}</Text> : null}
-
       <View style={styles.searchBar}>
         <Ionicons name="search-outline" size={18} color="#999" />
         <TextInput
@@ -146,15 +143,13 @@ export default function SitesScreen() {
         contentContainerStyle={styles.listContent}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         ListEmptyComponent={
-          !error ? (
-            <Text style={styles.emptyText}>
-              {searchQuery.trim()
-                ? "No sites found"
-                : sites.length === 0
-                ? "No sites found."
-                : "No active sites."}
-            </Text>
-          ) : null
+          <Text style={styles.emptyText}>
+            {searchQuery.trim()
+              ? "No sites found"
+              : sites.length === 0
+              ? "No sites found."
+              : "No active sites."}
+          </Text>
         }
         renderItem={({ item }) => (
           <TouchableOpacity
@@ -248,10 +243,6 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     justifyContent: "center",
     alignItems: "center",
-  },
-  errorText: {
-    color: "red",
-    marginBottom: 16,
   },
   searchBar: {
     flexDirection: "row",

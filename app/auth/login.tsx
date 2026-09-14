@@ -2,27 +2,23 @@ import { View, Text, TextInput, TouchableOpacity, ActivityIndicator } from 'reac
 import { useState } from 'react';
 import { useRouter } from 'expo-router';
 import { login } from '../../src/services/auth.service';
+import { showError } from '../../src/utils/toast';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState<string>("");
   const [password, setPassword] = useState<string>("");
-  const [error, setError] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
   const router = useRouter();
 
   const loginHandler = async () => {
-    console.log("+==========")
-    setError("");
     setLoading(true);
     try {
       const user = await login(email, password);
-      console.log("USER = ",user)
       if (user.role === "admin") router.replace("/(admin)/dashboard");
       else if (user.role === "staff") router.replace("/(staff)/dashboard");
       else if (user.role === "client") router.replace("/(client)/dashboard");
     } catch (err: any) {
-        console.log("USER = ",err)
-      setError(err.message);
+      showError(err.message);
     } finally {
       setLoading(false);
     }
@@ -33,10 +29,6 @@ export default function LoginScreen() {
       <Text style={{ fontSize: 24, fontWeight: "bold", marginBottom: 32 }}>
         Brothers Cleaning
       </Text>
-
-      {error ? (
-        <Text style={{ color: "red", marginBottom: 16 }}>{error}</Text>
-      ) : null}
 
       <TextInput
         placeholder="Email"

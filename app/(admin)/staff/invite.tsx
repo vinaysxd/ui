@@ -1,6 +1,5 @@
 import { useState } from "react";
 import {
-  View,
   Text,
   TextInput,
   ScrollView,
@@ -11,6 +10,7 @@ import {
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { inviteStaff } from "../../../src/services/staff.service";
+import { showSuccess, showError } from "../../../src/utils/toast";
 
 export default function InviteStaffScreen() {
   const router = useRouter();
@@ -19,26 +19,20 @@ export default function InviteStaffScreen() {
   const [phone, setPhone] = useState<string>("");
 
   const [submitting, setSubmitting] = useState<boolean>(false);
-  const [error, setError] = useState<string>("");
-  const [success, setSuccess] = useState<boolean>(false);
 
   const handleSubmit = async () => {
-    setError("");
-
     if (!fullName.trim() || !email.trim() || !phone.trim()) {
-      setError("Full name, email, and phone are all required");
+      showError("Full name, email, and phone are all required");
       return;
     }
 
     setSubmitting(true);
     try {
       await inviteStaff({ full_name: fullName.trim(), email: email.trim(), phone: phone.trim() });
-      setSuccess(true);
-      setTimeout(() => {
-        router.back();
-      }, 1000);
+      showSuccess("Staff invitation sent");
+      router.back();
     } catch (err: any) {
-      setError(err.message);
+      showError(err.message);
       setSubmitting(false);
     }
   };
@@ -49,15 +43,12 @@ export default function InviteStaffScreen() {
 
       <Text style={styles.title}>Invite Staff</Text>
 
-      {error ? <Text style={styles.errorText}>{error}</Text> : null}
-      {success ? <Text style={styles.successText}>Staff invitation sent</Text> : null}
-
       <Text style={styles.label}>Full Name</Text>
       <TextInput
         style={styles.input}
         value={fullName}
         onChangeText={setFullName}
-        editable={!submitting && !success}
+        editable={!submitting}
       />
 
       <Text style={styles.label}>Email</Text>
@@ -67,7 +58,7 @@ export default function InviteStaffScreen() {
         onChangeText={setEmail}
         autoCapitalize="none"
         keyboardType="email-address"
-        editable={!submitting && !success}
+        editable={!submitting}
       />
 
       <Text style={styles.label}>Phone</Text>
@@ -76,14 +67,10 @@ export default function InviteStaffScreen() {
         value={phone}
         onChangeText={setPhone}
         keyboardType="phone-pad"
-        editable={!submitting && !success}
+        editable={!submitting}
       />
 
-      <TouchableOpacity
-        style={styles.submitButton}
-        onPress={handleSubmit}
-        disabled={submitting || success}
-      >
+      <TouchableOpacity style={styles.submitButton} onPress={handleSubmit} disabled={submitting}>
         {submitting ? (
           <ActivityIndicator color="#fff" />
         ) : (
@@ -125,15 +112,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: "bold",
-    marginBottom: 16,
-  },
-  errorText: {
-    color: "red",
-    marginBottom: 16,
-  },
-  successText: {
-    color: "#16a34a",
-    fontWeight: "600",
     marginBottom: 16,
   },
   label: {

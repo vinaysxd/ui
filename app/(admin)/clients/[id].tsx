@@ -18,6 +18,7 @@ import {
   Client,
 } from "../../../src/services/client.service";
 import { getAllSites, Site } from "../../../src/services/sites.service";
+import { showSuccess, showError } from "../../../src/utils/toast";
 
 type Tab = "details" | "sites";
 
@@ -58,12 +59,10 @@ export default function ClientDetailScreen() {
   const [saving, setSaving] = useState<boolean>(false);
   const [deactivating, setDeactivating] = useState<boolean>(false);
   const [reactivating, setReactivating] = useState<boolean>(false);
-  const [error, setError] = useState<string>("");
 
   const [assignedSites, setAssignedSites] = useState<Site[]>([]);
   const [sitesLoading, setSitesLoading] = useState<boolean>(false);
   const [sitesLoaded, setSitesLoaded] = useState<boolean>(false);
-  const [sitesError, setSitesError] = useState<string>("");
 
   const applyFields = (data: Client) => {
     setFullName(data.full_name ?? "");
@@ -75,13 +74,12 @@ export default function ClientDetailScreen() {
   };
 
   const fetchClient = useCallback(async () => {
-    setError("");
     try {
       const data = await getClient(id);
       setClient(data);
       applyFields(data);
     } catch (err: any) {
-      setError(err.message);
+      showError(err.message);
     } finally {
       setLoading(false);
     }
@@ -92,7 +90,6 @@ export default function ClientDetailScreen() {
   }, [fetchClient]);
 
   const fetchSites = useCallback(async () => {
-    setSitesError("");
     setSitesLoading(true);
     try {
       const allSites = await getAllSites();
@@ -100,7 +97,7 @@ export default function ClientDetailScreen() {
       setAssignedSites(filtered);
       setSitesLoaded(true);
     } catch (err: any) {
-      setSitesError(err.message);
+      showError(err.message);
     } finally {
       setSitesLoading(false);
     }
@@ -113,7 +110,6 @@ export default function ClientDetailScreen() {
   }, [activeTab, sitesLoaded, fetchSites]);
 
   const handleEdit = () => {
-    setError("");
     setIsEditing(true);
   };
 
@@ -121,13 +117,11 @@ export default function ClientDetailScreen() {
     if (client) {
       applyFields(client);
     }
-    setError("");
     setIsEditing(false);
   };
 
   const handleSave = async () => {
     setSaving(true);
-    setError("");
     try {
       const updated = await updateClient(id, {
         full_name: fullName,
@@ -140,8 +134,9 @@ export default function ClientDetailScreen() {
       setClient(updated);
       applyFields(updated);
       setIsEditing(false);
+      showSuccess("Client details saved");
     } catch (err: any) {
-      setError(err.message);
+      showError(err.message);
     } finally {
       setSaving(false);
     }
@@ -149,12 +144,12 @@ export default function ClientDetailScreen() {
 
   const handleDeactivate = async () => {
     setDeactivating(true);
-    setError("");
     try {
       await deactivateClient(id);
       await fetchClient();
+      showSuccess("Client deactivated");
     } catch (err: any) {
-      setError(err.message);
+      showError(err.message);
     } finally {
       setDeactivating(false);
     }
@@ -162,12 +157,12 @@ export default function ClientDetailScreen() {
 
   const handleReactivate = async () => {
     setReactivating(true);
-    setError("");
     try {
       await reactivateClient(id);
       await fetchClient();
+      showSuccess("Client reactivated");
     } catch (err: any) {
-      setError(err.message);
+      showError(err.message);
     } finally {
       setReactivating(false);
     }
@@ -181,17 +176,12 @@ export default function ClientDetailScreen() {
     );
   }
 
-  if (error && !client) {
+  if (!client) {
     return (
       <View style={styles.centered}>
         <BackButton onPress={() => router.back()} />
-        <Text style={styles.errorText}>{error}</Text>
       </View>
     );
-  }
-
-  if (!client) {
-    return null;
   }
 
   return (
@@ -223,8 +213,6 @@ export default function ClientDetailScreen() {
       </View>
 
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-        {error ? <Text style={styles.errorText}>{error}</Text> : null}
-
         {activeTab === "details" && (
           <>
             <View style={styles.section}>
@@ -320,7 +308,6 @@ export default function ClientDetailScreen() {
 
         {activeTab === "sites" && (
           <>
-            {sitesError ? <Text style={styles.errorText}>{sitesError}</Text> : null}
             {sitesLoading ? (
               <ActivityIndicator style={styles.sitesLoading} />
             ) : assignedSites.length === 0 ? (
@@ -438,10 +425,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-  },
-  errorText: {
-    color: "red",
-    marginBottom: 16,
   },
   backButton: {
     flexDirection: "row",
