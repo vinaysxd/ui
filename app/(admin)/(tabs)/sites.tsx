@@ -13,11 +13,18 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { getAllStaff, Staff } from "../../src/services/staff.service";
+import { getAllSites, Site } from "../../../src/services/sites.service";
 
-export default function StaffScreen() {
+const clientLabel = (site: Site): string => {
+  if (!site.client) {
+    return "No client";
+  }
+  return site.client.company_name ?? site.client.full_name;
+};
+
+export default function SitesScreen() {
   const router = useRouter();
-  const [staff, setStaff] = useState<Staff[]>([]);
+  const [sites, setSites] = useState<Site[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
@@ -29,11 +36,11 @@ export default function StaffScreen() {
   const animatedHeight = useRef(new Animated.Value(0)).current;
   const animatedRotate = useRef(new Animated.Value(0)).current;
 
-  const fetchStaff = useCallback(async () => {
+  const fetchSites = useCallback(async () => {
     setError("");
     try {
-      const data = await getAllStaff();
-      setStaff(data);
+      const data = await getAllSites();
+      setSites(data);
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -43,28 +50,26 @@ export default function StaffScreen() {
   }, []);
 
   useEffect(() => {
-    fetchStaff();
-  }, [fetchStaff]);
+    fetchSites();
+  }, [fetchSites]);
 
   const onRefresh = () => {
     setRefreshing(true);
-    fetchStaff();
+    fetchSites();
   };
 
-  const activeStaff = useMemo(() => staff.filter((member) => member.is_active), [staff]);
-  const inactiveStaff = useMemo(() => staff.filter((member) => !member.is_active), [staff]);
+  const activeSites = useMemo(() => sites.filter((site) => site.is_active), [sites]);
+  const inactiveSites = useMemo(() => sites.filter((site) => !site.is_active), [sites]);
 
-  const filteredActiveStaff = useMemo(() => {
+  const filteredActiveSites = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
     if (!query) {
-      return activeStaff;
+      return activeSites;
     }
-    return activeStaff.filter((member) =>
-      [member.full_name, member.email, member.phone].some((field) =>
-        field?.toLowerCase().includes(query)
-      )
+    return activeSites.filter((site) =>
+      [site.name, site.address].some((field) => field?.toLowerCase().includes(query))
     );
-  }, [activeStaff, searchQuery]);
+  }, [activeSites, searchQuery]);
 
   const toggleExpanded = () => {
     const toValue = expanded ? 0 : 1;
@@ -107,12 +112,12 @@ export default function StaffScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Staff</Text>
+        <Text style={styles.title}>Sites</Text>
         <TouchableOpacity
-          style={styles.inviteButton}
-          onPress={() => router.push("/(admin)/staff/invite")}
+          style={styles.addButton}
+          onPress={() => router.push("/(admin)/sites/create")}
         >
-          <Ionicons name="person-add-outline" size={20} color="#fff" />
+          <Ionicons name="add-outline" size={22} color="#fff" />
         </TouchableOpacity>
       </View>
 
@@ -124,7 +129,7 @@ export default function StaffScreen() {
           style={styles.searchInput}
           value={searchQuery}
           onChangeText={setSearchQuery}
-          placeholder="Search active staff..."
+          placeholder="Search active sites..."
           placeholderTextColor="#999"
           autoCapitalize="none"
         />
@@ -136,7 +141,7 @@ export default function StaffScreen() {
       </View>
 
       <FlatList
-        data={filteredActiveStaff}
+        data={filteredActiveSites}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
@@ -144,34 +149,34 @@ export default function StaffScreen() {
           !error ? (
             <Text style={styles.emptyText}>
               {searchQuery.trim()
-                ? "No staff found"
-                : staff.length === 0
-                ? "No staff members found."
-                : "No active staff members."}
+                ? "No sites found"
+                : sites.length === 0
+                ? "No sites found."
+                : "No active sites."}
             </Text>
           ) : null
         }
         renderItem={({ item }) => (
           <TouchableOpacity
             style={styles.card}
-            onPress={() => router.push(`/(admin)/staff/${item.profile_id}`)}
+            onPress={() => router.push(`/(admin)/sites/${item.id}`)}
           >
             <View style={styles.cardHeader}>
-              <Text style={styles.name}>{item.full_name}</Text>
+              <Text style={styles.name}>{item.name}</Text>
               <View style={[styles.badge, styles.badgeActive]}>
                 <Text style={styles.badgeText}>Active</Text>
               </View>
             </View>
-            <Text style={styles.detail}>{item.email}</Text>
-            <Text style={styles.detail}>{item.phone}</Text>
+            <Text style={styles.detail}>{item.address}</Text>
+            <Text style={styles.detail}>{clientLabel(item)}</Text>
           </TouchableOpacity>
         )}
         ListFooterComponent={
-          inactiveStaff.length > 0 ? (
+          inactiveSites.length > 0 ? (
             <View style={styles.accordionContainer}>
               <TouchableOpacity style={styles.accordionHeader} onPress={toggleExpanded}>
                 <Text style={styles.accordionHeaderText}>
-                  Deactivated Staff ({inactiveStaff.length})
+                  Deactivated Sites ({inactiveSites.length})
                 </Text>
                 <Animated.View style={rotateStyle}>
                   <Ionicons name="chevron-down-outline" size={20} color="#000" />
@@ -190,20 +195,20 @@ export default function StaffScreen() {
                 ]}
               >
                 <View onLayout={handleInactiveContentLayout} style={styles.accordionInner}>
-                  {inactiveStaff.map((item) => (
+                  {inactiveSites.map((item) => (
                     <TouchableOpacity
                       key={item.id}
                       style={[styles.card, styles.inactiveCard]}
-                      onPress={() => router.push(`/(admin)/staff/${item.profile_id}`)}
+                      onPress={() => router.push(`/(admin)/sites/${item.id}`)}
                     >
                       <View style={styles.cardHeader}>
-                        <Text style={styles.name}>{item.full_name}</Text>
+                        <Text style={styles.name}>{item.name}</Text>
                         <View style={[styles.badge, styles.badgeInactive]}>
                           <Text style={styles.badgeText}>Inactive</Text>
                         </View>
                       </View>
-                      <Text style={styles.detail}>{item.email}</Text>
-                      <Text style={styles.detail}>{item.phone}</Text>
+                      <Text style={styles.detail}>{item.address}</Text>
+                      <Text style={styles.detail}>{clientLabel(item)}</Text>
                     </TouchableOpacity>
                   ))}
                 </View>
@@ -236,7 +241,7 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: "bold",
   },
-  inviteButton: {
+  addButton: {
     backgroundColor: "#000",
     width: 40,
     height: 40,

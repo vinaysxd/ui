@@ -2,7 +2,7 @@ import axios from "axios";
 import { getToken, getRefreshToken, setAuth, clearAuth } from "../store/auth";
 
 const api = axios.create({
-  baseURL: "http://localhost:3000",
+  baseURL: "http://192.168.0.81:3000",
   headers: {
     "Content-Type": "application/json",
   },

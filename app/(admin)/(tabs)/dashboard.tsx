@@ -9,10 +9,10 @@ import {
   StyleSheet,
 } from "react-native";
 import { useRouter } from "expo-router";
-import { getAdminDashboard, AdminDashboard } from "../../src/services/dashboard.service";
-import { getAllSites } from "../../src/services/sites.service";
-import { getAttendanceBySite, Attendance } from "../../src/services/attendance.service";
-import { logout } from "../../src/services/auth.service";
+import { getAdminDashboard, AdminDashboard } from "../../../src/services/dashboard.service";
+import { getAllSites } from "../../../src/services/sites.service";
+import { getAttendanceBySite, Attendance } from "../../../src/services/attendance.service";
+import { logout } from "../../../src/services/auth.service";
 
 interface RecentAttendance extends Attendance {
   site_name: string;

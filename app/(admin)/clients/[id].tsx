@@ -11,21 +11,19 @@ import {
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import {
-  getStaff,
-  updateStaff,
-  deactivateStaff,
-  reactivateStaff,
-  Staff,
-} from "../../../src/services/staff.service";
-import { getAllSites, getSiteStaff, Site } from "../../../src/services/sites.service";
-import { getAttendanceBySite, Attendance } from "../../../src/services/attendance.service";
+  getClient,
+  updateClient,
+  deactivateClient,
+  reactivateClient,
+  Client,
+} from "../../../src/services/client.service";
+import { getAllSites, Site } from "../../../src/services/sites.service";
 
-type Tab = "details" | "sites" | "attendance";
+type Tab = "details" | "sites";
 
 const TABS: { key: Tab; label: string }[] = [
   { key: "details", label: "Details" },
   { key: "sites", label: "Sites" },
-  { key: "attendance", label: "Attendance" },
 ];
 
 const MONTHS = [
@@ -41,24 +39,20 @@ const formatDate = (iso: string): string => {
   return `${day} ${month} ${year}`;
 };
 
-const formatDateTime = (iso: string): string => {
-  const date = new Date(iso);
-  const hours = String(date.getHours()).padStart(2, "0");
-  const minutes = String(date.getMinutes()).padStart(2, "0");
-  return `${formatDate(iso)} ${hours}:${minutes}`;
-};
-
-export default function StaffDetailScreen() {
+export default function ClientDetailScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const [staff, setStaff] = useState<Staff | null>(null);
-  const [isEditing, setIsEditing] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<Tab>("details");
+
+  const [client, setClient] = useState<Client | null>(null);
+  const [isEditing, setIsEditing] = useState<boolean>(false);
 
   const [fullName, setFullName] = useState<string>("");
   const [phone, setPhone] = useState<string>("");
-  const [address, setAddress] = useState<string>("");
-  const [emergencyContact, setEmergencyContact] = useState<string>("");
+  const [avatarUrl, setAvatarUrl] = useState<string>("");
+  const [companyName, setCompanyName] = useState<string>("");
+  const [billingAddress, setBillingAddress] = useState<string>("");
+  const [contactPerson, setContactPerson] = useState<string>("");
 
   const [loading, setLoading] = useState<boolean>(true);
   const [saving, setSaving] = useState<boolean>(false);
@@ -67,67 +61,56 @@ export default function StaffDetailScreen() {
   const [error, setError] = useState<string>("");
 
   const [assignedSites, setAssignedSites] = useState<Site[]>([]);
+  const [sitesLoading, setSitesLoading] = useState<boolean>(false);
+  const [sitesLoaded, setSitesLoaded] = useState<boolean>(false);
   const [sitesError, setSitesError] = useState<string>("");
 
-  const [attendance, setAttendance] = useState<Attendance[]>([]);
-  const [attendanceError, setAttendanceError] = useState<string>("");
-
-  const applyFields = (data: Staff) => {
+  const applyFields = (data: Client) => {
     setFullName(data.full_name ?? "");
     setPhone(data.phone ?? "");
-    setAddress(data.address ?? "");
-    setEmergencyContact(data.emergency_contact ?? "");
+    setAvatarUrl(data.avatar_url ?? "");
+    setCompanyName(data.company_name ?? "");
+    setBillingAddress(data.billing_address ?? "");
+    setContactPerson(data.contact_person ?? "");
   };
 
-  const fetchStaff = useCallback(async () => {
+  const fetchClient = useCallback(async () => {
     setError("");
     try {
-      const data = await getStaff(id);
-      setStaff(data);
+      const data = await getClient(id);
+      setClient(data);
       applyFields(data);
     } catch (err: any) {
       setError(err.message);
-    }
-  }, [id]);
-
-  const fetchAssignedSitesAndAttendance = useCallback(async () => {
-    setSitesError("");
-    setAttendanceError("");
-    let assigned: Site[] = [];
-    try {
-      const sites = await getAllSites();
-      const siteStaffLists = await Promise.all(sites.map((site) => getSiteStaff(site.id)));
-      assigned = sites.filter((_, index) =>
-        siteStaffLists[index].some((member) => member.id === id)
-      );
-      setAssignedSites(assigned);
-    } catch (err: any) {
-      setSitesError(err.message);
-      return;
-    }
-
-    try {
-      const attendanceLists = await Promise.all(
-        assigned.map((site) => getAttendanceBySite(site.id))
-      );
-      const records = attendanceLists.flat().filter((record) => record.staff_id === id);
-      records.sort((a, b) => new Date(b.clock_in).getTime() - new Date(a.clock_in).getTime());
-      setAttendance(records.slice(0, 20));
-    } catch (err: any) {
-      setAttendanceError(err.message);
+    } finally {
+      setLoading(false);
     }
   }, [id]);
 
   useEffect(() => {
-    const loadAll = async () => {
-      setLoading(true);
-      await Promise.all([fetchStaff(), fetchAssignedSitesAndAttendance()]);
-      setLoading(false);
-    };
-    loadAll();
-  }, [fetchStaff, fetchAssignedSitesAndAttendance]);
+    fetchClient();
+  }, [fetchClient]);
 
-  const siteNameById = Object.fromEntries(assignedSites.map((site) => [site.id, site.name]));
+  const fetchSites = useCallback(async () => {
+    setSitesError("");
+    setSitesLoading(true);
+    try {
+      const allSites = await getAllSites();
+      const filtered = allSites.filter((site) => site.client_id === client?.id);
+      setAssignedSites(filtered);
+      setSitesLoaded(true);
+    } catch (err: any) {
+      setSitesError(err.message);
+    } finally {
+      setSitesLoading(false);
+    }
+  }, [client]);
+
+  useEffect(() => {
+    if (activeTab === "sites" && !sitesLoaded) {
+      fetchSites();
+    }
+  }, [activeTab, sitesLoaded, fetchSites]);
 
   const handleEdit = () => {
     setError("");
@@ -135,8 +118,8 @@ export default function StaffDetailScreen() {
   };
 
   const handleCancel = () => {
-    if (staff) {
-      applyFields(staff);
+    if (client) {
+      applyFields(client);
     }
     setError("");
     setIsEditing(false);
@@ -146,13 +129,15 @@ export default function StaffDetailScreen() {
     setSaving(true);
     setError("");
     try {
-      const updated = await updateStaff(id, {
+      const updated = await updateClient(id, {
         full_name: fullName,
         phone,
-        address,
-        emergency_contact: emergencyContact,
+        avatar_url: avatarUrl,
+        company_name: companyName,
+        billing_address: billingAddress,
+        contact_person: contactPerson,
       });
-      setStaff(updated);
+      setClient(updated);
       applyFields(updated);
       setIsEditing(false);
     } catch (err: any) {
@@ -166,10 +151,11 @@ export default function StaffDetailScreen() {
     setDeactivating(true);
     setError("");
     try {
-      await deactivateStaff(id);
-      router.back();
+      await deactivateClient(id);
+      await fetchClient();
     } catch (err: any) {
       setError(err.message);
+    } finally {
       setDeactivating(false);
     }
   };
@@ -178,8 +164,8 @@ export default function StaffDetailScreen() {
     setReactivating(true);
     setError("");
     try {
-      await reactivateStaff(id);
-      await fetchStaff();
+      await reactivateClient(id);
+      await fetchClient();
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -195,7 +181,7 @@ export default function StaffDetailScreen() {
     );
   }
 
-  if (error && !staff) {
+  if (error && !client) {
     return (
       <View style={styles.centered}>
         <BackButton onPress={() => router.back()} />
@@ -204,7 +190,7 @@ export default function StaffDetailScreen() {
     );
   }
 
-  if (!staff) {
+  if (!client) {
     return null;
   }
 
@@ -214,9 +200,9 @@ export default function StaffDetailScreen() {
         <BackButton onPress={() => router.back()} />
 
         <View style={styles.header}>
-          <Text style={styles.name}>{staff.full_name}</Text>
-          <View style={[styles.badge, staff.is_active ? styles.badgeActive : styles.badgeInactive]}>
-            <Text style={styles.badgeText}>{staff.is_active ? "Active" : "Inactive"}</Text>
+          <Text style={styles.name}>{client.full_name}</Text>
+          <View style={[styles.badge, client.is_active ? styles.badgeActive : styles.badgeInactive]}>
+            <Text style={styles.badgeText}>{client.is_active ? "Active" : "Inactive"}</Text>
           </View>
         </View>
 
@@ -242,7 +228,7 @@ export default function StaffDetailScreen() {
         {activeTab === "details" && (
           <>
             <View style={styles.section}>
-              <Row label="Email" value={staff.email} />
+              <Row label="Email" value={client.email} />
               <FieldInput
                 label="Full Name"
                 value={fullName}
@@ -256,21 +242,32 @@ export default function StaffDetailScreen() {
                 editable={isEditing}
                 keyboardType="phone-pad"
               />
-              <Row label="Role" value={staff.role} />
-              <FieldInput label="Employee ID" value={staff.employee_id ?? ""} editable={false} />
+              <Row label="Role" value={client.role} />
               <FieldInput
-                label="Address"
-                value={address}
-                onChangeText={setAddress}
+                label="Avatar URL"
+                value={avatarUrl}
+                onChangeText={setAvatarUrl}
                 editable={isEditing}
               />
               <FieldInput
-                label="Emergency Contact"
-                value={emergencyContact}
-                onChangeText={setEmergencyContact}
+                label="Company Name"
+                value={companyName}
+                onChangeText={setCompanyName}
                 editable={isEditing}
               />
-              <Row label="Joined" value={staff.created_at ? formatDate(staff.created_at) : "—"} />
+              <FieldInput
+                label="Billing Address"
+                value={billingAddress}
+                onChangeText={setBillingAddress}
+                editable={isEditing}
+              />
+              <FieldInput
+                label="Contact Person"
+                value={contactPerson}
+                onChangeText={setContactPerson}
+                editable={isEditing}
+              />
+              <Row label="Joined" value={client.created_at ? formatDate(client.created_at) : "—"} />
             </View>
 
             {isEditing ? (
@@ -291,7 +288,7 @@ export default function StaffDetailScreen() {
                 <TouchableOpacity style={styles.editButton} onPress={handleEdit}>
                   <Text style={styles.editButtonText}>Edit</Text>
                 </TouchableOpacity>
-                {staff.is_active ? (
+                {client.is_active ? (
                   <TouchableOpacity
                     style={styles.deactivateButton}
                     onPress={handleDeactivate}
@@ -324,7 +321,9 @@ export default function StaffDetailScreen() {
         {activeTab === "sites" && (
           <>
             {sitesError ? <Text style={styles.errorText}>{sitesError}</Text> : null}
-            {assignedSites.length === 0 ? (
+            {sitesLoading ? (
+              <ActivityIndicator style={styles.sitesLoading} />
+            ) : assignedSites.length === 0 ? (
               <Text style={styles.emptyText}>No sites assigned</Text>
             ) : (
               assignedSites.map((site) => (
@@ -333,45 +332,17 @@ export default function StaffDetailScreen() {
                   style={styles.card}
                   onPress={() => router.push(`/(admin)/sites/${site.id}`)}
                 >
-                  <Text style={styles.cardTitle}>{site.name}</Text>
+                  <View style={styles.cardHeader}>
+                    <Text style={styles.cardTitle}>{site.name}</Text>
+                    <View
+                      style={[styles.badge, site.is_active ? styles.badgeActive : styles.badgeInactive]}
+                    >
+                      <Text style={styles.badgeText}>{site.is_active ? "Active" : "Inactive"}</Text>
+                    </View>
+                  </View>
                   <Text style={styles.detail}>{site.address}</Text>
                 </TouchableOpacity>
               ))
-            )}
-          </>
-        )}
-
-        {activeTab === "attendance" && (
-          <>
-            {attendanceError ? <Text style={styles.errorText}>{attendanceError}</Text> : null}
-            {attendance.length === 0 ? (
-              <Text style={styles.emptyText}>No attendance history</Text>
-            ) : (
-              attendance.map((record) => {
-                const beforeCount = record.photos.filter((photo) => photo.before_photo_url).length;
-                const afterCount = record.photos.filter((photo) => photo.after_photo_url).length;
-                return (
-                  <View key={record.id} style={styles.card}>
-                    <View style={styles.cardHeader}>
-                      <Text style={styles.cardTitle}>
-                        {siteNameById[record.site_id] ?? "Unknown site"}
-                      </Text>
-                      {record.clock_out ? null : (
-                        <View style={[styles.badge, styles.badgeActive]}>
-                          <Text style={styles.badgeText}>Active</Text>
-                        </View>
-                      )}
-                    </View>
-                    <Text style={styles.detail}>Clock in: {formatDateTime(record.clock_in)}</Text>
-                    {record.clock_out ? (
-                      <Text style={styles.detail}>Clock out: {formatDateTime(record.clock_out)}</Text>
-                    ) : null}
-                    <Text style={styles.detail}>
-                      Photos: {beforeCount} before, {afterCount} after
-                    </Text>
-                  </View>
-                );
-              })
             )}
           </>
         )}
@@ -515,36 +486,6 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 24,
   },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: "bold",
-    marginBottom: 8,
-  },
-  card: {
-    backgroundColor: "#fff",
-    borderRadius: 8,
-    padding: 16,
-    marginBottom: 12,
-  },
-  cardHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 4,
-  },
-  cardTitle: {
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  detail: {
-    fontSize: 14,
-    color: "#666",
-    marginTop: 2,
-  },
-  emptyText: {
-    color: "#666",
-    marginBottom: 16,
-  },
   row: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -634,5 +575,34 @@ const styles = StyleSheet.create({
   reactivateButtonText: {
     color: "#fff",
     fontWeight: "bold",
+  },
+  sitesLoading: {
+    marginTop: 16,
+  },
+  emptyText: {
+    color: "#666",
+    textAlign: "center",
+    marginTop: 16,
+  },
+  card: {
+    backgroundColor: "#fff",
+    borderRadius: 8,
+    padding: 16,
+    marginBottom: 12,
+  },
+  cardHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 4,
+  },
+  cardTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  detail: {
+    fontSize: 14,
+    color: "#666",
+    marginTop: 2,
   },
 });

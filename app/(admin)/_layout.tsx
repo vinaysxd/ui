@@ -1,5 +1,5 @@
-import { View, Text, TouchableOpacity, StyleSheet, Platform, useWindowDimensions } from "react-native";
-import { Tabs, Slot, usePathname, useRouter } from "expo-router";
+import { View, Text, TouchableOpacity, StyleSheet, useWindowDimensions } from "react-native";
+import { Stack, Slot, usePathname, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 
 const NAV_ITEMS = [
@@ -25,7 +25,7 @@ function Sidebar() {
             style={[styles.navItem, active && styles.navItemActive]}
             onPress={() => router.push(item.href)}
           >
-            <Ionicons name={item.icon} size={20} color={active ? "#fff" : "#000"} />
+            <Ionicons name={item.icon} size={20} color={active ? "#fff" : "#999"} />
             <Text style={[styles.navLabel, active && styles.navLabelActive]}>{item.label}</Text>
           </TouchableOpacity>
         );
@@ -45,34 +45,25 @@ function SidebarLayout() {
   );
 }
 
-function TabsLayout() {
+function StackLayout() {
   return (
-    <Tabs
-      screenOptions={{
-        headerShown: false,
-        tabBarActiveTintColor: "#000",
-        tabBarInactiveTintColor: "#999",
-      }}
-    >
-      {NAV_ITEMS.map((item) => (
-        <Tabs.Screen
-          key={item.name}
-          name={item.name}
-          options={{
-            title: item.label,
-            tabBarIcon: ({ color, size }) => <Ionicons name={item.icon} size={size} color={color} />,
-          }}
-        />
-      ))}
-    </Tabs>
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="(tabs)" />
+      <Stack.Screen name="staff/[id]" />
+      <Stack.Screen name="staff/invite" />
+      <Stack.Screen name="clients/[id]" />
+      <Stack.Screen name="clients/invite" />
+      <Stack.Screen name="sites/[id]" />
+      <Stack.Screen name="sites/create" />
+    </Stack>
   );
 }
 
 export default function AdminLayout() {
   const { width } = useWindowDimensions();
-  const isDesktop = Platform.OS === "web" || width > 768;
+  const isDesktop = width >= 768;
 
-  return isDesktop ? <SidebarLayout /> : <TabsLayout />;
+  return isDesktop ? <SidebarLayout /> : <StackLayout />;
 }
 
 const styles = StyleSheet.create({
@@ -111,7 +102,7 @@ const styles = StyleSheet.create({
   },
   navLabel: {
     fontSize: 15,
-    color: "#000",
+    color: "#999",
   },
   navLabelActive: {
     color: "#fff",
