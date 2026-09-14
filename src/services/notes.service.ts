@@ -28,3 +28,23 @@ export const getSiteNotes = async (site_id: string): Promise<SiteNote[]> => {
     throw new Error(getErrorMessage(code));
   }
 };
+
+export const getStaffSiteNotes = async (site_id: string): Promise<SiteNote[]> => {
+  try {
+    const response = await api.get(`/notes/${site_id}/staff-view`);
+    return response.data.notes;
+  } catch (error: any) {
+    const code = error?.response?.data?.code;
+    throw new Error(getErrorMessage(code));
+  }
+};
+
+export const addStaffNote = async (site_id: string, note: string): Promise<SiteNote> => {
+  try {
+    const response = await api.post(`/notes/${site_id}`, { note });
+    return response.data.note;
+  } catch (error: any) {
+    const code = error?.response?.data?.code;
+    throw new Error(getErrorMessage(code));
+  }
+};

@@ -59,6 +59,26 @@ export const getAllSites = async (): Promise<Site[]> => {
   }
 };
 
+export const getMySites = async (): Promise<Site[]> => {
+  try {
+    const response = await api.get("/sites/my-sites");
+    return response.data.sites;
+  } catch (error: any) {
+    const code = error?.response?.data?.code;
+    throw new Error(getErrorMessage(code));
+  }
+};
+
+export const getMySite = async (id: string): Promise<Site> => {
+  try {
+    const response = await api.get(`/sites/my-sites/${id}`);
+    return response.data.site;
+  } catch (error: any) {
+    const code = error?.response?.data?.code;
+    throw new Error(getErrorMessage(code));
+  }
+};
+
 export const getSite = async (id: string): Promise<Site> => {
   try {
     const response = await api.get(`/sites/${id}`);
