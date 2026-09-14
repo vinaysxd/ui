@@ -26,6 +26,9 @@ export interface ProfileUpdatePayload {
   avatar_url?: string;
   address?: string;
   emergency_contact?: string;
+  company_name?: string;
+  billing_address?: string;
+  contact_person?: string;
 }
 
 export const getProfile = async (): Promise<ProfileMe> => {

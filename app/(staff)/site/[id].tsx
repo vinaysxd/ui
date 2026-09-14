@@ -398,7 +398,7 @@ function AttendanceCard({
 function HistoryPhotoPair({ photo }: { photo: AttendancePhoto }) {
   const [beforeFailed, setBeforeFailed] = useState<boolean>(false);
   const [afterFailed, setAfterFailed] = useState<boolean>(false);
-
+  console.log("beforeFailed",beforeFailed)
   return (
     <View style={styles.photoPair}>
       <Text style={styles.photoPairLabel}>{photo.label}</Text>

@@ -18,9 +18,9 @@ export const login = async (email: string, password: string) => {
 export const logout = async () => {
   try {
     await api.post("/auth/logout");
+  } catch (error) {
+    // ignore error, still clear local auth
+  } finally {
     await clearAuth();
-  } catch (error: any) {
-    const code = error?.response?.data?.code;
-    throw new Error(getErrorMessage(code));
   }
 };

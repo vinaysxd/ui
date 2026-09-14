@@ -165,6 +165,16 @@ export const getMyHistory = async (): Promise<Attendance[]> => {
   }
 };
 
+export const getClientHistory = async (): Promise<Attendance[]> => {
+  try {
+    const response = await api.get("/attendance/client-history");
+    return response.data.attendance;
+  } catch (error: any) {
+    const code = error?.response?.data?.code;
+    throw new Error(getErrorMessage(code));
+  }
+};
+
 export const getAttendanceBySite = async (site_id: string): Promise<Attendance[]> => {
   try {
     const response = await api.get(`/attendance/site/${site_id}`);

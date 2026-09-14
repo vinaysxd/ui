@@ -12,16 +12,29 @@ import {
   StyleSheet,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { getStaffSiteNotes, addStaffNote, SiteNote } from "../services/notes.service";
+import {
+  getStaffSiteNotes,
+  addStaffNote,
+  getClientSiteNotes,
+  addClientNote,
+  SiteNote,
+} from "../services/notes.service";
 import { showSuccess, showError } from "../utils/toast";
 import { formatDateTime } from "../utils/datetime";
 
 interface NotesPanelProps {
   siteId: string | null;
   active?: boolean;
+  role?: "staff" | "client";
 }
 
-export default function NotesPanel({ siteId, active = true }: NotesPanelProps) {
+const NOTES_API = {
+  staff: { getNotes: getStaffSiteNotes, addNote: addStaffNote },
+  client: { getNotes: getClientSiteNotes, addNote: addClientNote },
+};
+
+export default function NotesPanel({ siteId, active = true, role = "staff" }: NotesPanelProps) {
+  const { getNotes, addNote } = NOTES_API[role];
   const [notes, setNotes] = useState<SiteNote[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
@@ -38,7 +51,7 @@ export default function NotesPanel({ siteId, active = true }: NotesPanelProps) {
       return;
     }
     try {
-      const data = await getStaffSiteNotes(siteId);
+      const data = await getNotes(siteId);
       setNotes(data);
     } catch (err: any) {
       showError(err.message);
@@ -46,7 +59,7 @@ export default function NotesPanel({ siteId, active = true }: NotesPanelProps) {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [siteId]);
+  }, [siteId, getNotes]);
 
   useEffect(() => {
     if (active) {
@@ -73,7 +86,7 @@ export default function NotesPanel({ siteId, active = true }: NotesPanelProps) {
     }
     setSubmitting(true);
     try {
-      const note = await addStaffNote(siteId, noteText.trim());
+      const note = await addNote(siteId, noteText.trim());
       setNotes((prev) => [note, ...prev]);
       setNoteText("");
       setComposing(false);
