@@ -7,29 +7,42 @@ import {
   RefreshControl,
   TouchableOpacity,
   StyleSheet,
+  useWindowDimensions,
 } from "react-native";
 import { useRouter } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import { getAdminDashboard, AdminDashboard } from "../../../src/services/dashboard.service";
 import { getRecentAttendance, Attendance } from "../../../src/services/attendance.service";
 import { logout } from "../../../src/services/auth.service";
+import { COLORS, RADIUS } from "../../../src/constants/theme";
+import StatCard from "../../../src/components/admin/StatCard";
+import AttendanceCard from "../../../src/components/admin/AttendanceCard";
+import AttendanceRow, { COLUMN_FLEX } from "../../../src/components/admin/AttendanceRow";
 
 const MONTHS = [
   "Jan", "Feb", "Mar", "Apr", "May", "Jun",
   "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
 ];
+const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
-const formatDateTime = (iso: string): string => {
-  const date = new Date(iso);
-  const day = String(date.getDate()).padStart(2, "0");
-  const month = MONTHS[date.getMonth()];
-  const year = date.getFullYear();
-  const hours = String(date.getHours()).padStart(2, "0");
-  const minutes = String(date.getMinutes()).padStart(2, "0");
-  return `${day} ${month} ${year} ${hours}:${minutes}`;
+const formatToday = (): string => {
+  const now = new Date();
+  return `${DAYS[now.getDay()]}, ${MONTHS[now.getMonth()]} ${now.getDate()}`;
 };
+
+const STAT_ITEMS = [
+  { key: "total_staff", label: "Total Staff", icon: "people-outline" as const },
+  { key: "total_clients", label: "Total Clients", icon: "briefcase-outline" as const },
+  { key: "total_sites", label: "Total Sites", icon: "business-outline" as const },
+  { key: "todays_attendance_count", label: "Today's Attendance", icon: "checkmark-done-outline" as const },
+] as const;
 
 export default function AdminDashboardScreen() {
   const router = useRouter();
+  const { width } = useWindowDimensions();
+  const isDesktop = width >= 768;
+
   const [stats, setStats] = useState<AdminDashboard | null>(null);
   const [recentAttendance, setRecentAttendance] = useState<Attendance[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -74,190 +87,222 @@ export default function AdminDashboardScreen() {
   if (loading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" />
+        <ActivityIndicator size="large" color={COLORS.gold} />
       </View>
     );
   }
 
-  return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.content}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-    >
-      <View style={styles.header}>
-        <Text style={styles.title}>Admin Dashboard</Text>
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <Text style={styles.logoutText}>Logout</Text>
-        </TouchableOpacity>
+  const header = (
+    <View style={styles.header}>
+      <View>
+        <Text style={styles.greeting}>Hello, Admin 👋</Text>
+        <Text style={styles.dateSubtitle}>{formatToday()}</Text>
       </View>
+      <TouchableOpacity onPress={handleLogout}>
+        <Ionicons name="log-out-outline" size={24} color={COLORS.gold} />
+      </TouchableOpacity>
+    </View>
+  );
 
-      {error ? <Text style={styles.errorText}>{error}</Text> : null}
+  const errorBanner = error ? <Text style={styles.errorText}>{error}</Text> : null;
 
-      <View style={styles.statsGrid}>
-        <View style={[styles.statCard, styles.blueCard]}>
-          <Text style={styles.statValue}>{stats?.total_staff ?? 0}</Text>
-          <Text style={styles.statLabel}>Total Staff</Text>
-        </View>
-        <View style={[styles.statCard, styles.greenCard]}>
-          <Text style={styles.statValue}>{stats?.total_clients ?? 0}</Text>
-          <Text style={styles.statLabel}>Total Clients</Text>
-        </View>
-        <View style={[styles.statCard, styles.purpleCard]}>
-          <Text style={styles.statValue}>{stats?.total_sites ?? 0}</Text>
-          <Text style={styles.statLabel}>Total Sites</Text>
-        </View>
-        <View style={[styles.statCard, styles.orangeCard]}>
-          <Text style={styles.statValue}>{stats?.todays_attendance_count ?? 0}</Text>
-          <Text style={styles.statLabel}>Today's Attendance</Text>
-        </View>
-      </View>
-
+  const sectionHeader = (
+    <View style={styles.sectionHeaderRow}>
       <Text style={styles.sectionTitle}>Recent Attendance</Text>
+      <Text style={styles.sectionSubtitle}>Latest activity</Text>
+    </View>
+  );
 
-      {recentAttendance.length === 0 ? (
-        <Text style={styles.emptyText}>No attendance records found.</Text>
-      ) : (
-        recentAttendance.map((record) => (
-          <View key={record.id} style={styles.attendanceRow}>
-            <View style={styles.attendanceInfo}>
-              <Text style={styles.staffName}>{record.staff?.full_name ?? "Unknown staff"}</Text>
-              <Text style={styles.siteName}>{record.site?.name ?? "Unknown site"}</Text>
-              <Text style={styles.clockInText}>{formatDateTime(record.clock_in)}</Text>
+  const statCards = (cardStyle: object) =>
+    STAT_ITEMS.map((item) => (
+      <StatCard
+        key={item.key}
+        icon={item.icon}
+        label={item.label}
+        value={stats?.[item.key] ?? 0}
+        style={cardStyle}
+      />
+    ));
+
+  if (isDesktop) {
+    return (
+      <LinearGradient colors={["#1A1A1A", "#0D0D0D"]} style={styles.desktopScreen}>
+        <View style={styles.card}>
+          <ScrollView contentContainerStyle={styles.webContent}>
+            <View style={styles.maxWidthWrap}>
+              {header}
+              {errorBanner}
+
+              <View style={styles.statsRowWeb}>{statCards(styles.statCardWeb)}</View>
+
+              {sectionHeader}
+
+              {recentAttendance.length === 0 ? (
+                <Text style={styles.emptyText}>No attendance records found.</Text>
+              ) : (
+                <View style={styles.table}>
+                  <View style={styles.tableHeaderRow}>
+                    <Text style={[styles.th, { flex: COLUMN_FLEX.staff }]}>Staff</Text>
+                    <Text style={[styles.th, { flex: COLUMN_FLEX.site }]}>Site</Text>
+                    <Text style={[styles.th, { flex: COLUMN_FLEX.time }]}>Clock In</Text>
+                    <Text style={[styles.th, { flex: COLUMN_FLEX.time }]}>Clock Out</Text>
+                    <Text style={[styles.th, { flex: COLUMN_FLEX.status }]}>Status</Text>
+                  </View>
+                  {recentAttendance.map((record) => (
+                    <AttendanceRow key={record.id} record={record} />
+                  ))}
+                </View>
+              )}
             </View>
-            {record.clock_out ? (
-              <Text style={styles.clockOutText}>{formatDateTime(record.clock_out)}</Text>
-            ) : (
-              <View style={styles.activeBadge}>
-                <Text style={styles.activeBadgeText}>Active</Text>
-              </View>
-            )}
-          </View>
-        ))
-      )}
-    </ScrollView>
+          </ScrollView>
+        </View>
+      </LinearGradient>
+    );
+  }
+
+  return (
+    <View style={styles.mobileScreen}>
+      <ScrollView
+        contentContainerStyle={styles.mobileContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={COLORS.gold}
+            colors={[COLORS.gold]}
+          />
+        }
+      >
+        {header}
+        {errorBanner}
+
+        <View style={styles.statsGridMobile}>{statCards(styles.statCardMobile)}</View>
+
+        {sectionHeader}
+
+        {recentAttendance.length === 0 ? (
+          <Text style={styles.emptyText}>No attendance records found.</Text>
+        ) : (
+          recentAttendance.map((record) => <AttendanceCard key={record.id} record={record} />)
+        )}
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#f5f5f5",
-  },
-  content: {
-    padding: 16,
-    paddingBottom: 32,
-  },
   centered: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+    backgroundColor: COLORS.background,
   },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 16,
+    marginBottom: 20,
   },
-  title: {
-    fontSize: 24,
-    fontWeight: "bold",
+  greeting: {
+    color: COLORS.textPrimary,
+    fontSize: 22,
+    fontWeight: "700",
   },
-  logoutButton: {
-    backgroundColor: "#000",
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-  },
-  logoutText: {
-    color: "#fff",
-    fontWeight: "bold",
+  dateSubtitle: {
+    color: COLORS.textMuted,
+    fontSize: 13,
+    marginTop: 2,
   },
   errorText: {
-    color: "red",
+    color: COLORS.danger,
     marginBottom: 16,
   },
-  statsGrid: {
+  emptyText: {
+    color: COLORS.textMuted,
+  },
+  sectionHeaderRow: {
+    marginBottom: 14,
+  },
+  sectionTitle: {
+    color: COLORS.textPrimary,
+    fontSize: 16,
+    fontWeight: "700",
+  },
+  sectionSubtitle: {
+    color: COLORS.gold,
+    fontSize: 12,
+    marginTop: 2,
+  },
+
+  // Web: floating dark card on gradient background
+  desktopScreen: {
+    flex: 1,
+  },
+  card: {
+    flex: 1,
+    margin: 24, 
+     
+    elevation: 8,
+  },
+  webContent: {
+    padding: 28,
+    width: "100%",
+  },
+  maxWidthWrap: {
+    width: "100%",
+    maxWidth: 1200,
+    alignSelf: "center",
+  },
+  statsRowWeb: {
+    flexDirection: "row",
+    gap: 16,
+    backgroundColor: COLORS.surfaceElevated,
+    borderRadius: RADIUS.lg,
+    padding: 20,
+    marginBottom: 28,
+  },
+  statCardWeb: {
+    flex: 1,
+  },
+  table: {
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+  },
+  tableHeaderRow: {
+    flexDirection: "row",
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  th: {
+    color: COLORS.textMuted,
+    fontSize: 11,
+    letterSpacing: 1,
+    textTransform: "uppercase",
+  },
+
+  // Mobile
+  mobileScreen: {
+    flex: 1,
+    backgroundColor: COLORS.background,
+  },
+  mobileContent: {
+    padding: 16,
+    paddingBottom: 32,
+  },
+  statsGridMobile: {
     flexDirection: "row",
     flexWrap: "wrap",
     justifyContent: "space-between",
     marginBottom: 24,
   },
-  statCard: {
+  statCardMobile: {
     width: "48%",
-    borderRadius: 12,
-    padding: 16,
+    backgroundColor: COLORS.surface,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: RADIUS.lg,
     marginBottom: 12,
-  },
-  blueCard: {
-    backgroundColor: "#2563eb",
-  },
-  greenCard: {
-    backgroundColor: "#16a34a",
-  },
-  purpleCard: {
-    backgroundColor: "#7c3aed",
-  },
-  orangeCard: {
-    backgroundColor: "#ea580c",
-  },
-  statValue: {
-    fontSize: 28,
-    fontWeight: "bold",
-    color: "#fff",
-  },
-  statLabel: {
-    fontSize: 14,
-    color: "#fff",
-    marginTop: 4,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    marginBottom: 12,
-  },
-  emptyText: {
-    color: "#666",
-  },
-  attendanceRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    backgroundColor: "#fff",
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 8,
-  },
-  attendanceInfo: {
-    flex: 1,
-  },
-  staffName: {
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  siteName: {
-    fontSize: 14,
-    color: "#666",
-    marginTop: 2,
-  },
-  clockInText: {
-    fontSize: 12,
-    color: "#999",
-    marginTop: 4,
-  },
-  clockOutText: {
-    fontSize: 12,
-    color: "#666",
-  },
-  activeBadge: {
-    backgroundColor: "#16a34a",
-    borderRadius: 12,
-    paddingVertical: 4,
-    paddingHorizontal: 10,
-  },
-  activeBadgeText: {
-    color: "#fff",
-    fontSize: 12,
-    fontWeight: "600",
   },
 });

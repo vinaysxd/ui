@@ -15,6 +15,7 @@ export const COLORS = {
   dangerBg: "#2E1A1A",
   warning: "#F59E0B",
   warningBg: "#2E2A1A",
+  accentBg: "#2E2A1A",
 };
 
 export const LIGHT_COLORS: typeof COLORS = {
@@ -34,8 +35,9 @@ export const LIGHT_COLORS: typeof COLORS = {
   dangerBg: "#FDECEA",
   warning: "#B45309",
   warningBg: "#FFF8E1",
+  accentBg: "#F5EFDA",
 };
 
 export const SPACING = { xs: 4, sm: 8, md: 16, lg: 24, xl: 32 };
 
-export const RADIUS = { sm: 6, md: 10, lg: 16, full: 999 };
+export const RADIUS = { sm: 6, md: 10, lg: 16, xl: 24, full: 999 };

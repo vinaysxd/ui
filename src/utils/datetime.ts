@@ -12,3 +12,10 @@ export const formatDateTime = (iso: string): string => {
   const minutes = String(date.getMinutes()).padStart(2, "0");
   return `${day} ${month} ${year} ${hours}:${minutes}`;
 };
+
+export const formatTime = (iso: string): string => {
+  const date = new Date(iso);
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+  return `${hours}:${minutes}`;
+};
