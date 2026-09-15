@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { useState } from 'react';
 import { useRouter } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
 import { login } from '../../src/services/auth.service';
 import { showError } from '../../src/utils/toast';
 import { COLORS, SPACING, RADIUS } from '../../src/constants/theme';
@@ -37,7 +38,25 @@ export default function LoginScreen() {
   };
 
   return (
-    <View style={styles.screen}>
+    <LinearGradient
+      colors={["#0D0D0D", "#1A1A1A", "#0D0D0D"]}
+      style={styles.screen}
+    >
+      <View style={styles.topLine} />
+
+      <LinearGradient
+        colors={["#C9A84C10", "transparent"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.accentGlow}
+        pointerEvents="none"
+      />
+
+      <View style={[styles.circle, styles.circle1]} pointerEvents="none" />
+      <View style={[styles.circle, styles.circle2]} pointerEvents="none" />
+      <View style={[styles.circle, styles.circle3]} pointerEvents="none" />
+      <View style={[styles.circle, styles.circle4]} pointerEvents="none" />
+
       <View style={styles.form}>
         <Image
           source={require('../../assets/brothers_logo.png')}
@@ -81,7 +100,7 @@ export default function LoginScreen() {
 
         {error ? <Text style={styles.errorText}>{error}</Text> : null}
       </View>
-    </View>
+    </LinearGradient>
   );
 }
 
@@ -91,7 +110,55 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingHorizontal: 24,
     paddingVertical: SPACING.lg,
-    backgroundColor: COLORS.background,
+  },
+  topLine: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 2,
+    backgroundColor: COLORS.gold,
+    opacity: 0.6,
+  },
+  accentGlow: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    width: "60%",
+    height: "45%",
+  },
+  circle: {
+    position: "absolute",
+    borderRadius: RADIUS.full,
+    backgroundColor: COLORS.gold,
+  },
+  circle1: {
+    width: 300,
+    height: 300,
+    top: -80,
+    right: -80,
+    opacity: 0.04,
+  },
+  circle2: {
+    width: 200,
+    height: 200,
+    bottom: 60,
+    left: -60,
+    opacity: 0.05,
+  },
+  circle3: {
+    width: 150,
+    height: 150,
+    top: "42%",
+    right: 30,
+    opacity: 0.03,
+  },
+  circle4: {
+    width: 220,
+    height: 220,
+    bottom: -100,
+    right: 120,
+    opacity: 0.04,
   },
   form: {
     width: "100%",
