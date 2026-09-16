@@ -7,9 +7,12 @@ import {
   ScrollView,
   ActivityIndicator,
   TouchableOpacity,
+  Pressable,
   StyleSheet,
   Modal,
   FlatList,
+  Alert,
+  Platform,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -27,7 +30,7 @@ import {
 import { getAllClients, Client } from "../../../src/services/client.service";
 import { getAllStaff, Staff } from "../../../src/services/staff.service";
 import { getAttendanceBySite, Attendance } from "../../../src/services/attendance.service";
-import { getSiteNotes, SiteNote } from "../../../src/services/notes.service";
+import { getSiteNotes, deleteNote, SiteNote } from "../../../src/services/notes.service";
 import { showSuccess, showError } from "../../../src/utils/toast";
 import { COLORS, RADIUS } from "../../../src/constants/theme";
 
@@ -184,6 +187,33 @@ export default function SiteDetailScreen() {
       setNotesLoading(false);
     }
   }, [id]);
+
+  const handleDeleteNote = async (noteId: string) => {
+    try {
+      await deleteNote(id, noteId);
+      setNotes((prev) => prev.filter((n) => n.id !== noteId));
+      showSuccess("Note deleted");
+    } catch (err: any) {
+      showError(err.message);
+    }
+  };
+
+  const confirmDelete = (noteId: string) => {
+    if (Platform.OS === "web") {
+      if (window.confirm("Delete this note?")) {
+        handleDeleteNote(noteId);
+      }
+    } else {
+      Alert.alert("Delete this note?", undefined, [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: () => handleDeleteNote(noteId),
+        },
+      ]);
+    }
+  };
 
   useEffect(() => {
     if (activeTab === "attendance" && !attendanceLoaded) {
@@ -345,7 +375,7 @@ export default function SiteDetailScreen() {
   if (!site) {
     return (
       <View style={styles.centered}>
-        <BackButton onPress={() => router.back()} />
+        <BackButton onPress={() => router.replace("/(admin)/sites")} />
       </View>
     );
   }
@@ -353,7 +383,7 @@ export default function SiteDetailScreen() {
   return (
     <View style={styles.screen}>
       <View style={styles.topBar}>
-        <BackButton onPress={() => router.back()} />
+        <BackButton onPress={() => router.replace("/(admin)/sites")} />
 
         <View style={styles.header}>
           <View style={styles.headerInfo}>
@@ -669,17 +699,41 @@ export default function SiteDetailScreen() {
                     <View style={isClient ? styles.goldBar : styles.staffBar} />
                     <View style={styles.cardHeader}>
                       <Text style={styles.authorName}>{note.author?.full_name ?? "Unknown author"}</Text>
-                      <View
-                        style={[styles.noteBadge, isClient ? styles.noteBadgeClient : styles.noteBadgeStaff]}
-                      >
-                        <Text
-                          style={[
-                            styles.noteBadgeText,
-                            isClient ? styles.noteBadgeTextClient : styles.noteBadgeTextStaff,
-                          ]}
+                      <View style={styles.cardHeaderRight}>
+                        <View
+                          style={[styles.noteBadge, isClient ? styles.noteBadgeClient : styles.noteBadgeStaff]}
                         >
-                          {isClient ? "CLIENT" : "STAFF"}
-                        </Text>
+                          <Text
+                            style={[
+                              styles.noteBadgeText,
+                              isClient ? styles.noteBadgeTextClient : styles.noteBadgeTextStaff,
+                            ]}
+                          >
+                            {isClient ? "CLIENT" : "STAFF"}
+                          </Text>
+                        </View>
+                        <Pressable
+                          onPress={(e: any) => {
+                            e.stopPropagation();
+                            console.log("delete button pressed", note.id);
+                            console.log("site_id:", id);
+                            confirmDelete(note.id);
+                          }}
+                          {...(Platform.OS === "web"
+                            ? {
+                                onClick: (e: any) => {
+                                  e.stopPropagation();
+                                  console.log("delete button pressed", note.id);
+                                  console.log("site_id:", id);
+                                  confirmDelete(note.id);
+                                },
+                              }
+                            : {})}
+                          style={styles.deleteNoteButton}
+                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                        >
+                          <Ionicons name="trash-outline" size={16} color={COLORS.danger} />
+                        </Pressable>
                       </View>
                     </View>
                     <Text style={styles.noteText}>{note.note}</Text>
@@ -1010,6 +1064,15 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 4,
+  },
+  cardHeaderRight: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  deleteNoteButton: {
+    zIndex: 999,
+    padding: 8,
   },
   attendanceCardShadow: {
     borderRadius: RADIUS.md,

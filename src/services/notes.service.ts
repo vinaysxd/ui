@@ -68,3 +68,12 @@ export const addClientNote = async (site_id: string, note: string): Promise<Site
     throw new Error(getErrorMessage(code));
   }
 };
+
+export const deleteNote = async (site_id: string, note_id: string): Promise<void> => {
+  try {
+    await api.delete(`/notes/${site_id}/${note_id}`);
+  } catch (error: any) {
+    const code = error?.response?.data?.code;
+    throw new Error(getErrorMessage(code));
+  }
+};

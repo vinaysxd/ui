@@ -161,7 +161,7 @@ export default function StaffDetailScreen() {
     try {
       await deactivateStaff(id);
       showSuccess("Staff deactivated");
-      router.back();
+      router.replace("/(admin)/staff");
     } catch (err: any) {
       showError(err.message);
       setDeactivating(false);
@@ -192,7 +192,7 @@ export default function StaffDetailScreen() {
   if (!staff) {
     return (
       <View style={styles.centered}>
-        <BackButton onPress={() => router.back()} />
+        <BackButton onPress={() => router.replace("/(admin)/staff")} />
       </View>
     );
   }
@@ -200,7 +200,7 @@ export default function StaffDetailScreen() {
   return (
     <View style={styles.screen}>
       <View style={styles.topBar}>
-        <BackButton onPress={() => router.back()} />
+        <BackButton onPress={() => router.replace("/(admin)/staff")} />
 
         <View style={styles.header}>
           <Text style={styles.name}>{staff.full_name}</Text>

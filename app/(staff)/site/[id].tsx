@@ -176,7 +176,7 @@ export default function StaffSiteDetailScreen() {
   if (!site) {
     return (
       <View style={styles.centered}>
-        <BackButton onPress={() => router.back()} />
+        <BackButton onPress={() => router.replace("/(staff)/sites")} />
       </View>
     );
   }
@@ -184,7 +184,7 @@ export default function StaffSiteDetailScreen() {
   return (
     <View style={styles.screen}>
       <View style={styles.topBar}>
-        <BackButton onPress={() => router.back()} />
+        <BackButton onPress={() => router.replace("/(staff)/sites")} />
 
         <View style={styles.header}>
           <Text style={styles.name}>{site.name}</Text>

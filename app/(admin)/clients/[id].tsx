@@ -181,7 +181,7 @@ export default function ClientDetailScreen() {
   if (!client) {
     return (
       <View style={styles.centered}>
-        <BackButton onPress={() => router.back()} />
+        <BackButton onPress={() => router.replace("/(admin)/clients")} />
       </View>
     );
   }
@@ -189,7 +189,7 @@ export default function ClientDetailScreen() {
   return (
     <View style={styles.screen}>
       <View style={styles.topBar}>
-        <BackButton onPress={() => router.back()} />
+        <BackButton onPress={() => router.replace("/(admin)/clients")} />
 
         <View style={styles.header}>
           <Text style={styles.name}>{client.full_name}</Text>

@@ -7,9 +7,11 @@ import {
   ActivityIndicator,
   RefreshControl,
   TouchableOpacity,
+  Pressable,
   KeyboardAvoidingView,
   Platform,
   StyleSheet,
+  Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import {
@@ -17,8 +19,10 @@ import {
   addStaffNote,
   getClientSiteNotes,
   addClientNote,
+  deleteNote,
   SiteNote,
 } from "../services/notes.service";
+import { getUser } from "../store/auth";
 import { showSuccess, showError } from "../utils/toast";
 import { formatDateTime } from "../utils/datetime";
 import { COLORS, RADIUS } from "../constants/theme";
@@ -39,6 +43,7 @@ export default function NotesPanel({ siteId, active = true, role = "staff" }: No
   const [notes, setNotes] = useState<SiteNote[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   const [composing, setComposing] = useState<boolean>(false);
   const [noteText, setNoteText] = useState<string>("");
@@ -71,9 +76,43 @@ export default function NotesPanel({ siteId, active = true, role = "staff" }: No
     }
   }, [active, fetchNotes]);
 
+  useEffect(() => {
+    getUser().then((user) => setCurrentUserId(user?.id ?? null));
+  }, []);
+
   const onRefresh = () => {
     setRefreshing(true);
     fetchNotes();
+  };
+
+  const handleDeleteNote = async (noteId: string) => {
+    if (!siteId) {
+      return;
+    }
+    try {
+      await deleteNote(siteId, noteId);
+      setNotes((prev) => prev.filter((n) => n.id !== noteId));
+      showSuccess("Note deleted");
+    } catch (err: any) {
+      showError(err.message);
+    }
+  };
+
+  const confirmDelete = (noteId: string) => {
+    if (Platform.OS === "web") {
+      if (window.confirm("Delete this note?")) {
+        handleDeleteNote(noteId);
+      }
+    } else {
+      Alert.alert("Delete this note?", undefined, [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: () => handleDeleteNote(noteId),
+        },
+      ]);
+    }
   };
 
   const handleSubmitNote = async () => {
@@ -115,7 +154,13 @@ export default function NotesPanel({ siteId, active = true, role = "staff" }: No
           contentContainerStyle={styles.listContent}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
           ListEmptyComponent={<Text style={styles.emptyText}>No notes yet</Text>}
-          renderItem={({ item }) => <NoteCard note={item} />}
+          renderItem={({ item }) => (
+            <NoteCard
+              note={item}
+              canDelete={currentUserId != null && item.author_id === currentUserId}
+              onDelete={() => confirmDelete(item.id)}
+            />
+          )}
         />
       )}
 
@@ -161,7 +206,15 @@ export default function NotesPanel({ siteId, active = true, role = "staff" }: No
   );
 }
 
-function NoteCard({ note }: { note: SiteNote }) {
+function NoteCard({
+  note,
+  canDelete,
+  onDelete,
+}: {
+  note: SiteNote;
+  canDelete: boolean;
+  onDelete: () => void;
+}) {
   const isClient = note.type === "client";
   return (
     <View style={[styles.card, isClient ? styles.cardClient : styles.cardStaff]}>
@@ -172,6 +225,15 @@ function NoteCard({ note }: { note: SiteNote }) {
         <Text style={styles.authorName} numberOfLines={1}>
           {note.author?.full_name ?? "Unknown"}
         </Text>
+        {canDelete && (
+          <Pressable
+            onPress={onDelete}
+            {...(Platform.OS === "web" ? { onClick: onDelete } : {})}
+            style={styles.deleteNoteButton}
+          >
+            <Ionicons name="trash-outline" size={16} color={COLORS.danger} />
+          </Pressable>
+        )}
       </View>
       <Text style={styles.noteText}>{note.note}</Text>
       <Text style={styles.timeText}>{formatDateTime(note.created_at)}</Text>
@@ -231,6 +293,10 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: COLORS.textPrimary,
     flexShrink: 1,
+  },
+  deleteNoteButton: {
+    marginLeft: "auto",
+    padding: 2,
   },
   noteText: {
     fontSize: 14,

@@ -106,7 +106,7 @@ export default function StaffEditProfileScreen() {
         ...(avatarPath ? { avatar_url: avatarPath } : {}),
       });
       showSuccess("Profile updated");
-      router.back();
+      router.replace("/(staff)/profile");
     } catch (err: any) {
       showError(err.message);
       setSaving(false);
@@ -115,7 +115,7 @@ export default function StaffEditProfileScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <BackButton onPress={() => router.back()} />
+      <BackButton onPress={() => router.replace("/(staff)/profile")} />
 
       <Text style={styles.title}>Edit Profile</Text>
 
@@ -193,7 +193,7 @@ export default function StaffEditProfileScreen() {
           <View style={styles.buttonRow}>
             <TouchableOpacity
               style={styles.cancelButton}
-              onPress={() => router.back()}
+              onPress={() => router.replace("/(staff)/profile")}
               disabled={saving}
             >
               <Text style={styles.cancelButtonText}>Cancel</Text>

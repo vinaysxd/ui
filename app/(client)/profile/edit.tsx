@@ -109,7 +109,7 @@ export default function ClientEditProfileScreen() {
         ...(avatarPath ? { avatar_url: avatarPath } : {}),
       });
       showSuccess("Profile updated");
-      router.back();
+      router.replace("/(client)/profile");
     } catch (err: any) {
       showError(err.message);
       setSaving(false);
@@ -118,7 +118,7 @@ export default function ClientEditProfileScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <BackButton onPress={() => router.back()} />
+      <BackButton onPress={() => router.replace("/(client)/profile")} />
 
       <Text style={styles.eyebrow}>EDIT</Text>
       <Text style={styles.title}>Edit Profile</Text>
@@ -202,7 +202,7 @@ export default function ClientEditProfileScreen() {
           <View style={styles.buttonRow}>
             <TouchableOpacity
               style={styles.cancelButton}
-              onPress={() => router.back()}
+              onPress={() => router.replace("/(client)/profile")}
               disabled={saving}
             >
               <Text style={styles.cancelButtonText}>Cancel</Text>
