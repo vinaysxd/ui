@@ -20,6 +20,7 @@ import {
 } from "../services/attendance.service";
 import { showSuccess, showError } from "../utils/toast";
 import PhotoThumb from "./PhotoThumb";
+import { COLORS, RADIUS } from "../constants/theme";
 
 interface PhotoUploadModalProps {
   visible: boolean;
@@ -161,7 +162,7 @@ export default function PhotoUploadModal({
 
         {loading ? (
           <View style={styles.centered}>
-            <ActivityIndicator size="large" />
+            <ActivityIndicator size="large" color={COLORS.gold} />
           </View>
         ) : (
           <FlatList
@@ -186,6 +187,7 @@ export default function PhotoUploadModal({
                       value={newLabel}
                       onChangeText={setNewLabel}
                       placeholder='e.g. "Kitchen" or "Bathroom"'
+                      placeholderTextColor={COLORS.textMuted}
                       autoFocus
                       editable={!uploadingBefore}
                     />
@@ -203,7 +205,7 @@ export default function PhotoUploadModal({
                         disabled={uploadingBefore}
                       >
                         {uploadingBefore ? (
-                          <ActivityIndicator color="#fff" size="small" />
+                          <ActivityIndicator color="#1A1A1A" size="small" />
                         ) : (
                           <Text style={styles.choosePhotoButtonText}>Choose Before Photo</Text>
                         )}
@@ -215,7 +217,7 @@ export default function PhotoUploadModal({
                     style={styles.addPairButton}
                     onPress={() => setAddingPair(true)}
                   >
-                    <Ionicons name="add" size={18} color="#fff" />
+                    <Ionicons name="add" size={18} color="#1A1A1A" />
                     <Text style={styles.addPairButtonText}>Add new pair</Text>
                   </TouchableOpacity>
                 )}
@@ -243,7 +245,7 @@ function PhotoPairCard({
     <View style={styles.card}>
       <View style={styles.cardHeader}>
         <Text style={styles.cardLabel}>{photo.label}</Text>
-        {paired ? <Ionicons name="checkmark-circle" size={20} color="#16a34a" /> : null}
+        {paired ? <Ionicons name="checkmark-circle" size={20} color={COLORS.success} /> : null}
       </View>
       <View style={styles.thumbRow}>
         <View style={styles.thumbColumn}>
@@ -262,10 +264,10 @@ function PhotoPairCard({
               disabled={uploadingAfter}
             >
               {uploadingAfter ? (
-                <ActivityIndicator size="small" color="#333" />
+                <ActivityIndicator size="small" color={COLORS.textSecondary} />
               ) : (
                 <>
-                  <Ionicons name="camera-outline" size={20} color="#333" />
+                  <Ionicons name="camera-outline" size={20} color={COLORS.textSecondary} />
                   <Text style={styles.uploadAfterThumbText}>Upload after</Text>
                 </>
               )}
@@ -280,7 +282,7 @@ function PhotoPairCard({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: COLORS.background,
   },
   header: {
     flexDirection: "row",
@@ -289,20 +291,21 @@ const styles = StyleSheet.create({
     paddingTop: 56,
     paddingHorizontal: 16,
     paddingBottom: 16,
-    backgroundColor: "#fff",
+    backgroundColor: COLORS.surface,
     borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
+    borderBottomColor: COLORS.border,
   },
   title: {
     fontSize: 18,
     fontWeight: "bold",
+    color: COLORS.textPrimary,
     flex: 1,
     marginRight: 12,
   },
   doneText: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#000",
+    color: COLORS.gold,
   },
   centered: {
     flex: 1,
@@ -314,15 +317,26 @@ const styles = StyleSheet.create({
     paddingBottom: 32,
   },
   emptyText: {
-    color: "#666",
+    color: COLORS.textMuted,
     textAlign: "center",
     marginTop: 32,
   },
   card: {
-    backgroundColor: "#fff",
-    borderRadius: 8,
+    backgroundColor: COLORS.surface,
+    borderRadius: RADIUS.md,
     padding: 16,
+    paddingLeft: 20,
     marginBottom: 12,
+    overflow: "hidden",
+  },
+  goldBar: {
+    position: "absolute",
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 3,
+    borderRadius: RADIUS.full,
+    backgroundColor: COLORS.gold,
   },
   cardHeader: {
     flexDirection: "row",
@@ -333,6 +347,7 @@ const styles = StyleSheet.create({
   cardLabel: {
     fontSize: 16,
     fontWeight: "600",
+    color: COLORS.textPrimary,
   },
   thumbRow: {
     flexDirection: "row",
@@ -343,16 +358,16 @@ const styles = StyleSheet.create({
   },
   thumbCaption: {
     fontSize: 12,
-    color: "#666",
+    color: COLORS.textMuted,
     marginBottom: 6,
   },
   uploadAfterThumb: {
     width: 120,
     height: 120,
-    borderRadius: 8,
-    backgroundColor: "#e5e5e5",
-    borderWidth: 0.5,
-    borderColor: "#e0e0e0",
+    borderRadius: RADIUS.md,
+    backgroundColor: COLORS.surfaceElevated,
+    borderWidth: 1,
+    borderColor: COLORS.border,
     justifyContent: "center",
     alignItems: "center",
     gap: 4,
@@ -360,7 +375,7 @@ const styles = StyleSheet.create({
   uploadAfterThumbText: {
     fontSize: 12,
     fontWeight: "600",
-    color: "#333",
+    color: COLORS.textSecondary,
   },
   footer: {
     marginTop: 4,
@@ -370,25 +385,26 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     gap: 6,
-    backgroundColor: "#000",
+    backgroundColor: COLORS.gold,
     padding: 14,
-    borderRadius: 8,
+    borderRadius: RADIUS.md,
   },
   addPairButtonText: {
-    color: "#fff",
+    color: "#1A1A1A",
     fontWeight: "bold",
   },
   addPairForm: {
-    backgroundColor: "#fff",
-    borderRadius: 8,
+    backgroundColor: COLORS.surface,
+    borderRadius: RADIUS.md,
     padding: 16,
   },
   input: {
     borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 8,
+    borderColor: COLORS.border,
+    borderRadius: RADIUS.md,
     padding: 12,
-    backgroundColor: "#fff",
+    backgroundColor: COLORS.surfaceElevated,
+    color: COLORS.textPrimary,
     marginBottom: 12,
   },
   addPairButtons: {
@@ -398,22 +414,22 @@ const styles = StyleSheet.create({
   cancelButton: {
     flex: 1,
     padding: 14,
-    borderRadius: 8,
+    borderRadius: RADIUS.md,
     alignItems: "center",
   },
   cancelButtonText: {
-    color: "#666",
+    color: COLORS.textSecondary,
     fontWeight: "600",
   },
   choosePhotoButton: {
     flex: 2,
-    backgroundColor: "#000",
+    backgroundColor: COLORS.gold,
     padding: 14,
-    borderRadius: 8,
+    borderRadius: RADIUS.md,
     alignItems: "center",
   },
   choosePhotoButtonText: {
-    color: "#fff",
+    color: "#1A1A1A",
     fontWeight: "bold",
   },
 });

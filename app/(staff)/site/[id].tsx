@@ -32,6 +32,7 @@ import { showSuccess, showError } from "../../../src/utils/toast";
 import { formatDateTime } from "../../../src/utils/datetime";
 import PhotoUploadModal from "../../../src/components/PhotoUploadModal";
 import NotesPanel from "../../../src/components/NotesPanel";
+import { COLORS, RADIUS } from "../../../src/constants/theme";
 
 type Tab = "details" | "attendance" | "notes";
 
@@ -167,7 +168,7 @@ export default function StaffSiteDetailScreen() {
   if (loading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" />
+        <ActivityIndicator size="large" color={COLORS.gold} />
       </View>
     );
   }
@@ -241,7 +242,7 @@ export default function StaffSiteDetailScreen() {
                 disabled={acting}
               >
                 {acting ? (
-                  <ActivityIndicator color="#fff" size="small" />
+                  <ActivityIndicator color={COLORS.danger} size="small" />
                 ) : (
                   <Text style={styles.clockOutButtonText}>Clock Out</Text>
                 )}
@@ -253,7 +254,7 @@ export default function StaffSiteDetailScreen() {
                 disabled={activeElsewhere || acting}
               >
                 {acting ? (
-                  <ActivityIndicator color="#333" size="small" />
+                  <ActivityIndicator color="#1A1A1A" size="small" />
                 ) : (
                   <Text style={styles.clockInButtonText}>Clock In</Text>
                 )}
@@ -323,7 +324,7 @@ function AttendanceHistory({ siteId }: { siteId: string }) {
   if (loading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" />
+        <ActivityIndicator size="large" color={COLORS.gold} />
       </View>
     );
   }
@@ -333,7 +334,14 @@ function AttendanceHistory({ siteId }: { siteId: string }) {
       data={history}
       keyExtractor={(item) => item.id}
       contentContainerStyle={styles.content}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          tintColor={COLORS.gold}
+          colors={[COLORS.gold]}
+        />
+      }
       ListEmptyComponent={<Text style={styles.emptyText}>No attendance history for this site.</Text>}
       renderItem={({ item }) => (
         <AttendanceCard
@@ -359,6 +367,7 @@ function AttendanceCard({
 
   return (
     <TouchableOpacity style={styles.historyCard} onPress={onToggle} activeOpacity={0.7}>
+      <View style={styles.goldBar} />
       <View style={styles.historyCardHeader}>
         <Text style={styles.historyTime}>{formatDateTime(record.clock_in)}</Text>
         <View style={styles.historyHeaderRight}>
@@ -367,7 +376,11 @@ function AttendanceCard({
               <Text style={styles.badgeText}>Active</Text>
             </View>
           ) : null}
-          <Ionicons name={expanded ? "chevron-up" : "chevron-down"} size={18} color="#999" />
+          <Ionicons
+            name={expanded ? "chevron-up" : "chevron-down"}
+            size={18}
+            color={COLORS.textMuted}
+          />
         </View>
       </View>
 
@@ -413,7 +426,7 @@ function HistoryPhotoPair({ photo }: { photo: AttendancePhoto }) {
             />
           ) : (
             <View style={styles.thumbPlaceholder}>
-              <Ionicons name="image-outline" size={20} color="#999" />
+              <Ionicons name="image-outline" size={20} color={COLORS.textMuted} />
             </View>
           )}
         </View>
@@ -427,7 +440,7 @@ function HistoryPhotoPair({ photo }: { photo: AttendancePhoto }) {
             />
           ) : (
             <View style={styles.thumbPlaceholder}>
-              <Ionicons name="image-outline" size={20} color="#999" />
+              <Ionicons name="image-outline" size={20} color={COLORS.textMuted} />
             </View>
           )}
         </View>
@@ -448,7 +461,7 @@ function Row({ label, value }: { label: string; value: string }) {
 function BackButton({ onPress }: { onPress: () => void }) {
   return (
     <TouchableOpacity style={styles.backButton} onPress={onPress}>
-      <Ionicons name="arrow-back" size={20} color="#000" />
+      <Ionicons name="arrow-back" size={20} color={COLORS.gold} />
       <Text style={styles.backButtonText}>Back</Text>
     </TouchableOpacity>
   );
@@ -457,13 +470,14 @@ function BackButton({ onPress }: { onPress: () => void }) {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
+    backgroundColor: COLORS.background,
   },
   topBar: {
     paddingTop: 16,
     paddingHorizontal: 16,
-    backgroundColor: "#fff",
+    backgroundColor: COLORS.surface,
     borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
+    borderBottomColor: COLORS.border,
   },
   tabBar: {
     flexDirection: "row",
@@ -475,15 +489,15 @@ const styles = StyleSheet.create({
     borderBottomColor: "transparent",
   },
   tabActive: {
-    borderBottomColor: "#000",
+    borderBottomColor: COLORS.gold,
   },
   tabText: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#999",
+    color: COLORS.textMuted,
   },
   tabTextActive: {
-    color: "#000",
+    color: COLORS.gold,
   },
   tabContent: {
     flex: 1,
@@ -499,6 +513,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+    backgroundColor: COLORS.background,
   },
   backButton: {
     flexDirection: "row",
@@ -509,7 +524,7 @@ const styles = StyleSheet.create({
   },
   backButtonText: {
     fontSize: 16,
-    color: "#000",
+    color: COLORS.gold,
   },
   header: {
     flexDirection: "row",
@@ -520,23 +535,26 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 24,
     fontWeight: "bold",
+    color: COLORS.textPrimary,
   },
   badge: {
-    borderRadius: 12,
+    borderRadius: RADIUS.full,
     paddingVertical: 4,
     paddingHorizontal: 10,
   },
   badgeActive: {
-    backgroundColor: "#16a34a",
+    backgroundColor: COLORS.successBg,
   },
   badgeText: {
-    color: "#fff",
+    color: COLORS.success,
     fontSize: 12,
     fontWeight: "600",
   },
   section: {
-    backgroundColor: "#fff",
-    borderRadius: 8,
+    backgroundColor: COLORS.surface,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: RADIUS.md,
     padding: 16,
     marginBottom: 16,
   },
@@ -545,44 +563,45 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
+    borderBottomColor: COLORS.border,
   },
   rowLabel: {
     fontSize: 14,
-    color: "#666",
+    color: COLORS.textSecondary,
   },
   rowValue: {
     fontSize: 14,
     fontWeight: "600",
+    color: COLORS.textPrimary,
     textAlign: "right",
     flexShrink: 1,
     marginLeft: 16,
   },
   statusCard: {
-    borderRadius: 12,
+    borderRadius: RADIUS.md,
     padding: 16,
     marginBottom: 16,
   },
   statusCardActive: {
-    backgroundColor: "#16a34a",
+    backgroundColor: COLORS.successBg,
   },
   statusCardInactive: {
-    backgroundColor: "#e5e5e5",
+    backgroundColor: COLORS.surface,
   },
   statusCardText: {
-    color: "#fff",
+    color: COLORS.success,
     fontSize: 15,
     fontWeight: "600",
   },
   statusCardTextInactive: {
-    color: "#666",
+    color: COLORS.textMuted,
     fontSize: 15,
     fontWeight: "600",
   },
   clockInButton: {
-    backgroundColor: "#e5e5e5",
+    backgroundColor: COLORS.gold,
     paddingVertical: 14,
-    borderRadius: 8,
+    borderRadius: RADIUS.md,
     alignItems: "center",
     marginBottom: 16,
   },
@@ -590,41 +609,52 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   clockInButtonText: {
-    color: "#333",
+    color: "#1A1A1A",
     fontWeight: "600",
   },
   clockOutButton: {
-    backgroundColor: "#dc2626",
+    backgroundColor: COLORS.dangerBg,
     paddingVertical: 14,
-    borderRadius: 8,
+    borderRadius: RADIUS.md,
     alignItems: "center",
     marginBottom: 16,
   },
   clockOutButtonText: {
-    color: "#fff",
+    color: COLORS.danger,
     fontWeight: "600",
   },
   uploadButton: {
-    backgroundColor: "#000",
+    backgroundColor: COLORS.surfaceElevated,
     padding: 14,
-    borderRadius: 8,
+    borderRadius: RADIUS.md,
     alignItems: "center",
   },
   uploadButtonText: {
-    color: "#fff",
+    color: COLORS.textSecondary,
     fontWeight: "bold",
   },
   emptyText: {
-    color: "#666",
+    color: COLORS.textMuted,
     textAlign: "center",
     marginTop: 16,
     marginBottom: 16,
   },
   historyCard: {
-    backgroundColor: "#fff",
-    borderRadius: 8,
+    backgroundColor: COLORS.surface,
+    borderRadius: RADIUS.md,
     padding: 16,
+    paddingLeft: 20,
     marginBottom: 12,
+    overflow: "hidden",
+  },
+  goldBar: {
+    position: "absolute",
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 3,
+    borderRadius: RADIUS.full,
+    backgroundColor: COLORS.gold,
   },
   historyCardHeader: {
     flexDirection: "row",
@@ -640,10 +670,11 @@ const styles = StyleSheet.create({
   historyTime: {
     fontSize: 15,
     fontWeight: "600",
+    color: COLORS.textPrimary,
   },
   historyDetail: {
     fontSize: 13,
-    color: "#666",
+    color: COLORS.textMuted,
     marginTop: 2,
   },
   photoPairsContainer: {
@@ -652,12 +683,13 @@ const styles = StyleSheet.create({
   },
   photoPair: {
     borderTopWidth: 1,
-    borderTopColor: "#f0f0f0",
+    borderTopColor: COLORS.border,
     paddingTop: 12,
   },
   photoPairLabel: {
     fontSize: 13,
     fontWeight: "600",
+    color: COLORS.textPrimary,
     marginBottom: 8,
   },
   thumbRow: {
@@ -669,20 +701,24 @@ const styles = StyleSheet.create({
   },
   thumbCaption: {
     fontSize: 12,
-    color: "#666",
+    color: COLORS.textMuted,
     marginBottom: 6,
   },
   thumb: {
     width: "100%",
     height: 100,
-    borderRadius: 8,
-    backgroundColor: "#eee",
+    borderRadius: RADIUS.md,
+    backgroundColor: COLORS.surfaceElevated,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   thumbPlaceholder: {
     width: "100%",
     height: 100,
-    borderRadius: 8,
-    backgroundColor: "#eee",
+    borderRadius: RADIUS.md,
+    backgroundColor: COLORS.surfaceElevated,
+    borderWidth: 1,
+    borderColor: COLORS.border,
     justifyContent: "center",
     alignItems: "center",
   },

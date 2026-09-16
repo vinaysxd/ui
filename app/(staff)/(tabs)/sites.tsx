@@ -19,6 +19,7 @@ import {
 } from "../../../src/services/location.service";
 import { getMySites, Site } from "../../../src/services/sites.service";
 import { showError } from "../../../src/utils/toast";
+import { COLORS, RADIUS } from "../../../src/constants/theme";
 
 interface SiteWithDistance extends Site {
   distanceKm: number | null;
@@ -100,7 +101,7 @@ export default function StaffSitesScreen() {
   if (loading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" />
+        <ActivityIndicator size="large" color={COLORS.gold} />
       </View>
     );
   }
@@ -110,18 +111,18 @@ export default function StaffSitesScreen() {
       <Text style={styles.title}>Sites</Text>
 
       <View style={styles.searchBar}>
-        <Ionicons name="search-outline" size={18} color="#999" />
+        <Ionicons name="search-outline" size={18} color={COLORS.gold} />
         <TextInput
           style={styles.searchInput}
           value={searchQuery}
           onChangeText={setSearchQuery}
           placeholder="Search by name or address..."
-          placeholderTextColor="#999"
+          placeholderTextColor={COLORS.textMuted}
           autoCapitalize="none"
         />
         {searchQuery.length > 0 ? (
           <TouchableOpacity onPress={() => setSearchQuery("")}>
-            <Ionicons name="close-outline" size={18} color="#999" />
+            <Ionicons name="close-outline" size={18} color={COLORS.textMuted} />
           </TouchableOpacity>
         ) : null}
       </View>
@@ -130,7 +131,14 @@ export default function StaffSitesScreen() {
         data={filteredSites}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={COLORS.gold}
+            colors={[COLORS.gold]}
+          />
+        }
         ListEmptyComponent={
           <Text style={styles.emptyText}>
             {searchQuery.trim() ? "No sites found" : "No sites assigned to you."}
@@ -141,6 +149,7 @@ export default function StaffSitesScreen() {
             style={styles.card}
             onPress={() => router.push(`/(staff)/site/${item.id}`)}
           >
+            <View style={styles.goldBar} />
             <Text style={styles.name}>{item.name}</Text>
             <Text style={styles.detail}>{item.address}</Text>
             <Text style={styles.distance}>{formatDistance(item.distanceKm)}</Text>
@@ -155,25 +164,28 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
+    backgroundColor: COLORS.background,
   },
   centered: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+    backgroundColor: COLORS.background,
   },
   title: {
     fontSize: 24,
     fontWeight: "bold",
     marginBottom: 16,
+    color: COLORS.textPrimary,
   },
   searchBar: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    backgroundColor: "#fff",
+    backgroundColor: COLORS.surface,
     borderWidth: 1,
-    borderColor: "#e0e0e0",
-    borderRadius: 8,
+    borderColor: COLORS.border,
+    borderRadius: RADIUS.md,
     paddingHorizontal: 12,
     paddingVertical: 10,
     marginBottom: 16,
@@ -182,33 +194,45 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 14,
     padding: 0,
+    color: COLORS.textPrimary,
   },
   listContent: {
     paddingBottom: 32,
   },
   emptyText: {
-    color: "#666",
+    color: COLORS.textMuted,
     textAlign: "center",
     marginTop: 32,
   },
   card: {
-    backgroundColor: "#fff",
-    borderRadius: 8,
+    backgroundColor: COLORS.surface,
+    borderRadius: RADIUS.md,
     padding: 16,
     marginBottom: 12,
+    overflow: "hidden",
+  },
+  goldBar: {
+    position: "absolute",
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 3,
+    borderRadius: RADIUS.full,
+    backgroundColor: COLORS.gold,
   },
   name: {
     fontSize: 16,
     fontWeight: "600",
+    color: COLORS.textPrimary,
   },
   detail: {
     fontSize: 14,
-    color: "#666",
+    color: COLORS.textSecondary,
     marginTop: 2,
   },
   distance: {
     fontSize: 13,
-    color: "#999",
+    color: COLORS.gold,
     marginTop: 4,
   },
 });

@@ -26,6 +26,7 @@ import {
 import { showSuccess, showError } from "../../../src/utils/toast";
 import PhotoUploadModal from "../../../src/components/PhotoUploadModal";
 import NotesModal from "../../../src/components/NotesModal";
+import { COLORS, RADIUS } from "../../../src/constants/theme";
 
 interface SiteWithDistance extends Site {
   distanceKm: number | null;
@@ -171,7 +172,7 @@ export default function StaffHomeScreen() {
   if (loading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" />
+        <ActivityIndicator size="large" color={COLORS.gold} />
       </View>
     );
   }
@@ -194,18 +195,18 @@ export default function StaffHomeScreen() {
       )}
 
       <View style={styles.searchBar}>
-        <Ionicons name="search-outline" size={18} color="#999" />
+        <Ionicons name="search-outline" size={18} color={COLORS.gold} />
         <TextInput
           style={styles.searchInput}
           value={searchQuery}
           onChangeText={setSearchQuery}
           placeholder="Search sites..."
-          placeholderTextColor="#999"
+          placeholderTextColor={COLORS.textMuted}
           autoCapitalize="none"
         />
         {searchQuery.length > 0 ? (
           <TouchableOpacity onPress={() => setSearchQuery("")}>
-            <Ionicons name="close-outline" size={18} color="#999" />
+            <Ionicons name="close-outline" size={18} color={COLORS.textMuted} />
           </TouchableOpacity>
         ) : null}
       </View>
@@ -214,7 +215,14 @@ export default function StaffHomeScreen() {
         data={filteredSites}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={COLORS.gold}
+            colors={[COLORS.gold]}
+          />
+        }
         ListEmptyComponent={
           <Text style={styles.emptyText}>
             {searchQuery.trim() ? "No sites found" : "No sites assigned to you."}
@@ -225,6 +233,7 @@ export default function StaffHomeScreen() {
           const acting = actingSiteId === item.id;
           return (
             <View style={styles.card}>
+              <View style={styles.goldBar} />
               <Text style={styles.name}>{item.name}</Text>
               <Text style={styles.detail}>{item.address}</Text>
               <Text style={styles.distance}>{formatDistance(item.distanceKm)}</Text>
@@ -237,7 +246,7 @@ export default function StaffHomeScreen() {
                     disabled={acting}
                   >
                     {acting ? (
-                      <ActivityIndicator color="#fff" size="small" />
+                      <ActivityIndicator color={COLORS.danger} size="small" />
                     ) : (
                       <Text style={styles.clockOutButtonText}>Clock Out</Text>
                     )}
@@ -273,7 +282,7 @@ export default function StaffHomeScreen() {
                     disabled={!!activeAttendance?.active || acting}
                   >
                     {acting ? (
-                      <ActivityIndicator color="#333" size="small" />
+                      <ActivityIndicator color="#1A1A1A" size="small" />
                     ) : (
                       <Text style={styles.clockInButtonText}>Clock In</Text>
                     )}
@@ -305,35 +314,38 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
+    backgroundColor: COLORS.background,
   },
   centered: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+    backgroundColor: COLORS.background,
   },
   title: {
     fontSize: 24,
     fontWeight: "bold",
     marginBottom: 16,
+    color: COLORS.textPrimary,
   },
   statusCard: {
-    borderRadius: 12,
+    borderRadius: RADIUS.md,
     padding: 16,
     marginBottom: 16,
   },
   statusCardActive: {
-    backgroundColor: "#16a34a",
+    backgroundColor: COLORS.successBg,
   },
   statusCardInactive: {
-    backgroundColor: "#e5e5e5",
+    backgroundColor: COLORS.surface,
   },
   statusCardText: {
-    color: "#fff",
+    color: COLORS.success,
     fontSize: 15,
     fontWeight: "600",
   },
   statusCardTextInactive: {
-    color: "#666",
+    color: COLORS.textMuted,
     fontSize: 15,
     fontWeight: "600",
   },
@@ -341,10 +353,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    backgroundColor: "#fff",
+    backgroundColor: COLORS.surface,
     borderWidth: 1,
-    borderColor: "#e0e0e0",
-    borderRadius: 8,
+    borderColor: COLORS.border,
+    borderRadius: RADIUS.md,
     paddingHorizontal: 12,
     paddingVertical: 10,
     marginBottom: 16,
@@ -353,33 +365,45 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 14,
     padding: 0,
+    color: COLORS.textPrimary,
   },
   listContent: {
     paddingBottom: 32,
   },
   emptyText: {
-    color: "#666",
+    color: COLORS.textMuted,
     textAlign: "center",
     marginTop: 32,
   },
   card: {
-    backgroundColor: "#fff",
-    borderRadius: 8,
+    backgroundColor: COLORS.surface,
+    borderRadius: RADIUS.md,
     padding: 16,
     marginBottom: 12,
+    overflow: "hidden",
+  },
+  goldBar: {
+    position: "absolute",
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 3,
+    borderRadius: RADIUS.full,
+    backgroundColor: COLORS.gold,
   },
   name: {
     fontSize: 16,
     fontWeight: "600",
+    color: COLORS.textPrimary,
   },
   detail: {
     fontSize: 14,
-    color: "#666",
+    color: COLORS.textSecondary,
     marginTop: 2,
   },
   distance: {
     fontSize: 13,
-    color: "#999",
+    color: COLORS.gold,
     marginTop: 4,
   },
   buttonRow: {
@@ -389,38 +413,38 @@ const styles = StyleSheet.create({
   },
   clockInButton: {
     flex: 1,
-    backgroundColor: "#e5e5e5",
+    backgroundColor: COLORS.gold,
     paddingVertical: 12,
-    borderRadius: 8,
+    borderRadius: RADIUS.md,
     alignItems: "center",
   },
   clockInButtonDisabled: {
     opacity: 0.5,
   },
   clockInButtonText: {
-    color: "#333",
+    color: "#1A1A1A",
     fontWeight: "600",
   },
   clockOutButton: {
     flex: 1,
-    backgroundColor: "#dc2626",
+    backgroundColor: COLORS.dangerBg,
     paddingVertical: 12,
-    borderRadius: 8,
+    borderRadius: RADIUS.md,
     alignItems: "center",
   },
   clockOutButtonText: {
-    color: "#fff",
+    color: COLORS.danger,
     fontWeight: "600",
   },
   secondaryButton: {
     flex: 1,
-    backgroundColor: "#e5e5e5",
+    backgroundColor: COLORS.surfaceElevated,
     paddingVertical: 12,
-    borderRadius: 8,
+    borderRadius: RADIUS.md,
     alignItems: "center",
   },
   secondaryButtonText: {
-    color: "#333",
+    color: COLORS.textSecondary,
     fontWeight: "600",
   },
 });

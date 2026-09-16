@@ -3,6 +3,7 @@ import {
   View,
   Text,
   Image,
+  TextInput,
   ScrollView,
   ActivityIndicator,
   TouchableOpacity,
@@ -12,10 +13,11 @@ import {
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
+import * as ImagePicker from "expo-image-picker";
 import Constants from "expo-constants";
-import { getProfile, ProfileMe } from "../../../src/services/profile.service";
+import { getProfile, updateProfile, uploadAvatar, ProfileMe } from "../../../src/services/profile.service";
 import { logout } from "../../../src/services/auth.service";
-import { showError } from "../../../src/utils/toast";
+import { showSuccess, showError } from "../../../src/utils/toast";
 import { COLORS, RADIUS } from "../../../src/constants/theme";
 import api from "../../../src/lib/api";
 
@@ -40,10 +42,28 @@ export default function SettingsScreen() {
   const [loggingOut, setLoggingOut] = useState<boolean>(false);
   const [avatarLoadFailed, setAvatarLoadFailed] = useState<boolean>(false);
 
+  const [isEditing, setIsEditing] = useState<boolean>(false);
+  const [saving, setSaving] = useState<boolean>(false);
+  const [uploading, setUploading] = useState<boolean>(false);
+  const [avatarPreviewUri, setAvatarPreviewUri] = useState<string | null>(null);
+
+  const [fullName, setFullName] = useState<string>("");
+  const [phone, setPhone] = useState<string>("");
+  const [avatarUrl, setAvatarUrl] = useState<string>("");
+
+  const applyFieldsFromProfile = (data: ProfileMe) => {
+    setFullName(data.full_name ?? "");
+    setPhone(data.phone ?? "");
+    setAvatarUrl(data.avatar_url ?? "");
+  };
+
   const fetchProfile = useCallback(async () => {
     try {
       const data = await getProfile();
       setProfile(data);
+      applyFieldsFromProfile(data);
+      setAvatarPreviewUri(null);
+      setAvatarLoadFailed(false);
     } catch (err: any) {
       showError(err.message);
     } finally {
@@ -66,6 +86,69 @@ export default function SettingsScreen() {
     }
   };
 
+  const handleChangePhoto = async () => {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      showError("Permission to access photos is required");
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+
+    if (result.canceled || result.assets.length === 0) {
+      return;
+    }
+
+    setAvatarLoadFailed(false);
+    setAvatarPreviewUri(result.assets[0].uri);
+
+    setUploading(true);
+    try {
+      const uploadedPath = await uploadAvatar(result.assets[0].uri);
+      setAvatarUrl(uploadedPath);
+    } catch (err: any) {
+      showError(err.message);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleEdit = () => {
+    setIsEditing(true);
+  };
+
+  const handleCancel = () => {
+    if (profile) {
+      applyFieldsFromProfile(profile);
+    }
+    setAvatarPreviewUri(null);
+    setAvatarLoadFailed(false);
+    setIsEditing(false);
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await updateProfile({
+        full_name: fullName,
+        phone,
+        ...(avatarUrl ? { avatar_url: avatarUrl } : {}),
+      });
+      await fetchProfile();
+      setIsEditing(false);
+      showSuccess("Profile updated");
+    } catch (err: any) {
+      showError(err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
   if (loading) {
     return (
       <View style={styles.centered}>
@@ -73,6 +156,8 @@ export default function SettingsScreen() {
       </View>
     );
   }
+
+  const topAvatarUri = avatarPreviewUri ?? profile?.signed_avatar_url ?? null;
 
   const content = (
     <View style={styles.maxWidthWrap}>
@@ -83,15 +168,15 @@ export default function SettingsScreen() {
 
       {profile ? (
         <View style={styles.profileCard}>
-          {profile.avatar_url && !avatarLoadFailed ? (
+          {topAvatarUri && !avatarLoadFailed ? (
             <Image
-              source={{ uri: profile.signed_avatar_url ?? undefined }}
+              source={{ uri: topAvatarUri }}
               style={styles.avatarImage}
               onError={() => setAvatarLoadFailed(true)}
             />
           ) : (
             <View style={styles.avatar}>
-              <Text style={styles.avatarText}>{getInitials(profile.full_name)}</Text>
+              <Text style={styles.avatarText}>{getInitials(fullName || profile.full_name)}</Text>
             </View>
           )}
           <Text style={styles.profileName}>{profile.full_name}</Text>
@@ -99,18 +184,75 @@ export default function SettingsScreen() {
           <View style={styles.roleBadge}>
             <Text style={styles.roleBadgeText}>{profile.role}</Text>
           </View>
+
+          {isEditing ? (
+            <TouchableOpacity
+              style={styles.changePhotoButton}
+              onPress={handleChangePhoto}
+              disabled={uploading}
+            >
+              {uploading ? (
+                <ActivityIndicator size="small" color={COLORS.gold} />
+              ) : (
+                <Text style={styles.changePhotoButtonText}>Change Photo</Text>
+              )}
+            </TouchableOpacity>
+          ) : null}
+
+          <View style={styles.fieldsBlock}>
+            <Text style={styles.fieldLabel}>Full Name</Text>
+            <TextInput
+              style={[styles.input, isEditing && styles.inputEditing]}
+              value={fullName}
+              onChangeText={setFullName}
+              editable={isEditing}
+              placeholder="—"
+              placeholderTextColor={COLORS.textMuted}
+            />
+
+            <Text style={styles.fieldLabel}>Phone</Text>
+            <TextInput
+              style={[styles.input, isEditing && styles.inputEditing]}
+              value={phone}
+              onChangeText={setPhone}
+              editable={isEditing}
+              keyboardType="phone-pad"
+              placeholder="—"
+              placeholderTextColor={COLORS.textMuted}
+            />
+
+            <Text style={styles.fieldLabel}>Avatar URL</Text>
+            <TextInput
+              style={[styles.input, isEditing && styles.inputEditing]}
+              value={avatarUrl}
+              onChangeText={setAvatarUrl}
+              editable={isEditing}
+              autoCapitalize="none"
+              placeholder="—"
+              placeholderTextColor={COLORS.textMuted}
+            />
+          </View>
+
+          {isEditing ? (
+            <View style={styles.editActionsRow}>
+              <TouchableOpacity style={styles.cancelButton} onPress={handleCancel} disabled={saving}>
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.saveButton} onPress={handleSave} disabled={saving}>
+                {saving ? (
+                  <ActivityIndicator size="small" color="#1A1A1A" />
+                ) : (
+                  <Text style={styles.saveButtonText}>Save</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <TouchableOpacity style={styles.editButton} onPress={handleEdit}>
+              <Text style={styles.editButtonText}>Edit Profile</Text>
+            </TouchableOpacity>
+          )}
         </View>
       ) : null}
-
-      <Text style={styles.sectionLabel}>Account</Text>
-      <View style={styles.section}>
-        <SettingsRow
-          icon="person-outline"
-          label="Edit Profile"
-          onPress={() => router.push("/(admin)/settings/edit-profile")}
-          last
-        />
-      </View>
 
       <Text style={styles.sectionLabel}>App</Text>
       <View style={styles.section}>
@@ -257,6 +399,87 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     textTransform: "capitalize",
   },
+  changePhotoButton: {
+    marginTop: 14,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: RADIUS.md,
+    borderWidth: 1,
+    borderColor: COLORS.gold,
+  },
+  changePhotoButtonText: {
+    color: COLORS.gold,
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  fieldsBlock: {
+    width: "100%",
+    marginTop: 20,
+  },
+  fieldLabel: {
+    color: COLORS.textSecondary,
+    fontSize: 11,
+    letterSpacing: 1,
+    textTransform: "uppercase",
+    marginBottom: 6,
+    marginTop: 12,
+  },
+  input: {
+    backgroundColor: COLORS.surfaceElevated,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: RADIUS.md,
+    color: COLORS.textPrimary,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    fontSize: 14,
+  },
+  inputEditing: {
+    borderColor: COLORS.gold,
+  },
+  editButton: {
+    width: "100%",
+    backgroundColor: COLORS.gold,
+    borderRadius: RADIUS.md,
+    paddingVertical: 12,
+    alignItems: "center",
+    marginTop: 20,
+  },
+  editButtonText: {
+    color: "#1A1A1A",
+    fontWeight: "700",
+    fontSize: 14,
+  },
+  editActionsRow: {
+    flexDirection: "row",
+    gap: 12,
+    width: "100%",
+    marginTop: 20,
+  },
+  cancelButton: {
+    flex: 1,
+    backgroundColor: COLORS.border,
+    borderRadius: RADIUS.md,
+    paddingVertical: 12,
+    alignItems: "center",
+  },
+  cancelButtonText: {
+    color: COLORS.textPrimary,
+    fontWeight: "600",
+    fontSize: 14,
+  },
+  saveButton: {
+    flex: 1,
+    backgroundColor: COLORS.gold,
+    borderRadius: RADIUS.md,
+    paddingVertical: 12,
+    alignItems: "center",
+  },
+  saveButtonText: {
+    color: "#1A1A1A",
+    fontWeight: "700",
+    fontSize: 14,
+  },
   sectionLabel: {
     color: COLORS.gold,
     fontSize: 11,
@@ -326,7 +549,7 @@ const styles = StyleSheet.create({
   },
   maxWidthWrap: {
     width: "100%",
-    maxWidth: 1200,
+    maxWidth: 400,
     alignSelf: "center",
   },
   mobileScreen: {

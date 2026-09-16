@@ -11,6 +11,16 @@ export interface SiteClient {
   contact_person: string | null;
 }
 
+export interface SiteStaffMember {
+  id: string;
+  email: string;
+  full_name: string;
+  phone: string;
+  role: "staff";
+  avatar_url: string | null;
+  is_active: boolean;
+}
+
 export interface Site {
   id: string;
   name: string;
@@ -21,16 +31,7 @@ export interface Site {
   created_by: string;
   is_active: boolean;
   client?: SiteClient | null;
-}
-
-export interface SiteStaffMember {
-  id: string;
-  email: string;
-  full_name: string;
-  phone: string;
-  role: "staff";
-  avatar_url: string | null;
-  is_active: boolean;
+  staff?: SiteStaffMember[];
 }
 
 export interface SiteCreatePayload {

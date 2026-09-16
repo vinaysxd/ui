@@ -14,6 +14,7 @@ import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { getProfile, updateProfile, uploadAvatar } from "../../../src/services/profile.service";
 import { showSuccess, showError } from "../../../src/utils/toast";
+import { COLORS, RADIUS } from "../../../src/constants/theme";
 
 const getInitials = (fullName: string): string => {
   const parts = fullName.trim().split(/\s+/).filter(Boolean);
@@ -40,6 +41,7 @@ export default function StaffEditProfileScreen() {
   const [saving, setSaving] = useState<boolean>(false);
   const [uploading, setUploading] = useState<boolean>(false);
   const [avatarLoadFailed, setAvatarLoadFailed] = useState<boolean>(false);
+  const [focusedField, setFocusedField] = useState<string | null>(null);
 
   const fetchProfile = useCallback(async () => {
     try {
@@ -118,7 +120,7 @@ export default function StaffEditProfileScreen() {
       <Text style={styles.title}>Edit Profile</Text>
 
       {loading ? (
-        <ActivityIndicator style={styles.loading} size="large" />
+        <ActivityIndicator style={styles.loading} size="large" color={COLORS.gold} />
       ) : (
         <>
           <View style={styles.avatarSection}>
@@ -139,7 +141,7 @@ export default function StaffEditProfileScreen() {
               disabled={uploading}
             >
               {uploading ? (
-                <ActivityIndicator color="#000" size="small" />
+                <ActivityIndicator color={COLORS.gold} size="small" />
               ) : (
                 <Text style={styles.changePhotoButtonText}>Change Photo</Text>
               )}
@@ -147,25 +149,45 @@ export default function StaffEditProfileScreen() {
           </View>
 
           <Text style={styles.label}>Full Name</Text>
-          <TextInput style={styles.input} value={fullName} onChangeText={setFullName} />
+          <TextInput
+            style={[styles.input, focusedField === "fullName" && styles.inputFocused]}
+            value={fullName}
+            onChangeText={setFullName}
+            onFocus={() => setFocusedField("fullName")}
+            onBlur={() => setFocusedField(null)}
+            placeholderTextColor={COLORS.textMuted}
+          />
 
           <Text style={styles.label}>Phone</Text>
           <TextInput
-            style={styles.input}
+            style={[styles.input, focusedField === "phone" && styles.inputFocused]}
             value={phone}
             onChangeText={setPhone}
             keyboardType="phone-pad"
+            onFocus={() => setFocusedField("phone")}
+            onBlur={() => setFocusedField(null)}
+            placeholderTextColor={COLORS.textMuted}
           />
 
           <Text style={styles.label}>Address</Text>
-          <TextInput style={styles.input} value={address} onChangeText={setAddress} />
+          <TextInput
+            style={[styles.input, focusedField === "address" && styles.inputFocused]}
+            value={address}
+            onChangeText={setAddress}
+            onFocus={() => setFocusedField("address")}
+            onBlur={() => setFocusedField(null)}
+            placeholderTextColor={COLORS.textMuted}
+          />
 
           <Text style={styles.label}>Emergency Contact</Text>
           <TextInput
-            style={styles.input}
+            style={[styles.input, focusedField === "emergencyContact" && styles.inputFocused]}
             value={emergencyContact}
             onChangeText={setEmergencyContact}
             keyboardType="phone-pad"
+            onFocus={() => setFocusedField("emergencyContact")}
+            onBlur={() => setFocusedField(null)}
+            placeholderTextColor={COLORS.textMuted}
           />
 
           <View style={styles.buttonRow}>
@@ -178,7 +200,7 @@ export default function StaffEditProfileScreen() {
             </TouchableOpacity>
             <TouchableOpacity style={styles.saveButton} onPress={handleSave} disabled={saving}>
               {saving ? (
-                <ActivityIndicator color="#fff" />
+                <ActivityIndicator color="#1A1A1A" />
               ) : (
                 <Text style={styles.saveButtonText}>Save</Text>
               )}
@@ -193,7 +215,7 @@ export default function StaffEditProfileScreen() {
 function BackButton({ onPress }: { onPress: () => void }) {
   return (
     <TouchableOpacity style={styles.backButton} onPress={onPress}>
-      <Ionicons name="arrow-back" size={20} color="#000" />
+      <Ionicons name="arrow-back" size={20} color={COLORS.gold} />
       <Text style={styles.backButtonText}>Back</Text>
     </TouchableOpacity>
   );
@@ -202,6 +224,7 @@ function BackButton({ onPress }: { onPress: () => void }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: COLORS.background,
   },
   content: {
     padding: 16,
@@ -216,12 +239,13 @@ const styles = StyleSheet.create({
   },
   backButtonText: {
     fontSize: 16,
-    color: "#000",
+    color: COLORS.gold,
   },
   title: {
     fontSize: 24,
     fontWeight: "bold",
     marginBottom: 16,
+    color: COLORS.textPrimary,
   },
   loading: {
     marginTop: 32,
@@ -233,48 +257,57 @@ const styles = StyleSheet.create({
   avatarImage: {
     width: 88,
     height: 88,
-    borderRadius: 44,
-    backgroundColor: "#eee",
+    borderRadius: RADIUS.full,
+    backgroundColor: COLORS.surfaceElevated,
     marginBottom: 12,
   },
   avatarPlaceholder: {
     width: 88,
     height: 88,
-    borderRadius: 44,
-    backgroundColor: "#000",
+    borderRadius: RADIUS.full,
+    backgroundColor: "#3A3520",
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 12,
   },
   avatarPlaceholderText: {
-    color: "#fff",
+    color: COLORS.gold,
     fontSize: 26,
     fontWeight: "bold",
   },
   changePhotoButton: {
     paddingVertical: 8,
     paddingHorizontal: 16,
-    borderRadius: 8,
+    borderRadius: RADIUS.md,
     borderWidth: 1,
-    borderColor: "#ccc",
+    borderColor: COLORS.gold,
   },
   changePhotoButtonText: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#000",
+    color: COLORS.gold,
   },
   label: {
-    fontSize: 14,
+    fontSize: 11,
     fontWeight: "600",
     marginBottom: 6,
     marginTop: 12,
+    color: COLORS.textMuted,
+    textTransform: "uppercase",
+    letterSpacing: 1.5,
   },
   input: {
     borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 8,
-    padding: 12,
-    backgroundColor: "#fff",
+    borderColor: COLORS.border,
+    borderRadius: RADIUS.md,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    backgroundColor: COLORS.surfaceElevated,
+    color: COLORS.textPrimary,
+    fontSize: 15,
+  },
+  inputFocused: {
+    borderColor: COLORS.gold,
   },
   buttonRow: {
     flexDirection: "row",
@@ -283,25 +316,26 @@ const styles = StyleSheet.create({
   },
   cancelButton: {
     flex: 1,
-    padding: 16,
-    borderRadius: 8,
+    height: 52,
+    borderRadius: RADIUS.md,
     alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#ccc",
+    justifyContent: "center",
+    backgroundColor: COLORS.border,
   },
   cancelButtonText: {
-    color: "#333",
+    color: COLORS.textPrimary,
     fontWeight: "600",
   },
   saveButton: {
     flex: 1,
-    backgroundColor: "#000",
-    padding: 16,
-    borderRadius: 8,
+    backgroundColor: COLORS.gold,
+    height: 52,
+    borderRadius: RADIUS.md,
     alignItems: "center",
+    justifyContent: "center",
   },
   saveButtonText: {
-    color: "#fff",
+    color: "#1A1A1A",
     fontWeight: "bold",
   },
 });

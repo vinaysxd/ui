@@ -197,7 +197,7 @@ export default function StaffScreen() {
   if (isDesktop) {
     return (
       <LinearGradient colors={["#1A1A1A", "#0D0D0D"]} style={styles.desktopScreen}>
-        <Text>HELLO I AM GRADIENT</Text>
+        
         <View style={styles.desktopCard}>
           <FlatList
             data={filteredActiveStaff}

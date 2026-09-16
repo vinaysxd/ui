@@ -19,6 +19,7 @@ import {
 } from "../../../src/services/client.service";
 import { getAllSites, Site } from "../../../src/services/sites.service";
 import { showSuccess, showError } from "../../../src/utils/toast";
+import { COLORS, RADIUS } from "../../../src/constants/theme";
 
 type Tab = "details" | "sites";
 
@@ -44,6 +45,7 @@ export default function ClientDetailScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [activeTab, setActiveTab] = useState<Tab>("details");
+  const [focusedField, setFocusedField] = useState<string | null>(null);
 
   const [client, setClient] = useState<Client | null>(null);
   const [isEditing, setIsEditing] = useState<boolean>(false);
@@ -171,7 +173,7 @@ export default function ClientDetailScreen() {
   if (loading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" />
+        <ActivityIndicator size="large" color={COLORS.gold} />
       </View>
     );
   }
@@ -192,7 +194,9 @@ export default function ClientDetailScreen() {
         <View style={styles.header}>
           <Text style={styles.name}>{client.full_name}</Text>
           <View style={[styles.badge, client.is_active ? styles.badgeActive : styles.badgeInactive]}>
-            <Text style={styles.badgeText}>{client.is_active ? "Active" : "Inactive"}</Text>
+            <Text style={[styles.badgeText, client.is_active ? styles.badgeTextActive : styles.badgeTextInactive]}>
+              {client.is_active ? "Active" : "Inactive"}
+            </Text>
           </View>
         </View>
 
@@ -222,6 +226,9 @@ export default function ClientDetailScreen() {
                 value={fullName}
                 onChangeText={setFullName}
                 editable={isEditing}
+                focused={focusedField === "fullName"}
+                onFocus={() => setFocusedField("fullName")}
+                onBlur={() => setFocusedField(null)}
               />
               <FieldInput
                 label="Phone"
@@ -229,6 +236,9 @@ export default function ClientDetailScreen() {
                 onChangeText={setPhone}
                 editable={isEditing}
                 keyboardType="phone-pad"
+                focused={focusedField === "phone"}
+                onFocus={() => setFocusedField("phone")}
+                onBlur={() => setFocusedField(null)}
               />
               <Row label="Role" value={client.role} />
               <FieldInput
@@ -236,24 +246,36 @@ export default function ClientDetailScreen() {
                 value={avatarUrl}
                 onChangeText={setAvatarUrl}
                 editable={isEditing}
+                focused={focusedField === "avatarUrl"}
+                onFocus={() => setFocusedField("avatarUrl")}
+                onBlur={() => setFocusedField(null)}
               />
               <FieldInput
                 label="Company Name"
                 value={companyName}
                 onChangeText={setCompanyName}
                 editable={isEditing}
+                focused={focusedField === "companyName"}
+                onFocus={() => setFocusedField("companyName")}
+                onBlur={() => setFocusedField(null)}
               />
               <FieldInput
                 label="Billing Address"
                 value={billingAddress}
                 onChangeText={setBillingAddress}
                 editable={isEditing}
+                focused={focusedField === "billingAddress"}
+                onFocus={() => setFocusedField("billingAddress")}
+                onBlur={() => setFocusedField(null)}
               />
               <FieldInput
                 label="Contact Person"
                 value={contactPerson}
                 onChangeText={setContactPerson}
                 editable={isEditing}
+                focused={focusedField === "contactPerson"}
+                onFocus={() => setFocusedField("contactPerson")}
+                onBlur={() => setFocusedField(null)}
               />
               <Row label="Joined" value={client.created_at ? formatDate(client.created_at) : "—"} />
             </View>
@@ -262,7 +284,7 @@ export default function ClientDetailScreen() {
               <>
                 <TouchableOpacity style={styles.saveButton} onPress={handleSave} disabled={saving}>
                   {saving ? (
-                    <ActivityIndicator color="#fff" />
+                    <ActivityIndicator color="#1A1A1A" />
                   ) : (
                     <Text style={styles.saveButtonText}>Save</Text>
                   )}
@@ -283,7 +305,7 @@ export default function ClientDetailScreen() {
                     disabled={deactivating}
                   >
                     {deactivating ? (
-                      <ActivityIndicator color="#fff" />
+                      <ActivityIndicator color={COLORS.danger} />
                     ) : (
                       <Text style={styles.deactivateButtonText}>Deactivate</Text>
                     )}
@@ -295,7 +317,7 @@ export default function ClientDetailScreen() {
                     disabled={reactivating}
                   >
                     {reactivating ? (
-                      <ActivityIndicator color="#fff" />
+                      <ActivityIndicator color={COLORS.success} />
                     ) : (
                       <Text style={styles.reactivateButtonText}>Reactivate</Text>
                     )}
@@ -309,7 +331,7 @@ export default function ClientDetailScreen() {
         {activeTab === "sites" && (
           <>
             {sitesLoading ? (
-              <ActivityIndicator style={styles.sitesLoading} />
+              <ActivityIndicator style={styles.sitesLoading} color={COLORS.gold} />
             ) : assignedSites.length === 0 ? (
               <Text style={styles.emptyText}>No sites assigned</Text>
             ) : (
@@ -319,12 +341,15 @@ export default function ClientDetailScreen() {
                   style={styles.card}
                   onPress={() => router.push(`/(admin)/sites/${site.id}`)}
                 >
+                  <View style={styles.goldBar} />
                   <View style={styles.cardHeader}>
                     <Text style={styles.cardTitle}>{site.name}</Text>
                     <View
                       style={[styles.badge, site.is_active ? styles.badgeActive : styles.badgeInactive]}
                     >
-                      <Text style={styles.badgeText}>{site.is_active ? "Active" : "Inactive"}</Text>
+                      <Text style={[styles.badgeText, site.is_active ? styles.badgeTextActive : styles.badgeTextInactive]}>
+                        {site.is_active ? "Active" : "Inactive"}
+                      </Text>
                     </View>
                   </View>
                   <Text style={styles.detail}>{site.address}</Text>
@@ -353,22 +378,31 @@ function FieldInput({
   onChangeText,
   editable,
   keyboardType,
+  focused,
+  onFocus,
+  onBlur,
 }: {
   label: string;
   value: string;
   onChangeText?: (text: string) => void;
   editable: boolean;
   keyboardType?: "default" | "phone-pad";
+  focused?: boolean;
+  onFocus?: () => void;
+  onBlur?: () => void;
 }) {
   return (
     <View style={styles.fieldRow}>
       <Text style={styles.rowLabel}>{label}</Text>
       <TextInput
-        style={[styles.input, !editable && styles.inputDisabled]}
+        style={[styles.input, !editable && styles.inputDisabled, focused && styles.inputFocused]}
         value={value}
         onChangeText={onChangeText}
         editable={editable}
         keyboardType={keyboardType}
+        onFocus={onFocus}
+        onBlur={onBlur}
+        placeholderTextColor={COLORS.textMuted}
       />
     </View>
   );
@@ -377,7 +411,7 @@ function FieldInput({
 function BackButton({ onPress }: { onPress: () => void }) {
   return (
     <TouchableOpacity style={styles.backButton} onPress={onPress}>
-      <Ionicons name="arrow-back" size={20} color="#000" />
+      <Ionicons name="arrow-back" size={20} color={COLORS.gold} />
       <Text style={styles.backButtonText}>Back</Text>
     </TouchableOpacity>
   );
@@ -386,13 +420,14 @@ function BackButton({ onPress }: { onPress: () => void }) {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
+    backgroundColor: COLORS.background,
   },
   topBar: {
     paddingTop: 16,
     paddingHorizontal: 16,
-    backgroundColor: "#fff",
+    backgroundColor: COLORS.surface,
     borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
+    borderBottomColor: COLORS.border,
   },
   tabBar: {
     flexDirection: "row",
@@ -404,15 +439,15 @@ const styles = StyleSheet.create({
     borderBottomColor: "transparent",
   },
   tabActive: {
-    borderBottomColor: "#000",
+    borderBottomColor: COLORS.gold,
   },
   tabText: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#999",
+    color: COLORS.textMuted,
   },
   tabTextActive: {
-    color: "#000",
+    color: COLORS.gold,
   },
   container: {
     flex: 1,
@@ -425,6 +460,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+    backgroundColor: COLORS.background,
   },
   backButton: {
     flexDirection: "row",
@@ -435,7 +471,7 @@ const styles = StyleSheet.create({
   },
   backButtonText: {
     fontSize: 16,
-    color: "#000",
+    color: COLORS.gold,
   },
   header: {
     flexDirection: "row",
@@ -446,26 +482,34 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 24,
     fontWeight: "bold",
+    color: COLORS.textPrimary,
   },
   badge: {
-    borderRadius: 12,
+    borderRadius: RADIUS.full,
     paddingVertical: 4,
     paddingHorizontal: 10,
   },
   badgeActive: {
-    backgroundColor: "#16a34a",
+    backgroundColor: COLORS.successBg,
   },
   badgeInactive: {
-    backgroundColor: "#dc2626",
+    backgroundColor: COLORS.dangerBg,
   },
   badgeText: {
-    color: "#fff",
     fontSize: 12,
     fontWeight: "600",
   },
+  badgeTextActive: {
+    color: COLORS.success,
+  },
+  badgeTextInactive: {
+    color: COLORS.danger,
+  },
   section: {
-    backgroundColor: "#fff",
-    borderRadius: 8,
+    backgroundColor: COLORS.surface,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: RADIUS.md,
     padding: 16,
     marginBottom: 24,
   },
@@ -474,11 +518,11 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
+    borderBottomColor: COLORS.border,
   },
   rowLabel: {
     fontSize: 14,
-    color: "#666",
+    color: COLORS.textSecondary,
   },
   rowValue: {
     fontSize: 14,
@@ -486,92 +530,121 @@ const styles = StyleSheet.create({
     textAlign: "right",
     flexShrink: 1,
     marginLeft: 16,
+    color: COLORS.textPrimary,
   },
   fieldRow: {
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
+    borderBottomColor: COLORS.border,
   },
   input: {
     borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 8,
+    borderColor: COLORS.border,
+    borderRadius: RADIUS.md,
     padding: 10,
     marginTop: 6,
-    backgroundColor: "#fff",
+    backgroundColor: COLORS.surfaceElevated,
+    color: COLORS.textPrimary,
     fontSize: 14,
     fontWeight: "600",
   },
   inputDisabled: {
     borderColor: "transparent",
-    backgroundColor: "#f5f5f5",
-    color: "#666",
+    backgroundColor: COLORS.surfaceElevated,
+    color: COLORS.textMuted,
     fontWeight: "normal",
   },
+  inputFocused: {
+    borderColor: COLORS.gold,
+  },
   editButton: {
-    backgroundColor: "#000",
-    padding: 16,
-    borderRadius: 8,
+    backgroundColor: COLORS.gold,
+    height: 52,
+    justifyContent: "center",
+    borderRadius: RADIUS.md,
     alignItems: "center",
     marginBottom: 12,
   },
   editButtonText: {
-    color: "#fff",
+    color: "#1A1A1A",
     fontWeight: "bold",
   },
   saveButton: {
-    backgroundColor: "#000",
-    padding: 16,
-    borderRadius: 8,
+    backgroundColor: COLORS.gold,
+    height: 52,
+    justifyContent: "center",
+    borderRadius: RADIUS.md,
     alignItems: "center",
     marginBottom: 12,
   },
   saveButtonText: {
-    color: "#fff",
+    color: "#1A1A1A",
     fontWeight: "bold",
   },
   cancelButton: {
-    padding: 16,
-    borderRadius: 8,
+    height: 48,
+    justifyContent: "center",
+    borderRadius: RADIUS.md,
     alignItems: "center",
+    backgroundColor: COLORS.border,
   },
   cancelButtonText: {
-    color: "#666",
+    color: COLORS.textPrimary,
     fontWeight: "600",
   },
   deactivateButton: {
-    backgroundColor: "#dc2626",
-    padding: 16,
-    borderRadius: 8,
+    backgroundColor: COLORS.dangerBg,
+    height: 52,
+    justifyContent: "center",
+    borderRadius: RADIUS.md,
     alignItems: "center",
   },
   deactivateButtonText: {
-    color: "#fff",
+    color: COLORS.danger,
     fontWeight: "bold",
   },
   reactivateButton: {
-    backgroundColor: "#16a34a",
-    padding: 16,
-    borderRadius: 8,
+    backgroundColor: COLORS.successBg,
+    height: 52,
+    justifyContent: "center",
+    borderRadius: RADIUS.md,
     alignItems: "center",
   },
   reactivateButtonText: {
-    color: "#fff",
+    color: COLORS.success,
     fontWeight: "bold",
   },
   sitesLoading: {
     marginTop: 16,
   },
   emptyText: {
-    color: "#666",
+    color: COLORS.textMuted,
     textAlign: "center",
     marginTop: 16,
   },
   card: {
-    backgroundColor: "#fff",
-    borderRadius: 8,
+    backgroundColor: COLORS.surface,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: RADIUS.md,
     padding: 16,
+    paddingLeft: 19,
     marginBottom: 12,
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  goldBar: {
+    position: "absolute",
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 3,
+    borderRadius: RADIUS.full,
+    backgroundColor: COLORS.gold,
   },
   cardHeader: {
     flexDirection: "row",
@@ -582,10 +655,11 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 16,
     fontWeight: "600",
+    color: COLORS.textPrimary,
   },
   detail: {
     fontSize: 14,
-    color: "#666",
+    color: COLORS.textSecondary,
     marginTop: 2,
   },
 });

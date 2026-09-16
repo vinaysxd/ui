@@ -1,6 +1,8 @@
-import { View, Text, TouchableOpacity, StyleSheet, useWindowDimensions } from "react-native";
+import { View, Text, Image, TouchableOpacity, StyleSheet, useWindowDimensions } from "react-native";
 import { Stack, Slot, usePathname, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import Constants from "expo-constants";
+import { COLORS, SPACING, RADIUS } from "../../src/constants/theme";
 
 const NAV_ITEMS = [
   { name: "dashboard", label: "Home", icon: "home-outline" as const, href: "/(staff)/dashboard" as const },
@@ -9,26 +11,47 @@ const NAV_ITEMS = [
 ];
 
 function Sidebar() {
-  console.log("THIS IS STAFF ROOT LAYOUT")
   const router = useRouter();
   const pathname = usePathname();
 
   return (
     <View style={styles.sidebar}>
-      <Text style={styles.logo}>Brothers Cleaning</Text>
-      {NAV_ITEMS.map((item) => {
-        const active = pathname === `/${item.name}`;
-        return (
-          <TouchableOpacity
-            key={item.name}
-            style={[styles.navItem, active && styles.navItemActive]}
-            onPress={() => router.push(item.href)}
-          >
-            <Ionicons name={item.icon} size={20} color={active ? "#fff" : "#999"} />
-            <Text style={[styles.navLabel, active && styles.navLabelActive]}>{item.label}</Text>
-          </TouchableOpacity>
-        );
-      })}
+      <View style={styles.sidebarTop}>
+        <View style={styles.brandRow}>
+          <Image
+            source={require("../../assets/brothers.jpg")}
+            style={styles.favicon}
+            resizeMode="cover"
+          />
+          <Text style={styles.brandText}>BROTHERS</Text>
+        </View>
+        <View style={styles.divider} />
+      </View>
+
+      <View style={styles.navList}>
+        {NAV_ITEMS.map((item) => {
+          const active =
+            item.name === "dashboard"
+              ? pathname === "/" || pathname === "/dashboard"
+              : pathname.startsWith(`/${item.name}`);
+          const color = active ? COLORS.gold : COLORS.textSecondary;
+          return (
+            <TouchableOpacity
+              key={item.name}
+              style={[styles.navItem, active && styles.navItemActive]}
+              onPress={() => router.replace(item.href)}
+            >
+              <Ionicons name={item.icon} size={18} color={color} />
+              <Text style={[styles.navLabel, { color }]}>{item.label}</Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+
+      <View style={styles.sidebarBottom}>
+        <View style={styles.divider} />
+        <Text style={styles.version}>v{Constants.expoConfig?.version ?? "1.0.0"}</Text>
+      </View>
     </View>
   );
 }
@@ -71,36 +94,68 @@ const styles = StyleSheet.create({
   },
   sidebar: {
     width: 220,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: COLORS.surface,
     borderRightWidth: 1,
-    borderRightColor: "#e0e0e0",
+    borderRightColor: COLORS.border,
     paddingTop: 24,
-    paddingHorizontal: 12,
   },
-  logo: {
-    fontSize: 18,
-    fontWeight: "bold",
-    marginBottom: 24,
-    paddingHorizontal: 8,
+  sidebarTop: {
+    paddingHorizontal: 20,
+    marginBottom: SPACING.md,
+  },
+  brandRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginBottom: SPACING.md,
+  },
+  favicon: {
+    width: 40,
+    height: 40,
+    borderRadius: 8,
+  },
+  brandText: {
+    color: COLORS.gold,
+    fontSize: 14,
+    fontWeight: "700",
+    letterSpacing: 3,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: COLORS.gold,
+    opacity: 0.3,
+  },
+  navList: {
+    flex: 1,
   },
   navItem: {
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    marginBottom: 4,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderTopRightRadius: RADIUS.md,
+    borderBottomRightRadius: RADIUS.md,
+    borderLeftWidth: 2,
+    borderLeftColor: "transparent",
   },
   navItemActive: {
-    backgroundColor: "#000",
+    backgroundColor: COLORS.accentBg,
+    borderLeftColor: COLORS.gold,
   },
   navLabel: {
-    fontSize: 15,
-    color: "#999",
+    fontSize: 13,
+    letterSpacing: 1.5,
+    textTransform: "uppercase",
   },
-  navLabelActive: {
-    color: "#fff",
-    fontWeight: "600",
+  sidebarBottom: {
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+  },
+  version: {
+    color: COLORS.textMuted,
+    fontSize: 11,
+    marginTop: SPACING.sm,
+    textAlign: "center",
   },
 });

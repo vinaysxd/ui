@@ -21,6 +21,7 @@ import {
 } from "../services/notes.service";
 import { showSuccess, showError } from "../utils/toast";
 import { formatDateTime } from "../utils/datetime";
+import { COLORS, RADIUS } from "../constants/theme";
 
 interface NotesPanelProps {
   siteId: string | null;
@@ -105,7 +106,7 @@ export default function NotesPanel({ siteId, active = true, role = "staff" }: No
     >
       {loading ? (
         <View style={styles.centered}>
-          <ActivityIndicator size="large" />
+          <ActivityIndicator size="large" color={COLORS.gold} />
         </View>
       ) : (
         <FlatList
@@ -126,6 +127,7 @@ export default function NotesPanel({ siteId, active = true, role = "staff" }: No
               value={noteText}
               onChangeText={setNoteText}
               placeholder="Write a note..."
+              placeholderTextColor={COLORS.textMuted}
               multiline
               autoFocus
               editable={!submitting}
@@ -142,15 +144,15 @@ export default function NotesPanel({ siteId, active = true, role = "staff" }: No
             </TouchableOpacity>
             <TouchableOpacity style={styles.sendButton} onPress={handleSubmitNote} disabled={submitting}>
               {submitting ? (
-                <ActivityIndicator color="#fff" size="small" />
+                <ActivityIndicator color="#1A1A1A" size="small" />
               ) : (
-                <Ionicons name="send" size={18} color="#fff" />
+                <Ionicons name="send" size={18} color="#1A1A1A" />
               )}
             </TouchableOpacity>
           </View>
         ) : (
           <TouchableOpacity style={styles.addNoteButton} onPress={() => setComposing(true)}>
-            <Ionicons name="add" size={18} color="#fff" />
+            <Ionicons name="add" size={18} color="#1A1A1A" />
             <Text style={styles.addNoteButtonText}>Add note</Text>
           </TouchableOpacity>
         )}
@@ -164,9 +166,9 @@ function NoteCard({ note }: { note: SiteNote }) {
   return (
     <View style={[styles.card, isClient ? styles.cardClient : styles.cardStaff]}>
       <View style={styles.cardHeader}>
-        <View style={[styles.badge, isClient ? styles.badgeClient : styles.badgeStaff]}>
-          <Text style={styles.badgeText}>{isClient ? "Client" : "Staff"}</Text>
-        </View>
+        <Text style={[styles.badgeText, isClient ? styles.badgeTextClient : styles.badgeTextStaff]}>
+          {isClient ? "CLIENT" : "STAFF"}
+        </Text>
         <Text style={styles.authorName} numberOfLines={1}>
           {note.author?.full_name ?? "Unknown"}
         </Text>
@@ -192,20 +194,20 @@ const styles = StyleSheet.create({
     flexGrow: 1,
   },
   emptyText: {
-    color: "#666",
+    color: COLORS.textMuted,
     textAlign: "center",
     marginTop: 32,
   },
   card: {
-    borderRadius: 8,
+    borderRadius: RADIUS.md,
     padding: 16,
     marginBottom: 12,
   },
   cardStaff: {
-    backgroundColor: "#e5e5e5",
+    backgroundColor: COLORS.surface,
   },
   cardClient: {
-    backgroundColor: "#dbeafe",
+    backgroundColor: "#2A2310",
   },
   cardHeader: {
     flexDirection: "row",
@@ -213,42 +215,37 @@ const styles = StyleSheet.create({
     gap: 8,
     marginBottom: 8,
   },
-  badge: {
-    borderRadius: 12,
-    paddingVertical: 4,
-    paddingHorizontal: 10,
-  },
-  badgeStaff: {
-    backgroundColor: "#2563eb",
-  },
-  badgeClient: {
-    backgroundColor: "#7c3aed",
-  },
   badgeText: {
-    color: "#fff",
-    fontSize: 12,
-    fontWeight: "600",
+    fontSize: 11,
+    fontWeight: "700",
+    letterSpacing: 1,
+  },
+  badgeTextStaff: {
+    color: COLORS.textSecondary,
+  },
+  badgeTextClient: {
+    color: COLORS.gold,
   },
   authorName: {
     fontSize: 13,
     fontWeight: "600",
-    color: "#333",
+    color: COLORS.textPrimary,
     flexShrink: 1,
   },
   noteText: {
     fontSize: 14,
-    color: "#333",
+    color: COLORS.textPrimary,
     marginBottom: 8,
   },
   timeText: {
     fontSize: 12,
-    color: "#666",
+    color: COLORS.textMuted,
   },
   footer: {
     padding: 16,
-    backgroundColor: "#fff",
+    backgroundColor: COLORS.surface,
     borderTopWidth: 1,
-    borderTopColor: "#f0f0f0",
+    borderTopColor: COLORS.border,
   },
   composeRow: {
     flexDirection: "row",
@@ -258,10 +255,11 @@ const styles = StyleSheet.create({
   composeInput: {
     flex: 1,
     borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 8,
+    borderColor: COLORS.border,
+    borderRadius: RADIUS.md,
     padding: 12,
-    backgroundColor: "#fff",
+    backgroundColor: COLORS.surfaceElevated,
+    color: COLORS.textPrimary,
     maxHeight: 100,
   },
   cancelButton: {
@@ -269,14 +267,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
   },
   cancelButtonText: {
-    color: "#666",
+    color: COLORS.textSecondary,
     fontWeight: "600",
   },
   sendButton: {
-    backgroundColor: "#000",
+    backgroundColor: COLORS.gold,
     width: 44,
     height: 44,
-    borderRadius: 8,
+    borderRadius: RADIUS.md,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -285,12 +283,12 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     gap: 6,
-    backgroundColor: "#000",
+    backgroundColor: COLORS.gold,
     padding: 14,
-    borderRadius: 8,
+    borderRadius: RADIUS.md,
   },
   addNoteButtonText: {
-    color: "#fff",
+    color: "#1A1A1A",
     fontWeight: "bold",
   },
 });

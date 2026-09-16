@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { View, Image, ActivityIndicator, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { getSignedPhotoUrl } from "../services/attendance.service";
+import { COLORS, RADIUS } from "../constants/theme";
 
 interface PhotoThumbProps {
   path: string | null;
@@ -50,7 +51,7 @@ export default function PhotoThumb({ path }: PhotoThumbProps) {
   if (loading) {
     return (
       <View style={styles.thumbPlaceholder}>
-        <ActivityIndicator size="small" color="#999" />
+        <ActivityIndicator size="small" color={COLORS.textMuted} />
       </View>
     );
   }
@@ -58,7 +59,7 @@ export default function PhotoThumb({ path }: PhotoThumbProps) {
   if (!signedUrl || failed) {
     return (
       <View style={styles.thumbPlaceholder}>
-        <Ionicons name="image-outline" size={24} color="#999" />
+        <Ionicons name="image-outline" size={24} color={COLORS.textMuted} />
       </View>
     );
   }
@@ -72,18 +73,18 @@ const styles = StyleSheet.create({
   thumb: {
     width: 120,
     height: 120,
-    borderRadius: 8,
-    backgroundColor: "#eee",
-    borderWidth: 0.5,
-    borderColor: "#e0e0e0",
+    borderRadius: RADIUS.md,
+    backgroundColor: COLORS.surfaceElevated,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   thumbPlaceholder: {
     width: 120,
     height: 120,
-    borderRadius: 8,
-    backgroundColor: "#eee",
-    borderWidth: 0.5,
-    borderColor: "#e0e0e0",
+    borderRadius: RADIUS.md,
+    backgroundColor: COLORS.surfaceElevated,
+    borderWidth: 1,
+    borderColor: COLORS.border,
     justifyContent: "center",
     alignItems: "center",
   },

@@ -13,6 +13,7 @@ import { useRouter } from "expo-router";
 import { getProfile, ProfileMe } from "../../../src/services/profile.service";
 import { logout } from "../../../src/services/auth.service";
 import { showError } from "../../../src/utils/toast";
+import { COLORS, RADIUS } from "../../../src/constants/theme";
 
 const MONTHS = [
   "Jan", "Feb", "Mar", "Apr", "May", "Jun",
@@ -82,7 +83,7 @@ export default function StaffProfileScreen() {
   if (loading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" />
+        <ActivityIndicator size="large" color={COLORS.gold} />
       </View>
     );
   }
@@ -95,7 +96,14 @@ export default function StaffProfileScreen() {
     <ScrollView
       style={styles.container}
       contentContainerStyle={styles.content}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          tintColor={COLORS.gold}
+          colors={[COLORS.gold]}
+        />
+      }
     >
       <View style={styles.headerCard}>
         {profile.signed_avatar_url && !avatarLoadFailed ? (
@@ -138,7 +146,7 @@ export default function StaffProfileScreen() {
 
       <TouchableOpacity style={styles.logoutButton} onPress={handleLogout} disabled={loggingOut}>
         {loggingOut ? (
-          <ActivityIndicator color="#fff" />
+          <ActivityIndicator color={COLORS.danger} />
         ) : (
           <Text style={styles.logoutButtonText}>Logout</Text>
         )}
@@ -161,6 +169,7 @@ function Row({ label, value, last }: { label: string; value: string; last?: bool
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: COLORS.background,
   },
   content: {
     padding: 16,
@@ -170,10 +179,13 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+    backgroundColor: COLORS.background,
   },
   headerCard: {
-    backgroundColor: "#fff",
-    borderRadius: 8,
+    backgroundColor: COLORS.surface,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: RADIUS.md,
     padding: 24,
     alignItems: "center",
     marginBottom: 24,
@@ -181,56 +193,60 @@ const styles = StyleSheet.create({
   avatar: {
     width: 72,
     height: 72,
-    borderRadius: 36,
-    backgroundColor: "#000",
+    borderRadius: RADIUS.full,
+    backgroundColor: "#3A3520",
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 12,
   },
   avatarText: {
-    color: "#fff",
+    color: COLORS.gold,
     fontSize: 24,
     fontWeight: "bold",
   },
   avatarImage: {
     width: 72,
     height: 72,
-    borderRadius: 36,
-    backgroundColor: "#eee",
+    borderRadius: RADIUS.full,
+    backgroundColor: COLORS.surfaceElevated,
     marginBottom: 12,
   },
   name: {
     fontSize: 22,
     fontWeight: "bold",
+    color: COLORS.textPrimary,
   },
   email: {
     fontSize: 14,
-    color: "#666",
+    color: COLORS.textSecondary,
     marginTop: 2,
   },
   roleBadge: {
     marginTop: 10,
-    backgroundColor: "#2563eb",
-    borderRadius: 12,
+    backgroundColor: COLORS.gold,
+    borderRadius: RADIUS.full,
     paddingVertical: 4,
     paddingHorizontal: 10,
   },
   roleBadgeText: {
-    color: "#fff",
+    color: "#1A1A1A",
     fontSize: 12,
     fontWeight: "600",
     textTransform: "capitalize",
   },
   sectionTitle: {
-    fontSize: 14,
+    fontSize: 11,
     fontWeight: "600",
-    color: "#666",
+    color: COLORS.gold,
     marginBottom: 8,
     textTransform: "uppercase",
+    letterSpacing: 2,
   },
   section: {
-    backgroundColor: "#fff",
-    borderRadius: 8,
+    backgroundColor: COLORS.surface,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: RADIUS.md,
     marginBottom: 24,
     overflow: "hidden",
   },
@@ -243,36 +259,39 @@ const styles = StyleSheet.create({
   },
   rowBorder: {
     borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
+    borderBottomColor: COLORS.border,
   },
   rowLabel: {
     fontSize: 15,
+    color: COLORS.textPrimary,
   },
   rowValue: {
     fontSize: 14,
-    color: "#666",
+    color: COLORS.textMuted,
     flexShrink: 1,
     marginLeft: 16,
   },
   editButton: {
-    backgroundColor: "#000",
-    padding: 16,
-    borderRadius: 8,
+    backgroundColor: COLORS.gold,
+    height: 52,
+    borderRadius: RADIUS.md,
     alignItems: "center",
+    justifyContent: "center",
     marginBottom: 12,
   },
   editButtonText: {
-    color: "#fff",
+    color: "#1A1A1A",
     fontWeight: "bold",
   },
   logoutButton: {
-    backgroundColor: "#dc2626",
-    padding: 16,
-    borderRadius: 8,
+    backgroundColor: COLORS.dangerBg,
+    height: 52,
+    borderRadius: RADIUS.md,
     alignItems: "center",
+    justifyContent: "center",
   },
   logoutButtonText: {
-    color: "#fff",
+    color: COLORS.danger,
     fontWeight: "bold",
   },
 });

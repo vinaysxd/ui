@@ -14,6 +14,7 @@ import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { getProfile, updateProfile, uploadAvatar } from "../../../src/services/profile.service";
 import { showSuccess, showError } from "../../../src/utils/toast";
+import { COLORS, RADIUS } from "../../../src/constants/theme";
 
 const getInitials = (fullName: string): string => {
   const parts = fullName.trim().split(/\s+/).filter(Boolean);
@@ -41,6 +42,7 @@ export default function ClientEditProfileScreen() {
   const [saving, setSaving] = useState<boolean>(false);
   const [uploading, setUploading] = useState<boolean>(false);
   const [avatarLoadFailed, setAvatarLoadFailed] = useState<boolean>(false);
+  const [focusedField, setFocusedField] = useState<string | null>(null);
 
   const fetchProfile = useCallback(async () => {
     try {
@@ -118,12 +120,13 @@ export default function ClientEditProfileScreen() {
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <BackButton onPress={() => router.back()} />
 
+      <Text style={styles.eyebrow}>EDIT</Text>
       <Text style={styles.title}>Edit Profile</Text>
 
       {loading ? (
-        <ActivityIndicator style={styles.loading} size="large" />
+        <ActivityIndicator style={styles.loading} size="large" color={COLORS.gold} />
       ) : (
-        <>
+        <View style={styles.card}>
           <View style={styles.avatarSection}>
             {avatarPreviewUri && !avatarLoadFailed ? (
               <Image
@@ -142,32 +145,59 @@ export default function ClientEditProfileScreen() {
               disabled={uploading}
             >
               {uploading ? (
-                <ActivityIndicator color="#000" size="small" />
+                <ActivityIndicator color={COLORS.gold} size="small" />
               ) : (
                 <Text style={styles.changePhotoButtonText}>Change Photo</Text>
               )}
             </TouchableOpacity>
           </View>
 
-          <Text style={styles.label}>Full Name</Text>
-          <TextInput style={styles.input} value={fullName} onChangeText={setFullName} />
+          <FormField
+            label="Full Name"
+            value={fullName}
+            onChangeText={setFullName}
+            focused={focusedField === "fullName"}
+            onFocus={() => setFocusedField("fullName")}
+            onBlur={() => setFocusedField(null)}
+          />
 
-          <Text style={styles.label}>Phone</Text>
-          <TextInput
-            style={styles.input}
+          <FormField
+            label="Phone"
             value={phone}
             onChangeText={setPhone}
             keyboardType="phone-pad"
+            focused={focusedField === "phone"}
+            onFocus={() => setFocusedField("phone")}
+            onBlur={() => setFocusedField(null)}
           />
 
-          <Text style={styles.label}>Company Name</Text>
-          <TextInput style={styles.input} value={companyName} onChangeText={setCompanyName} />
+          <FormField
+            label="Company Name"
+            value={companyName}
+            onChangeText={setCompanyName}
+            focused={focusedField === "companyName"}
+            onFocus={() => setFocusedField("companyName")}
+            onBlur={() => setFocusedField(null)}
+          />
 
-          <Text style={styles.label}>Billing Address</Text>
-          <TextInput style={styles.input} value={billingAddress} onChangeText={setBillingAddress} />
+          <FormField
+            label="Billing Address"
+            value={billingAddress}
+            onChangeText={setBillingAddress}
+            focused={focusedField === "billingAddress"}
+            onFocus={() => setFocusedField("billingAddress")}
+            onBlur={() => setFocusedField(null)}
+          />
 
-          <Text style={styles.label}>Contact Person</Text>
-          <TextInput style={styles.input} value={contactPerson} onChangeText={setContactPerson} />
+          <FormField
+            label="Contact Person"
+            value={contactPerson}
+            onChangeText={setContactPerson}
+            focused={focusedField === "contactPerson"}
+            onFocus={() => setFocusedField("contactPerson")}
+            onBlur={() => setFocusedField(null)}
+            last
+          />
 
           <View style={styles.buttonRow}>
             <TouchableOpacity
@@ -179,23 +209,57 @@ export default function ClientEditProfileScreen() {
             </TouchableOpacity>
             <TouchableOpacity style={styles.saveButton} onPress={handleSave} disabled={saving}>
               {saving ? (
-                <ActivityIndicator color="#fff" />
+                <ActivityIndicator color="#1A1A1A" />
               ) : (
                 <Text style={styles.saveButtonText}>Save</Text>
               )}
             </TouchableOpacity>
           </View>
-        </>
+        </View>
       )}
     </ScrollView>
+  );
+}
+
+function FormField({
+  label,
+  value,
+  onChangeText,
+  focused,
+  onFocus,
+  onBlur,
+  keyboardType,
+  last,
+}: {
+  label: string;
+  value: string;
+  onChangeText: (text: string) => void;
+  focused: boolean;
+  onFocus: () => void;
+  onBlur: () => void;
+  keyboardType?: "default" | "phone-pad";
+  last?: boolean;
+}) {
+  return (
+    <View style={!last ? styles.fieldSpacing : undefined}>
+      <Text style={styles.label}>{label}</Text>
+      <TextInput
+        style={[styles.input, focused && styles.inputFocused]}
+        value={value}
+        onChangeText={onChangeText}
+        keyboardType={keyboardType}
+        onFocus={onFocus}
+        onBlur={onBlur}
+        placeholderTextColor={COLORS.textMuted}
+      />
+    </View>
   );
 }
 
 function BackButton({ onPress }: { onPress: () => void }) {
   return (
     <TouchableOpacity style={styles.backButton} onPress={onPress}>
-      <Ionicons name="arrow-back" size={20} color="#000" />
-      <Text style={styles.backButtonText}>Back</Text>
+      <Ionicons name="arrow-back" size={22} color={COLORS.gold} />
     </TouchableOpacity>
   );
 }
@@ -203,29 +267,38 @@ function BackButton({ onPress }: { onPress: () => void }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: COLORS.background,
   },
   content: {
     padding: 16,
     paddingBottom: 32,
   },
   backButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
     alignSelf: "flex-start",
     marginBottom: 16,
   },
-  backButtonText: {
-    fontSize: 16,
-    color: "#000",
+  eyebrow: {
+    color: COLORS.gold,
+    fontSize: 11,
+    letterSpacing: 3,
+    textTransform: "uppercase",
+    marginBottom: 4,
   },
   title: {
-    fontSize: 24,
-    fontWeight: "bold",
-    marginBottom: 16,
+    fontSize: 22,
+    fontWeight: "700",
+    color: COLORS.textPrimary,
+    marginBottom: 20,
   },
   loading: {
     marginTop: 32,
+  },
+  card: {
+    backgroundColor: COLORS.surface,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: RADIUS.xl,
+    padding: 24,
   },
   avatarSection: {
     alignItems: "center",
@@ -234,48 +307,59 @@ const styles = StyleSheet.create({
   avatarImage: {
     width: 88,
     height: 88,
-    borderRadius: 44,
-    backgroundColor: "#eee",
+    borderRadius: RADIUS.full,
+    backgroundColor: COLORS.surfaceElevated,
     marginBottom: 12,
   },
   avatarPlaceholder: {
     width: 88,
     height: 88,
-    borderRadius: 44,
-    backgroundColor: "#000",
+    borderRadius: RADIUS.full,
+    backgroundColor: "#3A3520",
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 12,
   },
   avatarPlaceholderText: {
-    color: "#fff",
+    color: COLORS.gold,
     fontSize: 26,
     fontWeight: "bold",
   },
   changePhotoButton: {
     paddingVertical: 8,
     paddingHorizontal: 16,
-    borderRadius: 8,
+    borderRadius: RADIUS.md,
     borderWidth: 1,
-    borderColor: "#ccc",
+    borderColor: COLORS.gold,
   },
   changePhotoButtonText: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#000",
+    color: COLORS.gold,
+  },
+  fieldSpacing: {
+    marginBottom: 16,
   },
   label: {
-    fontSize: 14,
-    fontWeight: "600",
+    color: COLORS.textMuted,
+    fontSize: 11,
+    letterSpacing: 1.5,
+    textTransform: "uppercase",
     marginBottom: 6,
     marginTop: 12,
   },
   input: {
+    backgroundColor: COLORS.surfaceElevated,
     borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 8,
-    padding: 12,
-    backgroundColor: "#fff",
+    borderColor: COLORS.border,
+    borderRadius: RADIUS.md,
+    color: COLORS.textPrimary,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 15,
+  },
+  inputFocused: {
+    borderColor: COLORS.gold,
   },
   buttonRow: {
     flexDirection: "row",
@@ -284,25 +368,26 @@ const styles = StyleSheet.create({
   },
   cancelButton: {
     flex: 1,
-    padding: 16,
-    borderRadius: 8,
+    height: 52,
+    borderRadius: RADIUS.md,
     alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#ccc",
+    justifyContent: "center",
+    backgroundColor: COLORS.border,
   },
   cancelButtonText: {
-    color: "#333",
+    color: COLORS.textPrimary,
     fontWeight: "600",
   },
   saveButton: {
     flex: 1,
-    backgroundColor: "#000",
-    padding: 16,
-    borderRadius: 8,
+    backgroundColor: COLORS.gold,
+    height: 52,
+    borderRadius: RADIUS.md,
     alignItems: "center",
+    justifyContent: "center",
   },
   saveButtonText: {
-    color: "#fff",
+    color: "#1A1A1A",
     fontWeight: "bold",
   },
 });

@@ -80,6 +80,12 @@ export default function LoginScreen() {
 
       <View style={styles.form}>
         <Image
+          source={require('../../assets/favicon.jpg')}
+          style={styles.favicon}
+          resizeMode="cover"
+        />
+
+        <Image
           source={require('../../assets/brothers_logo.png')}
           style={styles.logo}
           resizeMode="contain"
@@ -199,6 +205,13 @@ const createStyles = (palette: typeof COLORS) =>
       width: "100%",
       maxWidth: 400,
       alignSelf: "center",
+    },
+    favicon: {
+      width: 60,
+      height: 60,
+      borderRadius: 12,
+      alignSelf: "center",
+      marginBottom: SPACING.sm,
     },
     logo: {
       width: 180,

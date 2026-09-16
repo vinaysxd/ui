@@ -1,8 +1,9 @@
 import axios from "axios";
 import { getToken, getRefreshToken, setAuth, clearAuth } from "../store/auth";
+import app_constants from "../constants/app_constants";
 
 const api = axios.create({
-  baseURL: "http://192.168.0.81:3000",
+  baseURL: app_constants.baseUrl,
   headers: {
     "Content-Type": "application/json",
   },

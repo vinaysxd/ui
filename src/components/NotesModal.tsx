@@ -1,5 +1,6 @@
 import { Modal, View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import NotesPanel from "./NotesPanel";
+import { COLORS } from "../constants/theme";
 
 interface NotesModalProps {
   visible: boolean;
@@ -27,7 +28,7 @@ export default function NotesModal({ visible, siteId, onClose }: NotesModalProps
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: COLORS.background,
   },
   header: {
     flexDirection: "row",
@@ -36,17 +37,18 @@ const styles = StyleSheet.create({
     paddingTop: 56,
     paddingHorizontal: 16,
     paddingBottom: 16,
-    backgroundColor: "#fff",
+    backgroundColor: COLORS.surface,
     borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
+    borderBottomColor: COLORS.border,
   },
   title: {
     fontSize: 18,
     fontWeight: "bold",
+    color: COLORS.textPrimary,
   },
   doneText: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#000",
+    color: COLORS.gold,
   },
 });

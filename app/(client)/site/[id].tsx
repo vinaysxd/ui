@@ -17,6 +17,7 @@ import { showError } from "../../../src/utils/toast";
 import { formatDateTime } from "../../../src/utils/datetime";
 import PhotoThumb from "../../../src/components/PhotoThumb";
 import NotesPanel from "../../../src/components/NotesPanel";
+import { COLORS, RADIUS } from "../../../src/constants/theme";
 
 type Tab = "details" | "attendance" | "notes";
 
@@ -25,6 +26,17 @@ const TABS: { key: Tab; label: string }[] = [
   { key: "attendance", label: "Attendance" },
   { key: "notes", label: "Notes" },
 ];
+
+const getInitials = (fullName: string): string => {
+  const parts = fullName.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) {
+    return "?";
+  }
+  if (parts.length === 1) {
+    return parts[0].charAt(0).toUpperCase();
+  }
+  return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+};
 
 const formatDuration = (startIso: string, endIso: string): string => {
   const totalMinutes = Math.max(
@@ -106,6 +118,28 @@ export default function ClientSiteDetailScreen() {
               <Row label="Latitude" value={String(site.latitude)} />
               <Row label="Longitude" value={String(site.longitude)} />
             </View>
+
+            <Text style={styles.sectionLabel}>Assigned Staff</Text>
+            {!site.staff || site.staff.length === 0 ? (
+              <Text style={styles.emptyText}>No staff assigned</Text>
+            ) : (
+              site.staff.map((member) => (
+                <View key={member.id} style={styles.staffCard}>
+                  <View style={styles.avatarCircle}>
+                    <Text style={styles.avatarText}>{getInitials(member.full_name)}</Text>
+                  </View>
+                  <View style={styles.staffCardInfo}>
+                    <Text style={styles.staffName}>{member.full_name}</Text>
+                    <Text style={styles.staffPhone}>{member.phone}</Text>
+                  </View>
+                  {member.is_active ? (
+                    <View style={[styles.badge, styles.badgeActive]}>
+                      <Text style={styles.badgeText}>Active</Text>
+                    </View>
+                  ) : null}
+                </View>
+              ))
+            )}
           </ScrollView>
         )}
 
@@ -183,6 +217,7 @@ function AttendanceCard({
 
   return (
     <TouchableOpacity style={styles.historyCard} onPress={onToggle} activeOpacity={0.7}>
+      <View style={styles.goldBar} />
       <View style={styles.historyCardHeader}>
         <Text style={styles.historyStaff}>{record.staff?.full_name ?? "Unknown staff"}</Text>
         <View style={styles.historyHeaderRight}>
@@ -191,7 +226,11 @@ function AttendanceCard({
               <Text style={styles.badgeText}>Active</Text>
             </View>
           ) : null}
-          <Ionicons name={expanded ? "chevron-up" : "chevron-down"} size={18} color="#999" />
+          <Ionicons
+            name={expanded ? "chevron-up" : "chevron-down"}
+            size={18}
+            color={COLORS.textMuted}
+          />
         </View>
       </View>
 
@@ -246,7 +285,7 @@ function Row({ label, value }: { label: string; value: string }) {
 function BackButton({ onPress }: { onPress: () => void }) {
   return (
     <TouchableOpacity style={styles.backButton} onPress={onPress}>
-      <Ionicons name="arrow-back" size={20} color="#000" />
+      <Ionicons name="arrow-back" size={20} color={COLORS.gold} />
       <Text style={styles.backButtonText}>Back</Text>
     </TouchableOpacity>
   );
@@ -255,13 +294,14 @@ function BackButton({ onPress }: { onPress: () => void }) {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
+    backgroundColor: COLORS.background,
   },
   topBar: {
     paddingTop: 16,
     paddingHorizontal: 16,
-    backgroundColor: "#fff",
+    backgroundColor: COLORS.surface,
     borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
+    borderBottomColor: COLORS.border,
   },
   tabBar: {
     flexDirection: "row",
@@ -273,15 +313,15 @@ const styles = StyleSheet.create({
     borderBottomColor: "transparent",
   },
   tabActive: {
-    borderBottomColor: "#000",
+    borderBottomColor: COLORS.gold,
   },
   tabText: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#999",
+    color: COLORS.textMuted,
   },
   tabTextActive: {
-    color: "#000",
+    color: COLORS.gold,
   },
   tabContent: {
     flex: 1,
@@ -297,6 +337,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+    backgroundColor: COLORS.background,
   },
   backButton: {
     flexDirection: "row",
@@ -307,29 +348,32 @@ const styles = StyleSheet.create({
   },
   backButtonText: {
     fontSize: 16,
-    color: "#000",
+    color: COLORS.gold,
   },
   name: {
     fontSize: 24,
     fontWeight: "bold",
     marginBottom: 16,
+    color: COLORS.textPrimary,
   },
   badge: {
-    borderRadius: 12,
+    borderRadius: RADIUS.full,
     paddingVertical: 4,
     paddingHorizontal: 10,
   },
   badgeActive: {
-    backgroundColor: "#16a34a",
+    backgroundColor: COLORS.successBg,
   },
   badgeText: {
-    color: "#fff",
+    color: COLORS.success,
     fontSize: 12,
     fontWeight: "600",
   },
   section: {
-    backgroundColor: "#fff",
-    borderRadius: 8,
+    backgroundColor: COLORS.surface,
+    borderRadius: RADIUS.md,
+    borderWidth: 1,
+    borderColor: COLORS.border,
     padding: 16,
     marginBottom: 16,
   },
@@ -338,11 +382,11 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
+    borderBottomColor: COLORS.border,
   },
   rowLabel: {
     fontSize: 14,
-    color: "#666",
+    color: COLORS.textSecondary,
   },
   rowValue: {
     fontSize: 14,
@@ -350,18 +394,77 @@ const styles = StyleSheet.create({
     textAlign: "right",
     flexShrink: 1,
     marginLeft: 16,
+    color: COLORS.textPrimary,
   },
   emptyText: {
-    color: "#666",
+    color: COLORS.textMuted,
     textAlign: "center",
     marginTop: 16,
     marginBottom: 16,
   },
-  historyCard: {
-    backgroundColor: "#fff",
-    borderRadius: 8,
+  sectionLabel: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: COLORS.gold,
+    textTransform: "uppercase",
+    letterSpacing: 2,
+    marginBottom: 10,
+  },
+  staffCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: COLORS.surface,
+    borderRadius: RADIUS.md,
+    borderWidth: 1,
+    borderColor: COLORS.border,
     padding: 16,
     marginBottom: 12,
+  },
+  avatarCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: RADIUS.full,
+    backgroundColor: "#3A3520",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 12,
+  },
+  avatarText: {
+    color: COLORS.gold,
+    fontSize: 14,
+    fontWeight: "700",
+  },
+  staffCardInfo: {
+    flex: 1,
+  },
+  staffName: {
+    color: "#FFFFFF",
+    fontWeight: "600",
+    fontSize: 14,
+  },
+  staffPhone: {
+    color: "#9A9A9A",
+    fontSize: 13,
+    marginTop: 2,
+  },
+  historyCard: {
+    backgroundColor: COLORS.surface,
+    borderRadius: RADIUS.md,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    padding: 16,
+    paddingLeft: 19,
+    marginBottom: 12,
+    overflow: "hidden",
+  },
+  goldBar: {
+    position: "absolute",
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 3,
+    borderRadius: RADIUS.full,
+    backgroundColor: COLORS.gold,
   },
   historyCardHeader: {
     flexDirection: "row",
@@ -377,10 +480,11 @@ const styles = StyleSheet.create({
   historyStaff: {
     fontSize: 15,
     fontWeight: "600",
+    color: COLORS.textPrimary,
   },
   historyDetail: {
     fontSize: 13,
-    color: "#666",
+    color: COLORS.textMuted,
     marginTop: 2,
   },
   photoPairsContainer: {
@@ -389,13 +493,14 @@ const styles = StyleSheet.create({
   },
   photoPair: {
     borderTopWidth: 1,
-    borderTopColor: "#f0f0f0",
+    borderTopColor: COLORS.border,
     paddingTop: 12,
   },
   photoPairLabel: {
     fontSize: 13,
     fontWeight: "600",
     marginBottom: 8,
+    color: COLORS.textPrimary,
   },
   thumbRow: {
     flexDirection: "row",
@@ -406,7 +511,7 @@ const styles = StyleSheet.create({
   },
   thumbCaption: {
     fontSize: 12,
-    color: "#666",
+    color: COLORS.textMuted,
     marginBottom: 6,
   },
 });

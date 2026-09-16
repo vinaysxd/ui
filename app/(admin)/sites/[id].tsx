@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import type { ComponentProps } from "react";
 import {
   View,
   Text,
@@ -28,8 +29,21 @@ import { getAllStaff, Staff } from "../../../src/services/staff.service";
 import { getAttendanceBySite, Attendance } from "../../../src/services/attendance.service";
 import { getSiteNotes, SiteNote } from "../../../src/services/notes.service";
 import { showSuccess, showError } from "../../../src/utils/toast";
+import { COLORS, RADIUS } from "../../../src/constants/theme";
 
 type Tab = "details" | "staff" | "attendance" | "notes";
+type IconName = ComponentProps<typeof Ionicons>["name"];
+
+const getInitials = (fullName: string): string => {
+  const parts = fullName.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) {
+    return "?";
+  }
+  if (parts.length === 1) {
+    return parts[0].charAt(0).toUpperCase();
+  }
+  return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+};
 
 const TABS: { key: Tab; label: string }[] = [
   { key: "details", label: "Details" },
@@ -45,6 +59,16 @@ const MONTHS = [
   "Jan", "Feb", "Mar", "Apr", "May", "Jun",
   "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
 ];
+
+const formatDuration = (startIso: string, endIso: string): string => {
+  const totalMinutes = Math.max(
+    0,
+    Math.floor((new Date(endIso).getTime() - new Date(startIso).getTime()) / 60000)
+  );
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  return hours === 0 ? `${minutes}m` : `${hours}h ${minutes}m`;
+};
 
 const formatDateTime = (iso: string): string => {
   const date = new Date(iso);
@@ -96,6 +120,7 @@ export default function SiteDetailScreen() {
   const [saving, setSaving] = useState<boolean>(false);
   const [deactivating, setDeactivating] = useState<boolean>(false);
   const [reactivating, setReactivating] = useState<boolean>(false);
+  const [focusedField, setFocusedField] = useState<string | null>(null);
 
   const applyFields = (data: Site) => {
     setName(data.name ?? "");
@@ -312,7 +337,7 @@ export default function SiteDetailScreen() {
   if (loading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" />
+        <ActivityIndicator size="large" color={COLORS.gold} />
       </View>
     );
   }
@@ -331,9 +356,19 @@ export default function SiteDetailScreen() {
         <BackButton onPress={() => router.back()} />
 
         <View style={styles.header}>
-          <Text style={styles.name}>{site.name}</Text>
+          <View style={styles.headerInfo}>
+            <Text style={styles.name}>{site.name}</Text>
+            <Text style={styles.addressText}>{site.address}</Text>
+          </View>
           <View style={[styles.badge, site.is_active ? styles.badgeActive : styles.badgeInactive]}>
-            <Text style={styles.badgeText}>{site.is_active ? "Active" : "Inactive"}</Text>
+            <Text
+              style={[
+                styles.badgeText,
+                site.is_active ? styles.badgeTextActive : styles.badgeTextInactive,
+              ]}
+            >
+              {site.is_active ? "Active" : "Inactive"}
+            </Text>
           </View>
         </View>
 
@@ -357,30 +392,55 @@ export default function SiteDetailScreen() {
         {activeTab === "details" && (
           <>
             <Text style={styles.sectionTitle}>Site Details</Text>
+            <View style={styles.goldDivider} />
             <View style={styles.section}>
-              <FieldInput label="Name" value={name} onChangeText={setName} editable={isEditing} />
+              <FieldInput
+                label="Name"
+                icon="business-outline"
+                value={name}
+                onChangeText={setName}
+                editable={isEditing}
+                focused={focusedField === "name"}
+                onFocus={() => setFocusedField("name")}
+                onBlur={() => setFocusedField(null)}
+              />
               <FieldInput
                 label="Address"
+                icon="location-outline"
                 value={address}
                 onChangeText={setAddress}
                 editable={isEditing}
+                focused={focusedField === "address"}
+                onFocus={() => setFocusedField("address")}
+                onBlur={() => setFocusedField(null)}
               />
               <FieldInput
                 label="Latitude"
+                icon="navigate-outline"
                 value={latitude}
                 onChangeText={setLatitude}
                 editable={isEditing}
                 keyboardType="numbers-and-punctuation"
+                focused={focusedField === "latitude"}
+                onFocus={() => setFocusedField("latitude")}
+                onBlur={() => setFocusedField(null)}
               />
               <FieldInput
                 label="Longitude"
+                icon="navigate-outline"
                 value={longitude}
                 onChangeText={setLongitude}
                 editable={isEditing}
                 keyboardType="numbers-and-punctuation"
+                focused={focusedField === "longitude"}
+                onFocus={() => setFocusedField("longitude")}
+                onBlur={() => setFocusedField(null)}
               />
               <View style={styles.fieldRow}>
-                <Text style={styles.rowLabel}>Client</Text>
+                <View style={styles.labelRow}>
+                  <Ionicons name="briefcase-outline" size={16} color={COLORS.gold} />
+                  <Text style={styles.rowLabel}>Client</Text>
+                </View>
                 {isEditing ? (
                   <TouchableOpacity
                     style={styles.dropdown}
@@ -391,75 +451,88 @@ export default function SiteDetailScreen() {
                     >
                       {selectedClientLabel || "Select a client"}
                     </Text>
-                    <Ionicons name="chevron-down-outline" size={18} color="#666" />
+                    <Ionicons name="chevron-down-outline" size={18} color={COLORS.textMuted} />
                   </TouchableOpacity>
                 ) : (
                   <Text style={styles.rowValueBlock}>{selectedClientLabel || "No client"}</Text>
                 )}
               </View>
+
+              {isEditing ? (
+                <>
+                  <TouchableOpacity style={styles.saveButton} onPress={handleSave} disabled={saving}>
+                    {saving ? (
+                      <ActivityIndicator color="#1A1A1A" />
+                    ) : (
+                      <Text style={styles.saveButtonText}>Save</Text>
+                    )}
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.cancelButton} onPress={handleCancel} disabled={saving}>
+                    <Text style={styles.cancelButtonText}>Cancel</Text>
+                  </TouchableOpacity>
+                </>
+              ) : (
+                <>
+                  <TouchableOpacity style={styles.editButton} onPress={handleEdit}>
+                    <Text style={styles.editButtonText}>Edit</Text>
+                  </TouchableOpacity>
+                  {site.is_active ? (
+                    <TouchableOpacity
+                      style={styles.deactivateButton}
+                      onPress={handleDeactivate}
+                      disabled={deactivating}
+                    >
+                      {deactivating ? (
+                        <ActivityIndicator color={COLORS.danger} />
+                      ) : (
+                        <Text style={styles.deactivateButtonText}>Deactivate</Text>
+                      )}
+                    </TouchableOpacity>
+                  ) : (
+                    <TouchableOpacity
+                      style={styles.reactivateButton}
+                      onPress={handleReactivate}
+                      disabled={reactivating}
+                    >
+                      {reactivating ? (
+                        <ActivityIndicator color={COLORS.success} />
+                      ) : (
+                        <Text style={styles.reactivateButtonText}>Reactivate</Text>
+                      )}
+                    </TouchableOpacity>
+                  )}
+                </>
+              )}
             </View>
 
             <Text style={styles.sectionTitle}>Client Details</Text>
-            <View style={styles.section}>
+            <View style={styles.clientCard}>
+              <View style={styles.goldBar} />
               {site.client ? (
                 <>
-                  <Row label="Full Name" value={site.client.full_name} />
-                  <Row label="Email" value={site.client.email} />
-                  <Row label="Phone" value={site.client.phone} />
-                  <Row label="Company Name" value={site.client.company_name ?? "—"} />
-                  <Row label="Billing Address" value={site.client.billing_address ?? "—"} />
-                  <Row label="Contact Person" value={site.client.contact_person ?? "—"} />
+                  <Row label="Full Name" icon="person-outline" value={site.client.full_name} />
+                  <Row label="Email" icon="mail-outline" value={site.client.email} />
+                  <Row label="Phone" icon="call-outline" value={site.client.phone} />
+                  <Row
+                    label="Company Name"
+                    icon="briefcase-outline"
+                    value={site.client.company_name ?? "—"}
+                  />
+                  <Row
+                    label="Billing Address"
+                    icon="location-outline"
+                    value={site.client.billing_address ?? "—"}
+                  />
+                  <Row
+                    label="Contact Person"
+                    icon="person-circle-outline"
+                    value={site.client.contact_person ?? "—"}
+                  />
                 </>
               ) : (
                 <Text style={styles.emptyText}>No client assigned.</Text>
               )}
             </View>
-
-            {isEditing ? (
-              <>
-                <TouchableOpacity style={styles.saveButton} onPress={handleSave} disabled={saving}>
-                  {saving ? (
-                    <ActivityIndicator color="#fff" />
-                  ) : (
-                    <Text style={styles.saveButtonText}>Save</Text>
-                  )}
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.cancelButton} onPress={handleCancel} disabled={saving}>
-                  <Text style={styles.cancelButtonText}>Cancel</Text>
-                </TouchableOpacity>
-              </>
-            ) : (
-              <>
-                <TouchableOpacity style={styles.editButton} onPress={handleEdit}>
-                  <Text style={styles.editButtonText}>Edit</Text>
-                </TouchableOpacity>
-                {site.is_active ? (
-                  <TouchableOpacity
-                    style={styles.deactivateButton}
-                    onPress={handleDeactivate}
-                    disabled={deactivating}
-                  >
-                    {deactivating ? (
-                      <ActivityIndicator color="#fff" />
-                    ) : (
-                      <Text style={styles.deactivateButtonText}>Deactivate</Text>
-                    )}
-                  </TouchableOpacity>
-                ) : (
-                  <TouchableOpacity
-                    style={styles.reactivateButton}
-                    onPress={handleReactivate}
-                    disabled={reactivating}
-                  >
-                    {reactivating ? (
-                      <ActivityIndicator color="#fff" />
-                    ) : (
-                      <Text style={styles.reactivateButtonText}>Reactivate</Text>
-                    )}
-                  </TouchableOpacity>
-                )}
-              </>
-            )}
           </>
         )}
 
@@ -468,42 +541,55 @@ export default function SiteDetailScreen() {
             <View style={styles.staffSectionHeader}>
               <Text style={styles.sectionTitle}>Assigned Staff</Text>
               <TouchableOpacity style={styles.assignButton} onPress={handleOpenAssignModal}>
-                <Ionicons name="person-add-outline" size={16} color="#fff" />
+                <Ionicons name="person-add-outline" size={16} color="#1A1A1A" />
                 <Text style={styles.assignButtonText}>Assign Staff</Text>
               </TouchableOpacity>
             </View>
 
             {assignedStaffLoading ? (
-              <ActivityIndicator style={styles.staffLoading} />
+              <ActivityIndicator style={styles.staffLoading} color={COLORS.gold} />
             ) : assignedStaff.length === 0 ? (
               <Text style={styles.emptyText}>No staff assigned to this site.</Text>
             ) : (
               assignedStaff.map((member) => (
-                <View key={member.id} style={styles.staffCard}>
-                  <View style={styles.staffCardInfo}>
-                    <Text style={styles.staffName}>{member.full_name}</Text>
-                    <Text style={styles.detail}>{member.phone}</Text>
-                    <View
-                      style={[
-                        styles.badge,
-                        styles.staffBadge,
-                        member.is_active ? styles.badgeActive : styles.badgeInactive,
-                      ]}
-                    >
-                      <Text style={styles.badgeText}>{member.is_active ? "Active" : "Inactive"}</Text>
+                <View key={member.id} style={styles.cardShadow}>
+                  <View style={styles.staffCard}>
+                    <View style={styles.goldBar} />
+                    <View style={styles.avatarCircle}>
+                      <Text style={styles.avatarText}>{getInitials(member.full_name)}</Text>
                     </View>
+                    <View style={styles.staffCardInfo}>
+                      <Text style={styles.staffName}>{member.full_name}</Text>
+                      <Text style={styles.detailSecondary}>{member.phone}</Text>
+                      <View
+                        style={[
+                          styles.badge,
+                          styles.staffBadge,
+                          member.is_active ? styles.badgeActive : styles.badgeInactive,
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.badgeText,
+                            member.is_active ? styles.badgeTextActive : styles.badgeTextInactive,
+                          ]}
+                        >
+                          {member.is_active ? "Active" : "Inactive"}
+                        </Text>
+                      </View>
+                    </View>
+                    <TouchableOpacity
+                      style={styles.unassignButton}
+                      onPress={() => handleUnassign(member.id)}
+                      disabled={unassigningId === member.id}
+                    >
+                      {unassigningId === member.id ? (
+                        <ActivityIndicator color={COLORS.danger} size="small" />
+                      ) : (
+                        <Text style={styles.unassignButtonText}>Unassign</Text>
+                      )}
+                    </TouchableOpacity>
                   </View>
-                  <TouchableOpacity
-                    style={styles.unassignButton}
-                    onPress={() => handleUnassign(member.id)}
-                    disabled={unassigningId === member.id}
-                  >
-                    {unassigningId === member.id ? (
-                      <ActivityIndicator color="#fff" size="small" />
-                    ) : (
-                      <Text style={styles.unassignButtonText}>Unassign</Text>
-                    )}
-                  </TouchableOpacity>
                 </View>
               ))
             )}
@@ -513,24 +599,56 @@ export default function SiteDetailScreen() {
         {activeTab === "attendance" && (
           <>
             {attendanceLoading ? (
-              <ActivityIndicator style={styles.staffLoading} />
+              <ActivityIndicator style={styles.staffLoading} color={COLORS.gold} />
             ) : attendance.length === 0 ? (
               <Text style={styles.emptyText}>No attendance records.</Text>
             ) : (
               attendance.map((record) => (
-                <View key={record.id} style={styles.card}>
-                  <View style={styles.cardHeader}>
-                    <Text style={styles.cardTitle}>{record.staff?.full_name ?? "Unknown staff"}</Text>
-                    {record.clock_out ? null : (
-                      <View style={[styles.badge, styles.badgeActive]}>
-                        <Text style={styles.badgeText}>Active</Text>
+                <View key={record.id} style={styles.attendanceCardShadow}>
+                  <View style={styles.attendanceCard}>
+                    <View style={styles.goldBar} />
+                    <View style={styles.attendanceLeft}>
+                      <View style={styles.attendanceAvatar}>
+                        <Text style={styles.attendanceAvatarText}>
+                          {getInitials(record.staff?.full_name ?? "?")}
+                        </Text>
                       </View>
-                    )}
+                      <View>
+                        <Text style={styles.attendanceStaffName}>
+                          {record.staff?.full_name ?? "Unknown staff"}
+                        </Text>
+                        <Text style={styles.attendanceSiteName}>{record.site?.name ?? "Today"}</Text>
+                      </View>
+                    </View>
+                    <View style={styles.attendanceRight}>
+                      <View style={styles.attendanceStatusRow}>
+                        <View
+                          style={[
+                            styles.attendanceStatusDot,
+                            record.clock_out
+                              ? styles.attendanceStatusDotMuted
+                              : styles.attendanceStatusDotActive,
+                          ]}
+                        />
+                        <Text
+                          style={[
+                            styles.attendanceStatusText,
+                            record.clock_out
+                              ? styles.attendanceStatusTextMuted
+                              : styles.attendanceStatusTextActive,
+                          ]}
+                        >
+                          {record.clock_out ? formatDateTime(record.clock_out) : "Active"}
+                        </Text>
+                      </View>
+                      <Text style={styles.attendanceClockIn}>{formatDateTime(record.clock_in)}</Text>
+                      {record.clock_out ? (
+                        <Text style={styles.attendanceDuration}>
+                          {formatDuration(record.clock_in, record.clock_out)}
+                        </Text>
+                      ) : null}
+                    </View>
                   </View>
-                  <Text style={styles.detail}>Clock in: {formatDateTime(record.clock_in)}</Text>
-                  {record.clock_out ? (
-                    <Text style={styles.detail}>Clock out: {formatDateTime(record.clock_out)}</Text>
-                  ) : null}
                 </View>
               ))
             )}
@@ -540,27 +658,42 @@ export default function SiteDetailScreen() {
         {activeTab === "notes" && (
           <>
             {notesLoading ? (
-              <ActivityIndicator style={styles.staffLoading} />
+              <ActivityIndicator style={styles.staffLoading} color={COLORS.gold} />
             ) : notes.length === 0 ? (
               <Text style={styles.emptyText}>No notes for this site.</Text>
             ) : (
-              notes.map((note) => (
-                <View key={note.id} style={styles.card}>
-                  <View style={styles.cardHeader}>
-                    <Text style={styles.cardTitle}>{note.author?.full_name ?? "Unknown author"}</Text>
-                    <View
-                      style={[
-                        styles.badge,
-                        note.type === "staff" ? styles.badgeStaff : styles.badgeClient,
-                      ]}
-                    >
-                      <Text style={styles.badgeText}>{note.type === "staff" ? "Staff" : "Client"}</Text>
+              notes.map((note) => {
+                const isClient = note.type === "client";
+                const card = (
+                  <View style={[styles.card, isClient ? styles.cardClient : styles.cardStaff]}>
+                    <View style={isClient ? styles.goldBar : styles.staffBar} />
+                    <View style={styles.cardHeader}>
+                      <Text style={styles.authorName}>{note.author?.full_name ?? "Unknown author"}</Text>
+                      <View
+                        style={[styles.noteBadge, isClient ? styles.noteBadgeClient : styles.noteBadgeStaff]}
+                      >
+                        <Text
+                          style={[
+                            styles.noteBadgeText,
+                            isClient ? styles.noteBadgeTextClient : styles.noteBadgeTextStaff,
+                          ]}
+                        >
+                          {isClient ? "CLIENT" : "STAFF"}
+                        </Text>
+                      </View>
                     </View>
+                    <Text style={styles.noteText}>{note.note}</Text>
+                    <Text style={styles.noteTimestamp}>{formatDateTime(note.created_at)}</Text>
                   </View>
-                  <Text style={styles.noteText}>{note.note}</Text>
-                  <Text style={styles.detail}>{formatDateTime(note.created_at)}</Text>
-                </View>
-              ))
+                );
+                return isClient ? (
+                  <View key={note.id} style={styles.cardShadow}>
+                    {card}
+                  </View>
+                ) : (
+                  <View key={note.id}>{card}</View>
+                );
+              })
             )}
           </>
         )}
@@ -572,18 +705,26 @@ export default function SiteDetailScreen() {
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Select Client</Text>
               <TouchableOpacity onPress={() => setClientPickerVisible(false)}>
-                <Ionicons name="close-outline" size={24} color="#000" />
+                <Ionicons name="close-outline" size={24} color={COLORS.gold} />
               </TouchableOpacity>
             </View>
             <FlatList
               data={clients}
               keyExtractor={(item) => item.id}
               ListEmptyComponent={<Text style={styles.emptyText}>No active clients found.</Text>}
-              renderItem={({ item }) => (
-                <TouchableOpacity style={styles.modalRow} onPress={() => handleSelectClient(item)}>
-                  <Text style={styles.modalRowText}>{clientDisplayLabel(item)}</Text>
-                </TouchableOpacity>
-              )}
+              renderItem={({ item }) => {
+                const isSelected = item.id === clientId;
+                return (
+                  <TouchableOpacity style={styles.modalRow} onPress={() => handleSelectClient(item)}>
+                    <Text style={[styles.modalRowText, isSelected && styles.modalRowTextSelected]}>
+                      {clientDisplayLabel(item)}
+                    </Text>
+                    {isSelected ? (
+                      <Ionicons name="checkmark" size={18} color={COLORS.gold} />
+                    ) : null}
+                  </TouchableOpacity>
+                );
+              }}
             />
           </View>
         </View>
@@ -595,11 +736,11 @@ export default function SiteDetailScreen() {
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Assign Staff</Text>
               <TouchableOpacity onPress={() => setAssignModalVisible(false)}>
-                <Ionicons name="close-outline" size={24} color="#000" />
+                <Ionicons name="close-outline" size={24} color={COLORS.gold} />
               </TouchableOpacity>
             </View>
             {allStaffLoading ? (
-              <ActivityIndicator style={styles.staffLoading} />
+              <ActivityIndicator style={styles.staffLoading} color={COLORS.gold} />
             ) : (
               <FlatList
                 data={unassignedActiveStaff}
@@ -616,7 +757,7 @@ export default function SiteDetailScreen() {
                       disabled={assigningId === item.profile_id}
                     >
                       {assigningId === item.profile_id ? (
-                        <ActivityIndicator color="#fff" size="small" />
+                        <ActivityIndicator color="#1A1A1A" size="small" />
                       ) : (
                         <Text style={styles.assignRowButtonText}>Assign</Text>
                       )}
@@ -632,10 +773,13 @@ export default function SiteDetailScreen() {
   );
 }
 
-function Row({ label, value }: { label: string; value: string }) {
+function Row({ label, icon, value }: { label: string; icon: IconName; value: string }) {
   return (
     <View style={styles.row}>
-      <Text style={styles.rowLabel}>{label}</Text>
+      <View style={styles.labelRow}>
+        <Ionicons name={icon} size={16} color={COLORS.gold} />
+        <Text style={styles.rowLabel}>{label}</Text>
+      </View>
       <Text style={styles.rowValue}>{value}</Text>
     </View>
   );
@@ -643,26 +787,40 @@ function Row({ label, value }: { label: string; value: string }) {
 
 function FieldInput({
   label,
+  icon,
   value,
   onChangeText,
   editable,
   keyboardType,
+  focused,
+  onFocus,
+  onBlur,
 }: {
   label: string;
+  icon: IconName;
   value: string;
   onChangeText?: (text: string) => void;
   editable: boolean;
   keyboardType?: "default" | "numbers-and-punctuation";
+  focused?: boolean;
+  onFocus?: () => void;
+  onBlur?: () => void;
 }) {
   return (
     <View style={styles.fieldRow}>
-      <Text style={styles.rowLabel}>{label}</Text>
+      <View style={styles.labelRow}>
+        <Ionicons name={icon} size={16} color={COLORS.gold} />
+        <Text style={styles.rowLabel}>{label}</Text>
+      </View>
       <TextInput
-        style={[styles.input, !editable && styles.inputDisabled]}
+        style={[styles.input, !editable && styles.inputDisabled, editable && focused && styles.inputFocused]}
         value={value}
         onChangeText={onChangeText}
         editable={editable}
         keyboardType={keyboardType}
+        onFocus={onFocus}
+        onBlur={onBlur}
+        placeholderTextColor={COLORS.textMuted}
       />
     </View>
   );
@@ -671,7 +829,7 @@ function FieldInput({
 function BackButton({ onPress }: { onPress: () => void }) {
   return (
     <TouchableOpacity style={styles.backButton} onPress={onPress}>
-      <Ionicons name="arrow-back" size={20} color="#000" />
+      <Ionicons name="arrow-back" size={20} color={COLORS.gold} />
       <Text style={styles.backButtonText}>Back</Text>
     </TouchableOpacity>
   );
@@ -680,13 +838,14 @@ function BackButton({ onPress }: { onPress: () => void }) {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
+    backgroundColor: COLORS.background,
   },
   topBar: {
     paddingTop: 16,
     paddingHorizontal: 16,
-    backgroundColor: "#fff",
+    backgroundColor: COLORS.surface,
     borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
+    borderBottomColor: COLORS.border,
   },
   tabBar: {
     flexDirection: "row",
@@ -698,15 +857,17 @@ const styles = StyleSheet.create({
     borderBottomColor: "transparent",
   },
   tabActive: {
-    borderBottomColor: "#000",
+    borderBottomColor: COLORS.gold,
   },
   tabText: {
-    fontSize: 14,
+    fontSize: 11,
     fontWeight: "600",
-    color: "#999",
+    color: COLORS.textMuted,
+    textTransform: "uppercase",
+    letterSpacing: 1.5,
   },
   tabTextActive: {
-    color: "#000",
+    color: COLORS.gold,
   },
   container: {
     flex: 1,
@@ -719,6 +880,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+    backgroundColor: COLORS.background,
   },
   backButton: {
     flexDirection: "row",
@@ -729,7 +891,7 @@ const styles = StyleSheet.create({
   },
   backButtonText: {
     fontSize: 16,
-    color: "#000",
+    color: COLORS.gold,
   },
   header: {
     flexDirection: "row",
@@ -737,48 +899,111 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 16,
   },
+  headerInfo: {
+    flexShrink: 1,
+  },
   name: {
-    fontSize: 24,
-    fontWeight: "bold",
+    fontSize: 22,
+    fontWeight: "700",
+    color: COLORS.textPrimary,
+  },
+  addressText: {
+    fontSize: 13,
+    color: COLORS.textSecondary,
+    marginTop: 2,
   },
   badge: {
-    borderRadius: 12,
+    borderRadius: RADIUS.full,
     paddingVertical: 4,
     paddingHorizontal: 10,
   },
   badgeActive: {
-    backgroundColor: "#16a34a",
+    backgroundColor: COLORS.successBg,
   },
   badgeInactive: {
-    backgroundColor: "#dc2626",
-  },
-  badgeStaff: {
-    backgroundColor: "#2563eb",
-  },
-  badgeClient: {
-    backgroundColor: "#7c3aed",
+    backgroundColor: COLORS.dangerBg,
   },
   badgeText: {
-    color: "#fff",
     fontSize: 12,
     fontWeight: "600",
   },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: "bold",
-    marginBottom: 8,
+  badgeTextActive: {
+    color: COLORS.success,
   },
-  section: {
-    backgroundColor: "#fff",
-    borderRadius: 8,
-    padding: 16,
+  badgeTextInactive: {
+    color: COLORS.danger,
+  },
+  sectionTitle: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: COLORS.gold,
+    marginBottom: 10,
+    textTransform: "uppercase",
+    letterSpacing: 2,
+  },
+  section: { 
+    borderRadius: RADIUS.xl,
+    padding: 24,
     marginBottom: 24,
+     
+    elevation: 3,
+  },
+  goldDivider: {
+    height: 1,
+    backgroundColor: COLORS.gold,
+    opacity: 0.3,
+    marginBottom: 16,
+  },
+  labelRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginBottom: 6,
+  },
+  cardShadow: {
+    borderRadius: RADIUS.md,
+     
+    elevation: 2,
+  },
+  clientCard: {
+    backgroundColor: COLORS.surfaceElevated,
+    borderRadius: RADIUS.md,
+    padding: 16,
+    paddingLeft: 20,
+    marginBottom: 24,
+    overflow: "hidden",
+  },
+  goldBar: {
+    position: "absolute",
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 3,
+    borderRadius: RADIUS.full,
+    backgroundColor: COLORS.gold,
+  },
+  staffBar: {
+    position: "absolute",
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 3,
+    borderRadius: RADIUS.full,
+    backgroundColor: COLORS.border,
   },
   card: {
-    backgroundColor: "#fff",
-    borderRadius: 8,
+    backgroundColor: COLORS.surface,
+    borderRadius: RADIUS.md,
     padding: 16,
+    paddingLeft: 20,
     marginBottom: 12,
+    overflow: "hidden",
+  },
+  cardClient: {
+    backgroundColor: "#2A2310",
+  },
+  cardStaff: {
+    backgroundColor: COLORS.surface,
   },
   cardHeader: {
     flexDirection: "row",
@@ -786,30 +1011,142 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 4,
   },
-  cardTitle: {
-    fontSize: 16,
+  attendanceCardShadow: {
+    borderRadius: RADIUS.md,
+     
+    elevation: 3,
+    marginBottom: 10,
+  },
+  attendanceCard: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    backgroundColor: COLORS.surface,
+    borderRadius: RADIUS.md,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    overflow: "hidden",
+  },
+  attendanceLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  attendanceAvatar: {
+    width: 36,
+    height: 36,
+    borderRadius: RADIUS.full,
+    backgroundColor: "#3A3520",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  attendanceAvatarText: {
+    color: COLORS.gold,
+    fontSize: 14,
+    fontWeight: "700",
+  },
+  attendanceStaffName: {
+    fontSize: 14,
     fontWeight: "600",
+    color: COLORS.textPrimary,
+  },
+  attendanceSiteName: {
+    fontSize: 12,
+    color: COLORS.textMuted,
+    marginTop: 2,
+  },
+  attendanceRight: {
+    alignItems: "flex-end",
+  },
+  attendanceStatusRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+  },
+  attendanceStatusDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  attendanceStatusDotActive: {
+    backgroundColor: COLORS.success,
+  },
+  attendanceStatusDotMuted: {
+    backgroundColor: COLORS.textMuted,
+  },
+  attendanceStatusText: {
+    fontSize: 11,
+  },
+  attendanceStatusTextActive: {
+    color: COLORS.success,
+  },
+  attendanceStatusTextMuted: {
+    color: COLORS.textMuted,
+  },
+  attendanceClockIn: {
+    fontSize: 11,
+    color: COLORS.textSecondary,
+    marginTop: 4,
+  },
+  attendanceDuration: {
+    fontSize: 11,
+    fontWeight: "600",
+    color: COLORS.gold,
+    marginTop: 2,
   },
   noteText: {
     fontSize: 14,
-    color: "#333",
+    color: COLORS.textSecondary,
+    marginTop: 8,
+  },
+  authorName: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: COLORS.textPrimary,
+  },
+  noteTimestamp: {
+    fontSize: 11,
+    color: COLORS.textMuted,
     marginTop: 6,
-    marginBottom: 6,
+  },
+  noteBadge: {
+    borderRadius: RADIUS.full,
+    paddingVertical: 3,
+    paddingHorizontal: 8,
+  },
+  noteBadgeClient: {
+    backgroundColor: COLORS.gold,
+  },
+  noteBadgeStaff: {
+    backgroundColor: COLORS.border,
+  },
+  noteBadgeText: {
+    fontSize: 10,
+    fontWeight: "700",
+  },
+  noteBadgeTextClient: {
+    color: "#1A1A1A",
+  },
+  noteBadgeTextStaff: {
+    color: COLORS.textMuted,
   },
   row: {
     flexDirection: "row",
     justifyContent: "space-between",
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
+    borderBottomColor: COLORS.border,
   },
   rowLabel: {
-    fontSize: 14,
-    color: "#666",
+    fontSize: 11,
+    color: COLORS.textMuted,
+    textTransform: "uppercase",
+    letterSpacing: 1.5,
   },
   rowValue: {
     fontSize: 14,
     fontWeight: "600",
+    color: COLORS.textPrimary,
     textAlign: "right",
     flexShrink: 1,
     marginLeft: 16,
@@ -817,27 +1154,32 @@ const styles = StyleSheet.create({
   rowValueBlock: {
     fontSize: 14,
     fontWeight: "600",
+    color: COLORS.textPrimary,
     marginTop: 6,
   },
   fieldRow: {
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
+    borderBottomColor: COLORS.border,
   },
   input: {
     borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 8,
-    padding: 10,
+    borderColor: COLORS.border,
+    borderRadius: RADIUS.md,
+    padding: 12,
     marginTop: 6,
-    backgroundColor: "#fff",
+    backgroundColor: COLORS.surfaceElevated,
+    color: COLORS.textPrimary,
     fontSize: 14,
     fontWeight: "600",
   },
+  inputFocused: {
+    borderColor: COLORS.gold,
+  },
   inputDisabled: {
-    borderColor: "transparent",
-    backgroundColor: "#f5f5f5",
-    color: "#666",
+    borderColor: COLORS.border,
+    backgroundColor: COLORS.surfaceElevated,
+    color: COLORS.textPrimary,
     fontWeight: "normal",
   },
   dropdown: {
@@ -845,69 +1187,75 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 8,
-    padding: 10,
+    borderColor: COLORS.border,
+    borderRadius: RADIUS.md,
+    padding: 12,
     marginTop: 6,
-    backgroundColor: "#fff",
+    backgroundColor: COLORS.surfaceElevated,
   },
   dropdownText: {
     fontSize: 14,
-    color: "#000",
+    color: COLORS.gold,
   },
   dropdownPlaceholder: {
     fontSize: 14,
-    color: "#999",
+    color: COLORS.textMuted,
   },
   editButton: {
-    backgroundColor: "#000",
-    padding: 16,
-    borderRadius: 8,
+    backgroundColor: COLORS.gold,
+    height: 52,
+    justifyContent: "center",
+    borderRadius: RADIUS.md,
     alignItems: "center",
     marginBottom: 12,
   },
   editButtonText: {
-    color: "#fff",
-    fontWeight: "bold",
+    color: "#1A1A1A",
+    fontWeight: "700",
   },
   saveButton: {
-    backgroundColor: "#000",
-    padding: 16,
-    borderRadius: 8,
+    backgroundColor: COLORS.gold,
+    height: 52,
+    justifyContent: "center",
+    borderRadius: RADIUS.md,
     alignItems: "center",
     marginBottom: 12,
   },
   saveButtonText: {
-    color: "#fff",
-    fontWeight: "bold",
+    color: "#1A1A1A",
+    fontWeight: "700",
   },
   cancelButton: {
-    padding: 16,
-    borderRadius: 8,
+    backgroundColor: COLORS.border,
+    height: 52,
+    justifyContent: "center",
+    borderRadius: RADIUS.md,
     alignItems: "center",
   },
   cancelButtonText: {
-    color: "#666",
+    color: COLORS.textPrimary,
     fontWeight: "600",
   },
   deactivateButton: {
-    backgroundColor: "#dc2626",
-    padding: 16,
-    borderRadius: 8,
+    backgroundColor: COLORS.dangerBg,
+    height: 52,
+    justifyContent: "center",
+    borderRadius: RADIUS.md,
     alignItems: "center",
   },
   deactivateButtonText: {
-    color: "#fff",
+    color: COLORS.danger,
     fontWeight: "bold",
   },
   reactivateButton: {
-    backgroundColor: "#16a34a",
-    padding: 16,
-    borderRadius: 8,
+    backgroundColor: COLORS.successBg,
+    height: 52,
+    justifyContent: "center",
+    borderRadius: RADIUS.md,
     alignItems: "center",
   },
   reactivateButtonText: {
-    color: "#fff",
+    color: COLORS.success,
     fontWeight: "bold",
   },
   staffSectionHeader: {
@@ -920,32 +1268,47 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    backgroundColor: "#000",
-    borderRadius: 8,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
+    backgroundColor: COLORS.gold,
+    borderRadius: RADIUS.md,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
   },
   assignButtonText: {
-    color: "#fff",
-    fontWeight: "600",
+    color: "#1A1A1A",
+    fontWeight: "700",
     fontSize: 13,
   },
   staffLoading: {
     marginTop: 16,
   },
   emptyText: {
-    color: "#666",
+    color: COLORS.textMuted,
     textAlign: "center",
     marginTop: 16,
   },
   staffCard: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
-    backgroundColor: "#fff",
-    borderRadius: 8,
+    backgroundColor: COLORS.surface,
+    borderRadius: RADIUS.md,
     padding: 16,
+    paddingLeft: 20,
     marginBottom: 12,
+    overflow: "hidden",
+  },
+  avatarCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: RADIUS.full,
+    backgroundColor: "#3A3520",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 12,
+  },
+  avatarText: {
+    color: COLORS.gold,
+    fontSize: 14,
+    fontWeight: "700",
   },
   staffCardInfo: {
     flex: 1,
@@ -953,10 +1316,11 @@ const styles = StyleSheet.create({
   staffName: {
     fontSize: 16,
     fontWeight: "600",
+    color: COLORS.textPrimary,
   },
-  detail: {
+  detailSecondary: {
     fontSize: 14,
-    color: "#666",
+    color: COLORS.textSecondary,
     marginTop: 2,
   },
   staffBadge: {
@@ -964,26 +1328,26 @@ const styles = StyleSheet.create({
     marginTop: 6,
   },
   unassignButton: {
-    backgroundColor: "#dc2626",
-    borderRadius: 8,
+    backgroundColor: COLORS.dangerBg,
+    borderRadius: RADIUS.sm,
     paddingVertical: 8,
     paddingHorizontal: 12,
     marginLeft: 12,
   },
   unassignButtonText: {
-    color: "#fff",
+    color: COLORS.danger,
     fontWeight: "600",
     fontSize: 13,
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.4)",
+    backgroundColor: "rgba(0,0,0,0.6)",
     justifyContent: "flex-end",
   },
   modalContent: {
-    backgroundColor: "#fff",
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
+    backgroundColor: COLORS.surface,
+    borderTopLeftRadius: RADIUS.xl,
+    borderTopRightRadius: RADIUS.xl,
     maxHeight: "70%",
     padding: 16,
   },
@@ -996,29 +1360,38 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 18,
     fontWeight: "bold",
+    color: COLORS.textPrimary,
   },
   modalRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+    backgroundColor: COLORS.surfaceElevated,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: RADIUS.md,
     paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
+    paddingHorizontal: 14,
+    marginBottom: 8,
   },
   modalRowText: {
     fontSize: 15,
+    color: COLORS.textPrimary,
     flexShrink: 1,
   },
+  modalRowTextSelected: {
+    color: COLORS.gold,
+  },
   assignRowButton: {
-    backgroundColor: "#000",
-    borderRadius: 8,
+    backgroundColor: COLORS.gold,
+    borderRadius: RADIUS.md,
     paddingVertical: 8,
     paddingHorizontal: 12,
     marginLeft: 12,
   },
   assignRowButtonText: {
-    color: "#fff",
-    fontWeight: "600",
+    color: "#1A1A1A",
+    fontWeight: "700",
     fontSize: 13,
   },
 });

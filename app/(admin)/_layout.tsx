@@ -19,23 +19,29 @@ function Sidebar() {
   return (
     <View style={styles.sidebar}>
       <View style={styles.sidebarTop}>
-        <Image
-          source={require("../../assets/brothers_logo.png")}
-          style={styles.logo}
-          resizeMode="contain"
-        />
+        <View style={styles.brandRow}>
+          <Image
+            source={require("../../assets/brothers.jpg")}
+            style={styles.favicon}
+            resizeMode="cover"
+          />
+          <Text style={styles.brandText}>BROTHERS</Text>
+        </View>
         <View style={styles.divider} />
       </View>
 
       <View style={styles.navList}>
         {NAV_ITEMS.map((item) => {
-          const active = pathname === `/${item.name}`;
+          const active =
+            item.name === "dashboard"
+              ? pathname === "/" || pathname === "/dashboard"
+              : pathname.startsWith(`/${item.name}`);
           const color = active ? COLORS.gold : COLORS.textSecondary;
           return (
             <TouchableOpacity
               key={item.name}
               style={[styles.navItem, active && styles.navItemActive]}
-              onPress={() => router.push(item.href)}
+              onPress={() => router.replace(item.href)}
             >
               <Ionicons name={item.icon} size={18} color={color} />
               <Text style={[styles.navLabel, { color }]}>{item.label}</Text>
@@ -73,7 +79,6 @@ function StackLayout() {
       <Stack.Screen name="clients/invite" />
       <Stack.Screen name="sites/[id]" />
       <Stack.Screen name="sites/create" />
-      <Stack.Screen name="settings/edit-profile" />
     </Stack>
   );
 }
@@ -104,11 +109,22 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     marginBottom: SPACING.md,
   },
-  logo: {
-    width: 140,
-    height: 62,
-    alignSelf: "center",
+  brandRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
     marginBottom: SPACING.md,
+  },
+  favicon: {
+    width: 40,
+    height: 40,
+    borderRadius: 8,
+  },
+  brandText: {
+    color: COLORS.gold,
+    fontSize: 14,
+    fontWeight: "700",
+    letterSpacing: 3,
   },
   divider: {
     height: 1,
