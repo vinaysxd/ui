@@ -18,8 +18,16 @@ import {
   Client,
 } from "../../../src/services/client.service";
 import { getAllSites, Site } from "../../../src/services/sites.service";
+import api from "../../../src/lib/api";
+import { getErrorMessage } from "../../../src/constants/errors";
 import { showSuccess, showError } from "../../../src/utils/toast";
 import { COLORS, RADIUS } from "../../../src/constants/theme";
+
+interface QBCustomerResult {
+  qb_customer_id: string;
+  name: string;
+  email?: string;
+}
 
 type Tab = "details" | "sites";
 
@@ -66,6 +74,14 @@ export default function ClientDetailScreen() {
   const [sitesLoading, setSitesLoading] = useState<boolean>(false);
   const [sitesLoaded, setSitesLoaded] = useState<boolean>(false);
 
+  const [qbCustomerId, setQbCustomerId] = useState<string | null>(null);
+  const [qbCustomerName, setQbCustomerName] = useState<string | null>(null);
+  const [qbSearchQuery, setQbSearchQuery] = useState<string>("");
+  const [qbSearchResults, setQbSearchResults] = useState<QBCustomerResult[]>([]);
+  const [qbSearching, setQbSearching] = useState<boolean>(false);
+  const [qbLinking, setQbLinking] = useState<boolean>(false);
+  const [qbUnlinking, setQbUnlinking] = useState<boolean>(false);
+
   const applyFields = (data: Client) => {
     setFullName(data.full_name ?? "");
     setPhone(data.phone ?? "");
@@ -73,6 +89,8 @@ export default function ClientDetailScreen() {
     setCompanyName(data.company_name ?? "");
     setBillingAddress(data.billing_address ?? "");
     setContactPerson(data.contact_person ?? "");
+    setQbCustomerId((data as any).qb_customer_id ?? null);
+    setQbCustomerName((data as any).qb_customer_name ?? null);
   };
 
   const fetchClient = useCallback(async () => {
@@ -90,6 +108,67 @@ export default function ClientDetailScreen() {
   useEffect(() => {
     fetchClient();
   }, [fetchClient]);
+
+  useEffect(() => {
+    if (qbCustomerId || !qbSearchQuery.trim()) {
+      setQbSearchResults([]);
+      setQbSearching(false);
+      return;
+    }
+
+    setQbSearching(true);
+    const timeout = setTimeout(async () => {
+      try {
+        const response = await api.get("/integrations/quickbooks/customers/search", {
+          params: { name: qbSearchQuery.trim() },
+        });
+        setQbSearchResults(response.data ?? []);
+      } catch (err: any) {
+        const code = err?.response?.data?.code;
+        showError(getErrorMessage(code));
+      } finally {
+        setQbSearching(false);
+      }
+    }, 500);
+
+    return () => clearTimeout(timeout);
+  }, [qbSearchQuery, qbCustomerId]);
+
+  const handleLinkCustomer = async (customer: QBCustomerResult) => {
+    setQbLinking(true);
+    try { 
+      await api.patch(`/integrations/quickbooks/clients/${id}/link`, {
+        qb_customer_id: customer.qb_customer_id,
+      });
+      setQbCustomerId(customer.qb_customer_id);
+      setQbCustomerName(customer.name);
+      setQbSearchQuery("");
+      setQbSearchResults([]);
+      showSuccess("QuickBooks customer linked successfully");
+    } catch (err: any) {
+      const code = err?.response?.data?.code;
+      showError(getErrorMessage(code));
+    } finally {
+      setQbLinking(false);
+    }
+  };
+
+  const handleUnlinkCustomer = async () => {
+    setQbUnlinking(true);
+    try {
+      await api.patch(`/integrations/quickbooks/clients/${id}/link`, {
+        qb_customer_id: null,
+      });
+      setQbCustomerId(null);
+      setQbCustomerName(null);
+      showSuccess("QuickBooks customer unlinked");
+    } catch (err: any) {
+      const code = err?.response?.data?.code;
+      showError(getErrorMessage(code));
+    } finally {
+      setQbUnlinking(false);
+    }
+  };
 
   const fetchSites = useCallback(async () => {
     setSitesLoading(true);
@@ -278,6 +357,63 @@ export default function ClientDetailScreen() {
                 onBlur={() => setFocusedField(null)}
               />
               <Row label="Joined" value={client.created_at ? formatDate(client.created_at) : "—"} />
+            </View>
+
+            <Text style={styles.sectionTitle}>QuickBooks</Text>
+            <View style={styles.section}>
+              {qbCustomerId ? (
+                <View style={styles.qbLinkedRow}>
+                  <View style={styles.qbLinkedInfo}>
+                    <Ionicons name="checkmark-circle" size={18} color={COLORS.success} />
+                    <Text style={styles.qbLinkedText} numberOfLines={1}>
+                      Linked: {qbCustomerName ?? qbCustomerId}
+                    </Text>
+                  </View>
+                  <TouchableOpacity
+                    style={styles.qbUnlinkButton}
+                    onPress={handleUnlinkCustomer}
+                    disabled={qbUnlinking}
+                  >
+                    {qbUnlinking ? (
+                      <ActivityIndicator color={COLORS.danger} size="small" />
+                    ) : (
+                      <Text style={styles.qbUnlinkButtonText}>Unlink</Text>
+                    )}
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <View>
+                  <TextInput
+                    style={styles.input}
+                    value={qbSearchQuery}
+                    onChangeText={setQbSearchQuery}
+                    placeholder="Search QuickBooks customer by name"
+                    placeholderTextColor={COLORS.textMuted}
+                  />
+
+                  {qbSearching ? (
+                    <ActivityIndicator style={styles.qbSearchLoading} color={COLORS.gold} size="small" />
+                  ) : qbSearchResults.length > 0 ? (
+                    <View style={styles.qbDropdown}>
+                      {qbSearchResults.map((customer) => (
+                        <TouchableOpacity
+                          key={customer.qb_customer_id}
+                          style={styles.qbDropdownItem}
+                          onPress={() => handleLinkCustomer(customer)}
+                          disabled={qbLinking}
+                        >
+                          <Text style={styles.qbDropdownName}>{customer.name}</Text>
+                          {customer.email ? (
+                            <Text style={styles.qbDropdownEmail}>{customer.email}</Text>
+                          ) : null}
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  ) : qbSearchQuery.trim().length > 0 ? (
+                    <Text style={styles.qbEmptyText}>No matching QuickBooks customers</Text>
+                  ) : null}
+                </View>
+              )}
             </View>
 
             {isEditing ? (
@@ -556,6 +692,74 @@ const styles = StyleSheet.create({
   },
   inputFocused: {
     borderColor: COLORS.gold,
+  },
+  sectionTitle: {
+    fontSize: 11,
+    fontWeight: "600",
+    color: COLORS.gold,
+    marginBottom: 8,
+    textTransform: "uppercase",
+    letterSpacing: 2,
+  },
+  qbLinkedRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  qbLinkedInfo: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    flexShrink: 1,
+  },
+  qbLinkedText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: COLORS.textPrimary,
+    flexShrink: 1,
+  },
+  qbUnlinkButton: {
+    backgroundColor: COLORS.dangerBg,
+    borderRadius: RADIUS.md,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+  },
+  qbUnlinkButtonText: {
+    color: COLORS.danger,
+    fontWeight: "600",
+    fontSize: 13,
+  },
+  qbSearchLoading: {
+    marginTop: 12,
+  },
+  qbDropdown: {
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: RADIUS.md,
+    backgroundColor: COLORS.surfaceElevated,
+    overflow: "hidden",
+  },
+  qbDropdownItem: {
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  qbDropdownName: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: COLORS.textPrimary,
+  },
+  qbDropdownEmail: {
+    fontSize: 12,
+    color: COLORS.textSecondary,
+    marginTop: 2,
+  },
+  qbEmptyText: {
+    fontSize: 13,
+    color: COLORS.textMuted,
+    marginTop: 10,
   },
   editButton: {
     backgroundColor: COLORS.gold,
