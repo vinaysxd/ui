@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -8,18 +8,23 @@ import {
   ActivityIndicator,
   TouchableOpacity,
   StyleSheet,
+  AppState,
   useWindowDimensions,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import * as ImagePicker from "expo-image-picker";
+import * as WebBrowser from "expo-web-browser";
 import Constants from "expo-constants";
 import { getProfile, updateProfile, uploadAvatar, ProfileMe } from "../../../src/services/profile.service";
 import { logout } from "../../../src/services/auth.service";
 import { showSuccess, showError } from "../../../src/utils/toast";
 import { COLORS, RADIUS } from "../../../src/constants/theme";
+import { getErrorMessage } from "../../../src/constants/errors";
 import api from "../../../src/lib/api";
+
+const QB_GREEN = "#2CA01C";
 
 const getInitials = (fullName: string): string => {
   const parts = fullName.trim().split(/\s+/).filter(Boolean);
@@ -51,6 +56,11 @@ export default function SettingsScreen() {
   const [phone, setPhone] = useState<string>("");
   const [avatarUrl, setAvatarUrl] = useState<string>("");
 
+  const [qbConnected, setQbConnected] = useState<boolean>(false);
+  const [qbLoading, setQbLoading] = useState<boolean>(true);
+  const [qbActionLoading, setQbActionLoading] = useState<boolean>(false);
+  const qbPendingConnect = useRef<boolean>(false);
+
   const applyFieldsFromProfile = (data: ProfileMe) => {
     setFullName(data.full_name ?? "");
     setPhone(data.phone ?? "");
@@ -74,6 +84,60 @@ export default function SettingsScreen() {
   useEffect(() => {
     fetchProfile();
   }, [fetchProfile]);
+
+  const fetchQbStatus = useCallback(async () => {
+    setQbLoading(true);
+    try {
+      const response = await api.get("/integrations/quickbooks/status");
+      setQbConnected(!!response.data?.connected);
+    } catch (err: any) {
+      setQbConnected(false);
+    } finally {
+      setQbLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchQbStatus();
+  }, [fetchQbStatus]);
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener("change", (nextState) => {
+      if (nextState === "active" && qbPendingConnect.current) {
+        qbPendingConnect.current = false;
+        fetchQbStatus();
+      }
+    });
+    return () => subscription.remove();
+  }, [fetchQbStatus]);
+
+  const handleConnectQb = async () => {
+    setQbActionLoading(true);
+    qbPendingConnect.current = true;
+    try {
+      const url = `${api.defaults.baseURL}/integrations/quickbooks/connect`;
+      await WebBrowser.openBrowserAsync(url);
+    } catch (err: any) {
+      showError(err.message ?? "Failed to open QuickBooks connection");
+    } finally {
+      setQbActionLoading(false);
+      await fetchQbStatus();
+    }
+  };
+
+  const handleDisconnectQb = async () => {
+    setQbActionLoading(true);
+    try {
+      await api.post("/integrations/quickbooks/disconnect");
+      setQbConnected(false);
+      showSuccess("QuickBooks disconnected");
+    } catch (err: any) {
+      const code = err?.response?.data?.code;
+      showError(getErrorMessage(code));
+    } finally {
+      setQbActionLoading(false);
+    }
+  };
 
   const handleLogout = async () => {
     setLoggingOut(true);
@@ -258,6 +322,53 @@ export default function SettingsScreen() {
       <View style={styles.section}>
         <SettingsRow label="Version" value={Constants.expoConfig?.version ?? "1.0.0"} />
         <SettingsRow label="API URL" value={api.defaults.baseURL ?? "—"} last />
+      </View>
+
+      <Text style={styles.sectionLabel}>QuickBooks</Text>
+      <View style={styles.section}>
+        {qbLoading ? (
+          <View style={styles.qbLoadingRow}>
+            <ActivityIndicator color={COLORS.gold} size="small" />
+          </View>
+        ) : qbConnected ? (
+          <View style={styles.qbRow}>
+            <View style={styles.qbStatusLeft}>
+              <View style={styles.qbStatusDot} />
+              <Text style={styles.qbStatusText}>Connected to QuickBooks</Text>
+            </View>
+            <TouchableOpacity
+              style={styles.qbDisconnectButton}
+              onPress={handleDisconnectQb}
+              disabled={qbActionLoading}
+            >
+              {qbActionLoading ? (
+                <ActivityIndicator size="small" color={COLORS.danger} />
+              ) : (
+                <Text style={styles.qbDisconnectButtonText}>Disconnect</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <View style={styles.qbConnectWrap}>
+            <Text style={styles.qbHintText}>
+              Connect QuickBooks to sync invoices and billing for clients.
+            </Text>
+            <TouchableOpacity
+              style={styles.qbConnectButton}
+              onPress={handleConnectQb}
+              disabled={qbActionLoading}
+            >
+              {qbActionLoading ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <>
+                  <Ionicons name="cash-outline" size={18} color="#FFFFFF" />
+                  <Text style={styles.qbConnectButtonText}>Connect QuickBooks</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
 
       <Text style={styles.sectionLabel}>Danger Zone</Text>
@@ -530,6 +641,70 @@ const styles = StyleSheet.create({
   logoutButtonText: {
     color: COLORS.danger,
     fontWeight: "bold",
+  },
+
+  qbLoadingRow: {
+    paddingVertical: 16,
+    alignItems: "center",
+  },
+  qbRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+  },
+  qbStatusLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    flexShrink: 1,
+  },
+  qbStatusDot: {
+    width: 10,
+    height: 10,
+    borderRadius: RADIUS.full,
+    backgroundColor: COLORS.success,
+  },
+  qbStatusText: {
+    color: COLORS.textPrimary,
+    fontSize: 14,
+    fontWeight: "600",
+    flexShrink: 1,
+  },
+  qbDisconnectButton: {
+    borderWidth: 1,
+    borderColor: COLORS.danger,
+    borderRadius: RADIUS.md,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+  },
+  qbDisconnectButtonText: {
+    color: COLORS.danger,
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  qbConnectWrap: {
+    padding: 16,
+  },
+  qbHintText: {
+    color: COLORS.textSecondary,
+    fontSize: 13,
+    marginBottom: 14,
+  },
+  qbConnectButton: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: QB_GREEN,
+    borderRadius: RADIUS.md,
+    paddingVertical: 12,
+  },
+  qbConnectButtonText: {
+    color: "#FFFFFF",
+    fontWeight: "700",
+    fontSize: 14,
   },
 
   // Web: floating dark card on gradient background

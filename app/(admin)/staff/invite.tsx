@@ -37,7 +37,7 @@ export default function InviteStaffScreen() {
       showError("Full name, email, and phone are all required");
       return;
     }
-
+    console.log("Full Name = ",fullName, email, phone)
     setSubmitting(true);
     try {
       await inviteStaff({ full_name: fullName.trim(), email: email.trim(), phone: phone.trim() });

@@ -6,6 +6,7 @@ import { COLORS } from "../../../src/constants/theme";
 const NAV_ITEMS = [
   { name: "dashboard", label: "Home", icon: "home-outline" as const },
   { name: "sites", label: "Sites", icon: "location-outline" as const },
+  { name: "billing", label: "Billing", icon: "receipt-outline" as const },
   { name: "profile", label: "Profile", icon: "person-outline" as const },
 ];
 

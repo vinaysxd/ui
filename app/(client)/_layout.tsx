@@ -7,6 +7,7 @@ import { COLORS, SPACING, RADIUS } from "../../src/constants/theme";
 const NAV_ITEMS = [
   { name: "dashboard", label: "Home", icon: "home-outline" as const, href: "/(client)/dashboard" as const },
   { name: "sites", label: "Sites", icon: "location-outline" as const, href: "/(client)/sites" as const },
+  { name: "billing", label: "Billing", icon: "receipt-outline" as const, href: "/(client)/billing" as const },
   { name: "profile", label: "Profile", icon: "person-outline" as const, href: "/(client)/profile" as const },
 ];
 

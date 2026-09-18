@@ -1,8 +1,13 @@
-import { useEffect, useState } from 'react';
-import { View, ActivityIndicator, StyleSheet } from 'react-native';
+import { useCallback, useEffect, useState } from 'react';
+import { View, Image, Text, StyleSheet } from 'react-native';
 import { Stack, usePathname, useSegments, useRouter } from 'expo-router';
 import Toast from 'react-native-toast-message';
+import * as SplashScreen from 'expo-splash-screen';
+import { Asset } from 'expo-asset';
 import { getToken, getUser } from '../src/store/auth';
+import { COLORS } from '../src/constants/theme';
+
+SplashScreen.preventAutoHideAsync();
 
 const dashboardForRole = (role: string | undefined) => {
   switch (role) {
@@ -22,6 +27,21 @@ export default function RootLayout() {
   const pathname = usePathname();
   const segments = useSegments();
   const [initialCheckDone, setInitialCheckDone] = useState(false);
+  const [assetsLoaded, setAssetsLoaded] = useState(false);
+
+  const loadAssets = useCallback(async () => {
+    try {
+      await Asset.loadAsync(require('../assets/brothers_logo.png'));
+    } catch {
+      // Preload is best-effort; the Image still renders via require() if this fails.
+    } finally {
+      setAssetsLoaded(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadAssets();
+  }, [loadAssets]);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -64,10 +84,27 @@ export default function RootLayout() {
     checkAuth();
   }, [pathname]);
 
-  if (!initialCheckDone) {
+  const ready = assetsLoaded && initialCheckDone;
+
+  const hideSplash = useCallback(async () => {
+    if (ready) {
+      await SplashScreen.hideAsync();
+    }
+  }, [ready]);
+
+  useEffect(() => {
+    hideSplash();
+  }, [hideSplash]);
+
+  if (!ready) {
     return (
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" />
+      <View style={styles.splash}>
+        <Image
+          source={require('../assets/splash.jpg')}
+          style={styles.splashLogo}
+          resizeMode="contain"
+        />
+        <Text style={styles.splashText}>BROTHERS</Text>
       </View>
     );
   }
@@ -81,9 +118,21 @@ export default function RootLayout() {
 }
 
 const styles = StyleSheet.create({
-  centered: {
+  splash: {
     flex: 1,
+    backgroundColor: '#1A1A1A',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  splashLogo: {
+    width: 200,
+    height: 90,
+  },
+  splashText: {
+    marginTop: 16,
+    color: COLORS.gold,
+    fontSize: 24,
+    letterSpacing: 6,
+    fontWeight: '700',
   },
 });

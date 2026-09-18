@@ -1,14 +1,19 @@
 {
   "expo": {
-    "name": "ui",
-    "slug": "ui",
+    "name": "Brother's",
+    "slug": "Brother's",
     "scheme": "brothers",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/brothers_icon.jpg",
     "userInterfaceStyle": "light",
     "ios": {
       "supportsTablet": true
+    },
+    "splash": {
+      "image": "./assets/splash.jpg",
+      "resizeMode": "contain",
+      "backgroundColor": "#000000"
     },
     "android": {
       "adaptiveIcon": {
@@ -25,7 +30,11 @@
     },
     "plugins": [
       "expo-router",
-      "expo-secure-store"
+      "expo-secure-store",
+      "expo-sharing",
+      "expo-web-browser",
+      "expo-splash-screen",
+      "expo-asset"
     ]
   }
 }
