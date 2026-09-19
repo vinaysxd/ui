@@ -1,11 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
-import { View, Image, Text, StyleSheet } from 'react-native';
 import { Stack, usePathname, useSegments, useRouter } from 'expo-router';
 import Toast from 'react-native-toast-message';
 import * as SplashScreen from 'expo-splash-screen';
 import { Asset } from 'expo-asset';
 import { getToken, getUser } from '../src/store/auth';
-import { COLORS } from '../src/constants/theme';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -84,29 +82,22 @@ export default function RootLayout() {
     checkAuth();
   }, [pathname]);
 
-  const ready = assetsLoaded && initialCheckDone;
+  const [splashDelayDone, setSplashDelayDone] = useState(false);
+  const loaded = assetsLoaded && initialCheckDone;
+  const ready = loaded && splashDelayDone;
 
-  const hideSplash = useCallback(async () => {
-    if (ready) {
-      await SplashScreen.hideAsync();
-    }
-  }, [ready]);
-
+  // Once assets and auth are ready, keep the splash up for 3 more seconds.
   useEffect(() => {
-    hideSplash();
-  }, [hideSplash]);
+    if (!loaded) return;
+    const timer = setTimeout(async () => {
+      await SplashScreen.hideAsync();
+      setSplashDelayDone(true);
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [loaded]);
 
   if (!ready) {
-    return (
-      <View style={styles.splash}>
-        <Image
-          source={require('../assets/splash.jpg')}
-          style={styles.splashLogo}
-          resizeMode="contain"
-        />
-        <Text style={styles.splashText}>BROTHERS</Text>
-      </View>
-    );
+    return null;
   }
 
   return (
@@ -116,23 +107,3 @@ export default function RootLayout() {
       </>
   );
 }
-
-const styles = StyleSheet.create({
-  splash: {
-    flex: 1,
-    backgroundColor: '#1A1A1A',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  splashLogo: {
-    width: 200,
-    height: 90,
-  },
-  splashText: {
-    marginTop: 16,
-    color: COLORS.gold,
-    fontSize: 24,
-    letterSpacing: 6,
-    fontWeight: '700',
-  },
-});
