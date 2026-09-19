@@ -1,4 +1,5 @@
-import { View, Text, Image, TouchableOpacity, StyleSheet, useWindowDimensions } from "react-native";
+import { View, Text, Image, TouchableOpacity, StyleSheet, useWindowDimensions, StatusBar } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { Stack, Slot, usePathname, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import Constants from "expo-constants";
@@ -70,11 +71,14 @@ function SidebarLayout() {
 
 function StackLayout() {
   return (
-    <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="(tabs)" />
-      <Stack.Screen name="site/[id]" />
-      <Stack.Screen name="profile/edit" />
-    </Stack>
+    <SafeAreaView style={styles.safeArea} edges={["top", "left", "right"]}>
+      <StatusBar backgroundColor="#1A1A1A" barStyle="light-content" />
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="site/[id]" />
+        <Stack.Screen name="profile/edit" />
+      </Stack>
+    </SafeAreaView>
   );
 }
 
@@ -86,6 +90,10 @@ export default function ClientLayout() {
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: "#1A1A1A",
+  },
   root: {
     flex: 1,
     flexDirection: "row",

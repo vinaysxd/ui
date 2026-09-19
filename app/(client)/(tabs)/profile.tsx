@@ -14,6 +14,7 @@ import { getProfile, ProfileMe } from "../../../src/services/profile.service";
 import { logout } from "../../../src/services/auth.service";
 import { showError } from "../../../src/utils/toast";
 import { COLORS, RADIUS } from "../../../src/constants/theme";
+import { LOADING_STYLE } from "../../../src/constants/ui";
 
 const getInitials = (fullName: string): string => {
   const parts = fullName.trim().split(/\s+/).filter(Boolean);
@@ -80,7 +81,7 @@ export default function ClientProfileScreen() {
   }
 
   return (
-    <ScrollView
+    <ScrollView keyboardShouldPersistTaps="handled"
       style={styles.container}
       contentContainerStyle={styles.content}
       refreshControl={
@@ -121,7 +122,7 @@ export default function ClientProfileScreen() {
         <Text style={styles.editButtonText}>Edit Profile</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.logoutButton} onPress={handleLogout} disabled={loggingOut}>
+      <TouchableOpacity style={[styles.logoutButton, loggingOut && LOADING_STYLE]} onPress={handleLogout} disabled={loggingOut}>
         {loggingOut ? (
           <ActivityIndicator color={COLORS.danger} />
         ) : (

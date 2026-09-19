@@ -27,6 +27,8 @@ import { showSuccess, showError } from "../../../src/utils/toast";
 import PhotoUploadModal from "../../../src/components/PhotoUploadModal";
 import NotesModal from "../../../src/components/NotesModal";
 import { COLORS, RADIUS } from "../../../src/constants/theme";
+import ProcessingOverlay from "../../../src/components/ProcessingOverlay";
+import { LOADING_STYLE } from "../../../src/constants/ui";
 
 interface SiteWithDistance extends Site {
   distanceKm: number | null;
@@ -211,7 +213,7 @@ export default function StaffHomeScreen() {
         ) : null}
       </View>
 
-      <FlatList
+      <FlatList keyboardShouldPersistTaps="handled"
         data={filteredSites}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
@@ -241,12 +243,12 @@ export default function StaffHomeScreen() {
               {isActiveSite ? (
                 <View style={styles.buttonRow}>
                   <TouchableOpacity
-                    style={styles.clockOutButton}
+                    style={[styles.clockOutButton, acting && LOADING_STYLE]}
                     onPress={() => handleClockOut(item)}
                     disabled={acting}
                   >
                     {acting ? (
-                      <ActivityIndicator color={COLORS.danger} size="small" />
+                      <ActivityIndicator color={COLORS.gold} size="small" />
                     ) : (
                       <Text style={styles.clockOutButtonText}>Clock Out</Text>
                     )}
@@ -277,6 +279,7 @@ export default function StaffHomeScreen() {
                     style={[
                       styles.clockInButton,
                       !!activeAttendance?.active && styles.clockInButtonDisabled,
+                      acting && LOADING_STYLE,
                     ]}
                     onPress={() => handleClockIn(item)}
                     disabled={!!activeAttendance?.active || acting}
@@ -306,6 +309,7 @@ export default function StaffHomeScreen() {
         siteId={notesModalSiteId}
         onClose={() => setNotesModalSiteId(null)}
       />
+      <ProcessingOverlay visible={actingSiteId !== ""} />
     </View>
   );
 }

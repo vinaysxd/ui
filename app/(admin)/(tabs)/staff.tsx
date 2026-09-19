@@ -199,7 +199,7 @@ export default function StaffScreen() {
       <LinearGradient colors={["#1A1A1A", "#0D0D0D"]} style={styles.desktopScreen}>
         
         <View style={styles.desktopCard}>
-          <FlatList
+          <FlatList keyboardShouldPersistTaps="handled"
             data={filteredActiveStaff}
             keyExtractor={(item) => item.id}
             contentContainerStyle={styles.webContent}
@@ -235,7 +235,7 @@ export default function StaffScreen() {
         {searchBar}
       </View>
 
-      <FlatList
+      <FlatList keyboardShouldPersistTaps="handled"
         data={filteredActiveStaff}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.mobileContent}

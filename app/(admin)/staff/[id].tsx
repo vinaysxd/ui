@@ -21,6 +21,8 @@ import { getAllSites, getSiteStaff, Site } from "../../../src/services/sites.ser
 import { getAttendanceBySite, Attendance } from "../../../src/services/attendance.service";
 import { showSuccess, showError } from "../../../src/utils/toast";
 import { COLORS, RADIUS } from "../../../src/constants/theme";
+import ScreenContainer from "../../../src/components/ScreenContainer";
+import { LOADING_STYLE } from "../../../src/constants/ui";
 
 type Tab = "details" | "sites" | "attendance";
 
@@ -198,186 +200,188 @@ export default function StaffDetailScreen() {
   }
 
   return (
-    <View style={styles.screen}>
-      <View style={styles.topBar}>
-        <BackButton onPress={() => router.replace("/(admin)/staff")} />
+    <ScreenContainer>
+      <View style={styles.screen}>
+        <View style={styles.topBar}>
+          <BackButton onPress={() => router.replace("/(admin)/staff")} />
 
-        <View style={styles.header}>
-          <Text style={styles.name}>{staff.full_name}</Text>
-          <View style={[styles.badge, staff.is_active ? styles.badgeActive : styles.badgeInactive]}>
-            <Text style={[styles.badgeText, staff.is_active ? styles.badgeTextActive : styles.badgeTextInactive]}>
-              {staff.is_active ? "Active" : "Inactive"}
-            </Text>
+          <View style={styles.header}>
+            <Text style={styles.name}>{staff.full_name}</Text>
+            <View style={[styles.badge, staff.is_active ? styles.badgeActive : styles.badgeInactive]}>
+              <Text style={[styles.badgeText, staff.is_active ? styles.badgeTextActive : styles.badgeTextInactive]}>
+                {staff.is_active ? "Active" : "Inactive"}
+              </Text>
+            </View>
           </View>
+
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabBar}>
+            {TABS.map((tab) => {
+              const active = activeTab === tab.key;
+              return (
+                <TouchableOpacity
+                  key={tab.key}
+                  style={[styles.tab, active && styles.tabActive]}
+                  onPress={() => setActiveTab(tab.key)}
+                >
+                  <Text style={[styles.tabText, active && styles.tabTextActive]}>{tab.label}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
         </View>
 
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabBar}>
-          {TABS.map((tab) => {
-            const active = activeTab === tab.key;
-            return (
-              <TouchableOpacity
-                key={tab.key}
-                style={[styles.tab, active && styles.tabActive]}
-                onPress={() => setActiveTab(tab.key)}
-              >
-                <Text style={[styles.tabText, active && styles.tabTextActive]}>{tab.label}</Text>
-              </TouchableOpacity>
-            );
-          })}
+        <ScrollView keyboardShouldPersistTaps="handled" style={styles.container} contentContainerStyle={styles.content}>
+          {activeTab === "details" && (
+            <>
+              <View style={styles.section}>
+                <Row label="Email" value={staff.email} />
+                <FieldInput
+                  label="Full Name"
+                  value={fullName}
+                  onChangeText={setFullName}
+                  editable={isEditing}
+                  focused={focusedField === "fullName"}
+                  onFocus={() => setFocusedField("fullName")}
+                  onBlur={() => setFocusedField(null)}
+                />
+                <FieldInput
+                  label="Phone"
+                  value={phone}
+                  onChangeText={setPhone}
+                  editable={isEditing}
+                  keyboardType="phone-pad"
+                  focused={focusedField === "phone"}
+                  onFocus={() => setFocusedField("phone")}
+                  onBlur={() => setFocusedField(null)}
+                />
+                <Row label="Role" value={staff.role} />
+                <FieldInput label="Employee ID" value={staff.employee_id ?? ""} editable={false} />
+                <FieldInput
+                  label="Address"
+                  value={address}
+                  onChangeText={setAddress}
+                  editable={isEditing}
+                  focused={focusedField === "address"}
+                  onFocus={() => setFocusedField("address")}
+                  onBlur={() => setFocusedField(null)}
+                />
+                <FieldInput
+                  label="Emergency Contact"
+                  value={emergencyContact}
+                  onChangeText={setEmergencyContact}
+                  editable={isEditing}
+                  focused={focusedField === "emergencyContact"}
+                  onFocus={() => setFocusedField("emergencyContact")}
+                  onBlur={() => setFocusedField(null)}
+                />
+                <Row label="Joined" value={staff.created_at ? formatDate(staff.created_at) : "—"} />
+              </View>
+
+              {isEditing ? (
+                <>
+                  <TouchableOpacity style={[styles.saveButton, saving && LOADING_STYLE]} onPress={handleSave} disabled={saving}>
+                    {saving ? (
+                      <ActivityIndicator color="#1A1A1A" />
+                    ) : (
+                      <Text style={styles.saveButtonText}>Save</Text>
+                    )}
+                  </TouchableOpacity>
+                  <TouchableOpacity style={[styles.cancelButton, saving && LOADING_STYLE]} onPress={handleCancel} disabled={saving}>
+                    <Text style={styles.cancelButtonText}>Cancel</Text>
+                  </TouchableOpacity>
+                </>
+              ) : (
+                <>
+                  <TouchableOpacity style={styles.editButton} onPress={handleEdit}>
+                    <Text style={styles.editButtonText}>Edit</Text>
+                  </TouchableOpacity>
+                  {staff.is_active ? (
+                    <TouchableOpacity
+                      style={[styles.deactivateButton, deactivating && LOADING_STYLE]}
+                      onPress={handleDeactivate}
+                      disabled={deactivating}
+                    >
+                      {deactivating ? (
+                        <ActivityIndicator color={COLORS.gold} />
+                      ) : (
+                        <Text style={styles.deactivateButtonText}>Deactivate</Text>
+                      )}
+                    </TouchableOpacity>
+                  ) : (
+                    <TouchableOpacity
+                      style={[styles.reactivateButton, reactivating && LOADING_STYLE]}
+                      onPress={handleReactivate}
+                      disabled={reactivating}
+                    >
+                      {reactivating ? (
+                        <ActivityIndicator color={COLORS.gold} />
+                      ) : (
+                        <Text style={styles.reactivateButtonText}>Reactivate</Text>
+                      )}
+                    </TouchableOpacity>
+                  )}
+                </>
+              )}
+            </>
+          )}
+
+          {activeTab === "sites" && (
+            <>
+              {assignedSites.length === 0 ? (
+                <Text style={styles.emptyText}>No sites assigned</Text>
+              ) : (
+                assignedSites.map((site) => (
+                  <TouchableOpacity
+                    key={site.id}
+                    style={styles.card}
+                    onPress={() => router.push(`/(admin)/sites/${site.id}`)}
+                  >
+                    <View style={styles.goldBar} />
+                    <Text style={styles.cardTitle}>{site.name}</Text>
+                    <Text style={styles.detail}>{site.address}</Text>
+                  </TouchableOpacity>
+                ))
+              )}
+            </>
+          )}
+
+          {activeTab === "attendance" && (
+            <>
+              {attendance.length === 0 ? (
+                <Text style={styles.emptyText}>No attendance history</Text>
+              ) : (
+                attendance.map((record) => {
+                  const beforeCount = record.photos.filter((photo) => photo.before_photo_url).length;
+                  const afterCount = record.photos.filter((photo) => photo.after_photo_url).length;
+                  return (
+                    <View key={record.id} style={styles.card}>
+                      <View style={styles.goldBar} />
+                      <View style={styles.cardHeader}>
+                        <Text style={styles.cardTitle}>
+                          {siteNameById[record.site_id] ?? "Unknown site"}
+                        </Text>
+                        {record.clock_out ? null : (
+                          <View style={[styles.badge, styles.badgeActive]}>
+                            <Text style={[styles.badgeText, styles.badgeTextActive]}>Active</Text>
+                          </View>
+                        )}
+                      </View>
+                      <Text style={styles.detail}>Clock in: {formatDateTime(record.clock_in)}</Text>
+                      {record.clock_out ? (
+                        <Text style={styles.detail}>Clock out: {formatDateTime(record.clock_out)}</Text>
+                      ) : null}
+                      <Text style={styles.detail}>
+                        Photos: {beforeCount} before, {afterCount} after
+                      </Text>
+                    </View>
+                  );
+                })
+              )}
+            </>
+          )}
         </ScrollView>
       </View>
-
-      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-        {activeTab === "details" && (
-          <>
-            <View style={styles.section}>
-              <Row label="Email" value={staff.email} />
-              <FieldInput
-                label="Full Name"
-                value={fullName}
-                onChangeText={setFullName}
-                editable={isEditing}
-                focused={focusedField === "fullName"}
-                onFocus={() => setFocusedField("fullName")}
-                onBlur={() => setFocusedField(null)}
-              />
-              <FieldInput
-                label="Phone"
-                value={phone}
-                onChangeText={setPhone}
-                editable={isEditing}
-                keyboardType="phone-pad"
-                focused={focusedField === "phone"}
-                onFocus={() => setFocusedField("phone")}
-                onBlur={() => setFocusedField(null)}
-              />
-              <Row label="Role" value={staff.role} />
-              <FieldInput label="Employee ID" value={staff.employee_id ?? ""} editable={false} />
-              <FieldInput
-                label="Address"
-                value={address}
-                onChangeText={setAddress}
-                editable={isEditing}
-                focused={focusedField === "address"}
-                onFocus={() => setFocusedField("address")}
-                onBlur={() => setFocusedField(null)}
-              />
-              <FieldInput
-                label="Emergency Contact"
-                value={emergencyContact}
-                onChangeText={setEmergencyContact}
-                editable={isEditing}
-                focused={focusedField === "emergencyContact"}
-                onFocus={() => setFocusedField("emergencyContact")}
-                onBlur={() => setFocusedField(null)}
-              />
-              <Row label="Joined" value={staff.created_at ? formatDate(staff.created_at) : "—"} />
-            </View>
-
-            {isEditing ? (
-              <>
-                <TouchableOpacity style={styles.saveButton} onPress={handleSave} disabled={saving}>
-                  {saving ? (
-                    <ActivityIndicator color="#1A1A1A" />
-                  ) : (
-                    <Text style={styles.saveButtonText}>Save</Text>
-                  )}
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.cancelButton} onPress={handleCancel} disabled={saving}>
-                  <Text style={styles.cancelButtonText}>Cancel</Text>
-                </TouchableOpacity>
-              </>
-            ) : (
-              <>
-                <TouchableOpacity style={styles.editButton} onPress={handleEdit}>
-                  <Text style={styles.editButtonText}>Edit</Text>
-                </TouchableOpacity>
-                {staff.is_active ? (
-                  <TouchableOpacity
-                    style={styles.deactivateButton}
-                    onPress={handleDeactivate}
-                    disabled={deactivating}
-                  >
-                    {deactivating ? (
-                      <ActivityIndicator color={COLORS.danger} />
-                    ) : (
-                      <Text style={styles.deactivateButtonText}>Deactivate</Text>
-                    )}
-                  </TouchableOpacity>
-                ) : (
-                  <TouchableOpacity
-                    style={styles.reactivateButton}
-                    onPress={handleReactivate}
-                    disabled={reactivating}
-                  >
-                    {reactivating ? (
-                      <ActivityIndicator color={COLORS.success} />
-                    ) : (
-                      <Text style={styles.reactivateButtonText}>Reactivate</Text>
-                    )}
-                  </TouchableOpacity>
-                )}
-              </>
-            )}
-          </>
-        )}
-
-        {activeTab === "sites" && (
-          <>
-            {assignedSites.length === 0 ? (
-              <Text style={styles.emptyText}>No sites assigned</Text>
-            ) : (
-              assignedSites.map((site) => (
-                <TouchableOpacity
-                  key={site.id}
-                  style={styles.card}
-                  onPress={() => router.push(`/(admin)/sites/${site.id}`)}
-                >
-                  <View style={styles.goldBar} />
-                  <Text style={styles.cardTitle}>{site.name}</Text>
-                  <Text style={styles.detail}>{site.address}</Text>
-                </TouchableOpacity>
-              ))
-            )}
-          </>
-        )}
-
-        {activeTab === "attendance" && (
-          <>
-            {attendance.length === 0 ? (
-              <Text style={styles.emptyText}>No attendance history</Text>
-            ) : (
-              attendance.map((record) => {
-                const beforeCount = record.photos.filter((photo) => photo.before_photo_url).length;
-                const afterCount = record.photos.filter((photo) => photo.after_photo_url).length;
-                return (
-                  <View key={record.id} style={styles.card}>
-                    <View style={styles.goldBar} />
-                    <View style={styles.cardHeader}>
-                      <Text style={styles.cardTitle}>
-                        {siteNameById[record.site_id] ?? "Unknown site"}
-                      </Text>
-                      {record.clock_out ? null : (
-                        <View style={[styles.badge, styles.badgeActive]}>
-                          <Text style={[styles.badgeText, styles.badgeTextActive]}>Active</Text>
-                        </View>
-                      )}
-                    </View>
-                    <Text style={styles.detail}>Clock in: {formatDateTime(record.clock_in)}</Text>
-                    {record.clock_out ? (
-                      <Text style={styles.detail}>Clock out: {formatDateTime(record.clock_out)}</Text>
-                    ) : null}
-                    <Text style={styles.detail}>
-                      Photos: {beforeCount} before, {afterCount} after
-                    </Text>
-                  </View>
-                );
-              })
-            )}
-          </>
-        )}
-      </ScrollView>
-    </View>
+    </ScreenContainer>
   );
 }
 

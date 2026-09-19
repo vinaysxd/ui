@@ -218,7 +218,7 @@ export default function ClientBillingScreen() {
           <Text style={styles.stateText}>{errorMessage}</Text>
         </View>
       ) : (
-        <FlatList
+        <FlatList keyboardShouldPersistTaps="handled"
           data={invoices}
           keyExtractor={(item) => item.Id}
           contentContainerStyle={styles.listContent}
@@ -267,7 +267,7 @@ export default function ClientBillingScreen() {
               </TouchableOpacity>
             </View>
 
-            <ScrollView style={styles.modalContent} contentContainerStyle={styles.modalContentInner}>
+            <ScrollView keyboardShouldPersistTaps="handled" style={styles.modalContent} contentContainerStyle={styles.modalContentInner}>
               <View style={styles.section}>
                 <Row label="Invoice #" value={selectedInvoice.DocNumber} />
                 <Row label="Date" value={formatDate(selectedInvoice.TxnDate)} />

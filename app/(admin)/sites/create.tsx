@@ -16,6 +16,8 @@ import { createSite } from "../../../src/services/sites.service";
 import { getAllClients, Client } from "../../../src/services/client.service";
 import { showSuccess, showError } from "../../../src/utils/toast";
 import { COLORS, RADIUS } from "../../../src/constants/theme";
+import ScreenContainer from "../../../src/components/ScreenContainer";
+import { LOADING_STYLE } from "../../../src/constants/ui";
 
 export default function CreateSiteScreen() {
   const router = useRouter();
@@ -110,119 +112,121 @@ export default function CreateSiteScreen() {
     client.company_name ? `${client.full_name} (${client.company_name})` : client.full_name;
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <View style={styles.maxWidthWrap}>
-        <TouchableOpacity style={styles.backButton} onPress={handleBack}>
-          <Ionicons name="arrow-back" size={22} color={COLORS.gold} />
-        </TouchableOpacity>
-
-        <Text style={styles.eyebrow}>CREATE</Text>
-        <Text style={styles.title}>New Site</Text>
-
-        <View style={styles.card}>
-          <FormField
-            label="Site Name"
-            value={name}
-            onChangeText={setName}
-            editable={!submitting}
-            focused={focusedField === "name"}
-            onFocus={() => setFocusedField("name")}
-            onBlur={() => setFocusedField(null)}
-          />
-
-          <FormField
-            label="Address"
-            value={address}
-            onChangeText={setAddress}
-            editable={!submitting}
-            focused={focusedField === "address"}
-            onFocus={() => setFocusedField("address")}
-            onBlur={() => setFocusedField(null)}
-          />
-
-          <FormField
-            label="Latitude"
-            value={latitude}
-            onChangeText={setLatitude}
-            keyboardType="numbers-and-punctuation"
-            editable={!submitting}
-            focused={focusedField === "latitude"}
-            onFocus={() => setFocusedField("latitude")}
-            onBlur={() => setFocusedField(null)}
-          />
-
-          <FormField
-            label="Longitude"
-            value={longitude}
-            onChangeText={setLongitude}
-            keyboardType="numbers-and-punctuation"
-            editable={!submitting}
-            focused={focusedField === "longitude"}
-            onFocus={() => setFocusedField("longitude")}
-            onBlur={() => setFocusedField(null)}
-          />
-
-          <View style={styles.fieldSpacing}>
-            <Text style={styles.label}>Client</Text>
-            {clientsLoading ? (
-              <ActivityIndicator style={styles.clientLoading} color={COLORS.gold} />
-            ) : (
-              <TouchableOpacity
-                style={styles.dropdown}
-                onPress={() => setPickerVisible(true)}
-                disabled={submitting}
-              >
-                <Text style={selectedClient ? styles.dropdownText : styles.dropdownPlaceholder}>
-                  {selectedClient ? clientDisplayLabel(selectedClient) : "Select a client"}
-                </Text>
-                <Ionicons name="chevron-down-outline" size={18} color={COLORS.textMuted} />
-              </TouchableOpacity>
-            )}
-          </View>
-
-          <TouchableOpacity style={styles.submitButton} onPress={handleSubmit} disabled={submitting}>
-            {submitting ? (
-              <ActivityIndicator color="#1A1A1A" />
-            ) : (
-              <Text style={styles.submitButtonText}>CREATE SITE</Text>
-            )}
+    <ScreenContainer>
+      <ScrollView keyboardShouldPersistTaps="handled" style={styles.container} contentContainerStyle={styles.content}>
+        <View style={styles.maxWidthWrap}>
+          <TouchableOpacity style={styles.backButton} onPress={handleBack}>
+            <Ionicons name="arrow-back" size={22} color={COLORS.gold} />
           </TouchableOpacity>
 
-          {error ? <Text style={styles.errorText}>{error}</Text> : null}
-        </View>
-      </View>
+          <Text style={styles.eyebrow}>CREATE</Text>
+          <Text style={styles.title}>New Site</Text>
 
-      <Modal visible={pickerVisible} animationType="slide" transparent>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Select Client</Text>
-              <TouchableOpacity onPress={() => setPickerVisible(false)}>
-                <Ionicons name="close-outline" size={24} color={COLORS.textPrimary} />
-              </TouchableOpacity>
-            </View>
-            <FlatList
-              data={clients}
-              keyExtractor={(item) => item.id}
-              ListEmptyComponent={<Text style={styles.emptyText}>No active clients found.</Text>}
-              renderItem={({ item }) => {
-                const isSelected = item.id === clientId;
-                return (
-                  <TouchableOpacity style={styles.modalRow} onPress={() => handleSelectClient(item)}>
-                    <Text style={[styles.modalRowText, isSelected && styles.modalRowTextSelected]}>
-                      {clientDisplayLabel(item)}
-                    </Text>
-                    {isSelected ? (
-                      <Ionicons name="checkmark" size={18} color={COLORS.gold} />
-                    ) : null}
-                  </TouchableOpacity>
-                );
-              }}
+          <View style={styles.card}>
+            <FormField
+              label="Site Name"
+              value={name}
+              onChangeText={setName}
+              editable={!submitting}
+              focused={focusedField === "name"}
+              onFocus={() => setFocusedField("name")}
+              onBlur={() => setFocusedField(null)}
             />
+
+            <FormField
+              label="Address"
+              value={address}
+              onChangeText={setAddress}
+              editable={!submitting}
+              focused={focusedField === "address"}
+              onFocus={() => setFocusedField("address")}
+              onBlur={() => setFocusedField(null)}
+            />
+
+            <FormField
+              label="Latitude"
+              value={latitude}
+              onChangeText={setLatitude}
+              keyboardType="numbers-and-punctuation"
+              editable={!submitting}
+              focused={focusedField === "latitude"}
+              onFocus={() => setFocusedField("latitude")}
+              onBlur={() => setFocusedField(null)}
+            />
+
+            <FormField
+              label="Longitude"
+              value={longitude}
+              onChangeText={setLongitude}
+              keyboardType="numbers-and-punctuation"
+              editable={!submitting}
+              focused={focusedField === "longitude"}
+              onFocus={() => setFocusedField("longitude")}
+              onBlur={() => setFocusedField(null)}
+            />
+
+            <View style={styles.fieldSpacing}>
+              <Text style={styles.label}>Client</Text>
+              {clientsLoading ? (
+                <ActivityIndicator style={styles.clientLoading} color={COLORS.gold} />
+              ) : (
+                <TouchableOpacity
+                  style={[styles.dropdown, submitting && LOADING_STYLE]}
+                  onPress={() => setPickerVisible(true)}
+                  disabled={submitting}
+                >
+                  <Text style={selectedClient ? styles.dropdownText : styles.dropdownPlaceholder}>
+                    {selectedClient ? clientDisplayLabel(selectedClient) : "Select a client"}
+                  </Text>
+                  <Ionicons name="chevron-down-outline" size={18} color={COLORS.textMuted} />
+                </TouchableOpacity>
+              )}
+            </View>
+
+            <TouchableOpacity style={[styles.submitButton, submitting && LOADING_STYLE]} onPress={handleSubmit} disabled={submitting}>
+              {submitting ? (
+                <ActivityIndicator color="#1A1A1A" />
+              ) : (
+                <Text style={styles.submitButtonText}>CREATE SITE</Text>
+              )}
+            </TouchableOpacity>
+
+            {error ? <Text style={styles.errorText}>{error}</Text> : null}
           </View>
         </View>
-      </Modal>
-    </ScrollView>
+
+        <Modal visible={pickerVisible} animationType="slide" transparent>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Select Client</Text>
+                <TouchableOpacity onPress={() => setPickerVisible(false)}>
+                  <Ionicons name="close-outline" size={24} color={COLORS.textPrimary} />
+                </TouchableOpacity>
+              </View>
+              <FlatList keyboardShouldPersistTaps="handled"
+                data={clients}
+                keyExtractor={(item) => item.id}
+                ListEmptyComponent={<Text style={styles.emptyText}>No active clients found.</Text>}
+                renderItem={({ item }) => {
+                  const isSelected = item.id === clientId;
+                  return (
+                    <TouchableOpacity style={styles.modalRow} onPress={() => handleSelectClient(item)}>
+                      <Text style={[styles.modalRowText, isSelected && styles.modalRowTextSelected]}>
+                        {clientDisplayLabel(item)}
+                      </Text>
+                      {isSelected ? (
+                        <Ionicons name="checkmark" size={18} color={COLORS.gold} />
+                      ) : null}
+                    </TouchableOpacity>
+                  );
+                }}
+              />
+            </View>
+          </View>
+        </Modal>
+      </ScrollView>
+    </ScreenContainer>
   );
 }
 

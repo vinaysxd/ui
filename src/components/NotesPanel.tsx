@@ -26,6 +26,7 @@ import { getUser } from "../store/auth";
 import { showSuccess, showError } from "../utils/toast";
 import { formatDateTime } from "../utils/datetime";
 import { COLORS, RADIUS } from "../constants/theme";
+import { LOADING_STYLE } from "../constants/ui";
 
 interface NotesPanelProps {
   siteId: string | null;
@@ -148,7 +149,7 @@ export default function NotesPanel({ siteId, active = true, role = "staff" }: No
           <ActivityIndicator size="large" color={COLORS.gold} />
         </View>
       ) : (
-        <FlatList
+        <FlatList keyboardShouldPersistTaps="handled"
           data={notes}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.listContent}
@@ -187,7 +188,7 @@ export default function NotesPanel({ siteId, active = true, role = "staff" }: No
             >
               <Text style={styles.cancelButtonText}>Cancel</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.sendButton} onPress={handleSubmitNote} disabled={submitting}>
+            <TouchableOpacity style={[styles.sendButton, submitting && LOADING_STYLE]} onPress={handleSubmitNote} disabled={submitting}>
               {submitting ? (
                 <ActivityIndicator color="#1A1A1A" size="small" />
               ) : (

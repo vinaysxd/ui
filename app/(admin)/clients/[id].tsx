@@ -22,6 +22,8 @@ import api from "../../../src/lib/api";
 import { getErrorMessage } from "../../../src/constants/errors";
 import { showSuccess, showError } from "../../../src/utils/toast";
 import { COLORS, RADIUS } from "../../../src/constants/theme";
+import ScreenContainer from "../../../src/components/ScreenContainer";
+import { LOADING_STYLE } from "../../../src/constants/ui";
 
 interface QBCustomerResult {
   qb_customer_id: string;
@@ -266,236 +268,238 @@ export default function ClientDetailScreen() {
   }
 
   return (
-    <View style={styles.screen}>
-      <View style={styles.topBar}>
-        <BackButton onPress={() => router.replace("/(admin)/clients")} />
+    <ScreenContainer>
+      <View style={styles.screen}>
+        <View style={styles.topBar}>
+          <BackButton onPress={() => router.replace("/(admin)/clients")} />
 
-        <View style={styles.header}>
-          <Text style={styles.name}>{client.full_name}</Text>
-          <View style={[styles.badge, client.is_active ? styles.badgeActive : styles.badgeInactive]}>
-            <Text style={[styles.badgeText, client.is_active ? styles.badgeTextActive : styles.badgeTextInactive]}>
-              {client.is_active ? "Active" : "Inactive"}
-            </Text>
+          <View style={styles.header}>
+            <Text style={styles.name}>{client.full_name}</Text>
+            <View style={[styles.badge, client.is_active ? styles.badgeActive : styles.badgeInactive]}>
+              <Text style={[styles.badgeText, client.is_active ? styles.badgeTextActive : styles.badgeTextInactive]}>
+                {client.is_active ? "Active" : "Inactive"}
+              </Text>
+            </View>
           </View>
+
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabBar}>
+            {TABS.map((tab) => {
+              const active = activeTab === tab.key;
+              return (
+                <TouchableOpacity
+                  key={tab.key}
+                  style={[styles.tab, active && styles.tabActive]}
+                  onPress={() => setActiveTab(tab.key)}
+                >
+                  <Text style={[styles.tabText, active && styles.tabTextActive]}>{tab.label}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
         </View>
 
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabBar}>
-          {TABS.map((tab) => {
-            const active = activeTab === tab.key;
-            return (
-              <TouchableOpacity
-                key={tab.key}
-                style={[styles.tab, active && styles.tabActive]}
-                onPress={() => setActiveTab(tab.key)}
-              >
-                <Text style={[styles.tabText, active && styles.tabTextActive]}>{tab.label}</Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
-      </View>
+        <ScrollView keyboardShouldPersistTaps="handled" style={styles.container} contentContainerStyle={styles.content}>
+          {activeTab === "details" && (
+            <>
+              <View style={styles.section}>
+                <Row label="Email" value={client.email} />
+                <FieldInput
+                  label="Full Name"
+                  value={fullName}
+                  onChangeText={setFullName}
+                  editable={isEditing}
+                  focused={focusedField === "fullName"}
+                  onFocus={() => setFocusedField("fullName")}
+                  onBlur={() => setFocusedField(null)}
+                />
+                <FieldInput
+                  label="Phone"
+                  value={phone}
+                  onChangeText={setPhone}
+                  editable={isEditing}
+                  keyboardType="phone-pad"
+                  focused={focusedField === "phone"}
+                  onFocus={() => setFocusedField("phone")}
+                  onBlur={() => setFocusedField(null)}
+                />
+                <Row label="Role" value={client.role} />
+                <FieldInput
+                  label="Avatar URL"
+                  value={avatarUrl}
+                  onChangeText={setAvatarUrl}
+                  editable={isEditing}
+                  focused={focusedField === "avatarUrl"}
+                  onFocus={() => setFocusedField("avatarUrl")}
+                  onBlur={() => setFocusedField(null)}
+                />
+                <FieldInput
+                  label="Company Name"
+                  value={companyName}
+                  onChangeText={setCompanyName}
+                  editable={isEditing}
+                  focused={focusedField === "companyName"}
+                  onFocus={() => setFocusedField("companyName")}
+                  onBlur={() => setFocusedField(null)}
+                />
+                <FieldInput
+                  label="Billing Address"
+                  value={billingAddress}
+                  onChangeText={setBillingAddress}
+                  editable={isEditing}
+                  focused={focusedField === "billingAddress"}
+                  onFocus={() => setFocusedField("billingAddress")}
+                  onBlur={() => setFocusedField(null)}
+                />
+                <FieldInput
+                  label="Contact Person"
+                  value={contactPerson}
+                  onChangeText={setContactPerson}
+                  editable={isEditing}
+                  focused={focusedField === "contactPerson"}
+                  onFocus={() => setFocusedField("contactPerson")}
+                  onBlur={() => setFocusedField(null)}
+                />
+                <Row label="Joined" value={client.created_at ? formatDate(client.created_at) : "—"} />
+              </View>
 
-      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-        {activeTab === "details" && (
-          <>
-            <View style={styles.section}>
-              <Row label="Email" value={client.email} />
-              <FieldInput
-                label="Full Name"
-                value={fullName}
-                onChangeText={setFullName}
-                editable={isEditing}
-                focused={focusedField === "fullName"}
-                onFocus={() => setFocusedField("fullName")}
-                onBlur={() => setFocusedField(null)}
-              />
-              <FieldInput
-                label="Phone"
-                value={phone}
-                onChangeText={setPhone}
-                editable={isEditing}
-                keyboardType="phone-pad"
-                focused={focusedField === "phone"}
-                onFocus={() => setFocusedField("phone")}
-                onBlur={() => setFocusedField(null)}
-              />
-              <Row label="Role" value={client.role} />
-              <FieldInput
-                label="Avatar URL"
-                value={avatarUrl}
-                onChangeText={setAvatarUrl}
-                editable={isEditing}
-                focused={focusedField === "avatarUrl"}
-                onFocus={() => setFocusedField("avatarUrl")}
-                onBlur={() => setFocusedField(null)}
-              />
-              <FieldInput
-                label="Company Name"
-                value={companyName}
-                onChangeText={setCompanyName}
-                editable={isEditing}
-                focused={focusedField === "companyName"}
-                onFocus={() => setFocusedField("companyName")}
-                onBlur={() => setFocusedField(null)}
-              />
-              <FieldInput
-                label="Billing Address"
-                value={billingAddress}
-                onChangeText={setBillingAddress}
-                editable={isEditing}
-                focused={focusedField === "billingAddress"}
-                onFocus={() => setFocusedField("billingAddress")}
-                onBlur={() => setFocusedField(null)}
-              />
-              <FieldInput
-                label="Contact Person"
-                value={contactPerson}
-                onChangeText={setContactPerson}
-                editable={isEditing}
-                focused={focusedField === "contactPerson"}
-                onFocus={() => setFocusedField("contactPerson")}
-                onBlur={() => setFocusedField(null)}
-              />
-              <Row label="Joined" value={client.created_at ? formatDate(client.created_at) : "—"} />
-            </View>
-
-            <Text style={styles.sectionTitle}>QuickBooks</Text>
-            <View style={styles.section}>
-              {qbCustomerId ? (
-                <View style={styles.qbLinkedRow}>
-                  <View style={styles.qbLinkedInfo}>
-                    <Ionicons name="checkmark-circle" size={18} color={COLORS.success} />
-                    <Text style={styles.qbLinkedText} numberOfLines={1}>
-                      Linked: {qbCustomerName ?? qbCustomerId}
-                    </Text>
-                  </View>
-                  <TouchableOpacity
-                    style={styles.qbUnlinkButton}
-                    onPress={handleUnlinkCustomer}
-                    disabled={qbUnlinking}
-                  >
-                    {qbUnlinking ? (
-                      <ActivityIndicator color={COLORS.danger} size="small" />
-                    ) : (
-                      <Text style={styles.qbUnlinkButtonText}>Unlink</Text>
-                    )}
-                  </TouchableOpacity>
-                </View>
-              ) : (
-                <View>
-                  <TextInput
-                    style={styles.input}
-                    value={qbSearchQuery}
-                    onChangeText={setQbSearchQuery}
-                    placeholder="Search QuickBooks customer by name"
-                    placeholderTextColor={COLORS.textMuted}
-                  />
-
-                  {qbSearching ? (
-                    <ActivityIndicator style={styles.qbSearchLoading} color={COLORS.gold} size="small" />
-                  ) : qbSearchResults.length > 0 ? (
-                    <View style={styles.qbDropdown}>
-                      {qbSearchResults.map((customer) => (
-                        <TouchableOpacity
-                          key={customer.qb_customer_id}
-                          style={styles.qbDropdownItem}
-                          onPress={() => handleLinkCustomer(customer)}
-                          disabled={qbLinking}
-                        >
-                          <Text style={styles.qbDropdownName}>{customer.name}</Text>
-                          {customer.email ? (
-                            <Text style={styles.qbDropdownEmail}>{customer.email}</Text>
-                          ) : null}
-                        </TouchableOpacity>
-                      ))}
-                    </View>
-                  ) : qbSearchQuery.trim().length > 0 ? (
-                    <Text style={styles.qbEmptyText}>No matching QuickBooks customers</Text>
-                  ) : null}
-                </View>
-              )}
-            </View>
-
-            {isEditing ? (
-              <>
-                <TouchableOpacity style={styles.saveButton} onPress={handleSave} disabled={saving}>
-                  {saving ? (
-                    <ActivityIndicator color="#1A1A1A" />
-                  ) : (
-                    <Text style={styles.saveButtonText}>Save</Text>
-                  )}
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.cancelButton} onPress={handleCancel} disabled={saving}>
-                  <Text style={styles.cancelButtonText}>Cancel</Text>
-                </TouchableOpacity>
-              </>
-            ) : (
-              <>
-                <TouchableOpacity style={styles.editButton} onPress={handleEdit}>
-                  <Text style={styles.editButtonText}>Edit</Text>
-                </TouchableOpacity>
-                {client.is_active ? (
-                  <TouchableOpacity
-                    style={styles.deactivateButton}
-                    onPress={handleDeactivate}
-                    disabled={deactivating}
-                  >
-                    {deactivating ? (
-                      <ActivityIndicator color={COLORS.danger} />
-                    ) : (
-                      <Text style={styles.deactivateButtonText}>Deactivate</Text>
-                    )}
-                  </TouchableOpacity>
-                ) : (
-                  <TouchableOpacity
-                    style={styles.reactivateButton}
-                    onPress={handleReactivate}
-                    disabled={reactivating}
-                  >
-                    {reactivating ? (
-                      <ActivityIndicator color={COLORS.success} />
-                    ) : (
-                      <Text style={styles.reactivateButtonText}>Reactivate</Text>
-                    )}
-                  </TouchableOpacity>
-                )}
-              </>
-            )}
-          </>
-        )}
-
-        {activeTab === "sites" && (
-          <>
-            {sitesLoading ? (
-              <ActivityIndicator style={styles.sitesLoading} color={COLORS.gold} />
-            ) : assignedSites.length === 0 ? (
-              <Text style={styles.emptyText}>No sites assigned</Text>
-            ) : (
-              assignedSites.map((site) => (
-                <TouchableOpacity
-                  key={site.id}
-                  style={styles.card}
-                  onPress={() => router.push(`/(admin)/sites/${site.id}`)}
-                >
-                  <View style={styles.goldBar} />
-                  <View style={styles.cardHeader}>
-                    <Text style={styles.cardTitle}>{site.name}</Text>
-                    <View
-                      style={[styles.badge, site.is_active ? styles.badgeActive : styles.badgeInactive]}
-                    >
-                      <Text style={[styles.badgeText, site.is_active ? styles.badgeTextActive : styles.badgeTextInactive]}>
-                        {site.is_active ? "Active" : "Inactive"}
+              <Text style={styles.sectionTitle}>QuickBooks</Text>
+              <View style={styles.section}>
+                {qbCustomerId ? (
+                  <View style={styles.qbLinkedRow}>
+                    <View style={styles.qbLinkedInfo}>
+                      <Ionicons name="checkmark-circle" size={18} color={COLORS.success} />
+                      <Text style={styles.qbLinkedText} numberOfLines={1}>
+                        Linked: {qbCustomerName ?? qbCustomerId}
                       </Text>
                     </View>
+                    <TouchableOpacity
+                      style={[styles.qbUnlinkButton, qbUnlinking && LOADING_STYLE]}
+                      onPress={handleUnlinkCustomer}
+                      disabled={qbUnlinking}
+                    >
+                      {qbUnlinking ? (
+                        <ActivityIndicator color={COLORS.danger} size="small" />
+                      ) : (
+                        <Text style={styles.qbUnlinkButtonText}>Unlink</Text>
+                      )}
+                    </TouchableOpacity>
                   </View>
-                  <Text style={styles.detail}>{site.address}</Text>
-                </TouchableOpacity>
-              ))
-            )}
-          </>
-        )}
-      </ScrollView>
-    </View>
+                ) : (
+                  <View>
+                    <TextInput
+                      style={styles.input}
+                      value={qbSearchQuery}
+                      onChangeText={setQbSearchQuery}
+                      placeholder="Search QuickBooks customer by name"
+                      placeholderTextColor={COLORS.textMuted}
+                    />
+
+                    {qbSearching ? (
+                      <ActivityIndicator style={styles.qbSearchLoading} color={COLORS.gold} size="small" />
+                    ) : qbSearchResults.length > 0 ? (
+                      <View style={styles.qbDropdown}>
+                        {qbSearchResults.map((customer) => (
+                          <TouchableOpacity
+                            key={customer.qb_customer_id}
+                            style={[styles.qbDropdownItem, qbLinking && LOADING_STYLE]}
+                            onPress={() => handleLinkCustomer(customer)}
+                            disabled={qbLinking}
+                          >
+                            <Text style={styles.qbDropdownName}>{customer.name}</Text>
+                            {customer.email ? (
+                              <Text style={styles.qbDropdownEmail}>{customer.email}</Text>
+                            ) : null}
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+                    ) : qbSearchQuery.trim().length > 0 ? (
+                      <Text style={styles.qbEmptyText}>No matching QuickBooks customers</Text>
+                    ) : null}
+                  </View>
+                )}
+              </View>
+
+              {isEditing ? (
+                <>
+                  <TouchableOpacity style={[styles.saveButton, saving && LOADING_STYLE]} onPress={handleSave} disabled={saving}>
+                    {saving ? (
+                      <ActivityIndicator color="#1A1A1A" />
+                    ) : (
+                      <Text style={styles.saveButtonText}>Save</Text>
+                    )}
+                  </TouchableOpacity>
+                  <TouchableOpacity style={[styles.cancelButton, saving && LOADING_STYLE]} onPress={handleCancel} disabled={saving}>
+                    <Text style={styles.cancelButtonText}>Cancel</Text>
+                  </TouchableOpacity>
+                </>
+              ) : (
+                <>
+                  <TouchableOpacity style={styles.editButton} onPress={handleEdit}>
+                    <Text style={styles.editButtonText}>Edit</Text>
+                  </TouchableOpacity>
+                  {client.is_active ? (
+                    <TouchableOpacity
+                      style={[styles.deactivateButton, deactivating && LOADING_STYLE]}
+                      onPress={handleDeactivate}
+                      disabled={deactivating}
+                    >
+                      {deactivating ? (
+                        <ActivityIndicator color={COLORS.gold} />
+                      ) : (
+                        <Text style={styles.deactivateButtonText}>Deactivate</Text>
+                      )}
+                    </TouchableOpacity>
+                  ) : (
+                    <TouchableOpacity
+                      style={[styles.reactivateButton, reactivating && LOADING_STYLE]}
+                      onPress={handleReactivate}
+                      disabled={reactivating}
+                    >
+                      {reactivating ? (
+                        <ActivityIndicator color={COLORS.gold} />
+                      ) : (
+                        <Text style={styles.reactivateButtonText}>Reactivate</Text>
+                      )}
+                    </TouchableOpacity>
+                  )}
+                </>
+              )}
+            </>
+          )}
+
+          {activeTab === "sites" && (
+            <>
+              {sitesLoading ? (
+                <ActivityIndicator style={styles.sitesLoading} color={COLORS.gold} />
+              ) : assignedSites.length === 0 ? (
+                <Text style={styles.emptyText}>No sites assigned</Text>
+              ) : (
+                assignedSites.map((site) => (
+                  <TouchableOpacity
+                    key={site.id}
+                    style={styles.card}
+                    onPress={() => router.push(`/(admin)/sites/${site.id}`)}
+                  >
+                    <View style={styles.goldBar} />
+                    <View style={styles.cardHeader}>
+                      <Text style={styles.cardTitle}>{site.name}</Text>
+                      <View
+                        style={[styles.badge, site.is_active ? styles.badgeActive : styles.badgeInactive]}
+                      >
+                        <Text style={[styles.badgeText, site.is_active ? styles.badgeTextActive : styles.badgeTextInactive]}>
+                          {site.is_active ? "Active" : "Inactive"}
+                        </Text>
+                      </View>
+                    </View>
+                    <Text style={styles.detail}>{site.address}</Text>
+                  </TouchableOpacity>
+                ))
+              )}
+            </>
+          )}
+        </ScrollView>
+      </View>
+    </ScreenContainer>
   );
 }
 

@@ -5,7 +5,7 @@
     "scheme": "brothers",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/brothers_app_icon.png",
+    "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "ios": {
       "supportsTablet": true
@@ -13,9 +13,7 @@
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundImage": "./assets/android-icon-background.png",
-        "monochromeImage": "./assets/android-icon-monochrome.png"
+        "foregroundImage": "./assets/adaptive-icon.png" 
       },
       "predictiveBackGestureEnabled": false,
       "package": "com.svinay.Brothers"
@@ -32,7 +30,7 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/splash_screen.png",
+          "image": "./assets/splash.png",
           "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#000000"

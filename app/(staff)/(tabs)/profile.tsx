@@ -14,6 +14,7 @@ import { getProfile, ProfileMe } from "../../../src/services/profile.service";
 import { logout } from "../../../src/services/auth.service";
 import { showError } from "../../../src/utils/toast";
 import { COLORS, RADIUS } from "../../../src/constants/theme";
+import { LOADING_STYLE } from "../../../src/constants/ui";
 
 const MONTHS = [
   "Jan", "Feb", "Mar", "Apr", "May", "Jun",
@@ -93,7 +94,7 @@ export default function StaffProfileScreen() {
   }
 
   return (
-    <ScrollView
+    <ScrollView keyboardShouldPersistTaps="handled"
       style={styles.container}
       contentContainerStyle={styles.content}
       refreshControl={
@@ -144,7 +145,7 @@ export default function StaffProfileScreen() {
         <Text style={styles.editButtonText}>Edit Profile</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.logoutButton} onPress={handleLogout} disabled={loggingOut}>
+      <TouchableOpacity style={[styles.logoutButton, loggingOut && LOADING_STYLE]} onPress={handleLogout} disabled={loggingOut}>
         {loggingOut ? (
           <ActivityIndicator color={COLORS.danger} />
         ) : (

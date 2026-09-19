@@ -128,7 +128,7 @@ export default function AdminDashboardScreen() {
     return (
       <LinearGradient colors={["#1A1A1A", "#0D0D0D"]} style={styles.desktopScreen}>
         <View style={styles.card}>
-          <ScrollView contentContainerStyle={styles.webContent}>
+          <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.webContent}>
             <View style={styles.maxWidthWrap}>
               {header}
               {errorBanner}
@@ -162,7 +162,7 @@ export default function AdminDashboardScreen() {
 
   return (
     <View style={styles.mobileScreen}>
-      <ScrollView
+      <ScrollView keyboardShouldPersistTaps="handled"
         contentContainerStyle={styles.mobileContent}
         refreshControl={
           <RefreshControl

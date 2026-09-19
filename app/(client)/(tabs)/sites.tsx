@@ -84,7 +84,7 @@ export default function ClientSitesScreen() {
         ) : null}
       </View>
 
-      <FlatList
+      <FlatList keyboardShouldPersistTaps="handled"
         data={filteredSites}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}

@@ -33,6 +33,9 @@ import { formatDateTime } from "../../../src/utils/datetime";
 import PhotoUploadModal from "../../../src/components/PhotoUploadModal";
 import NotesPanel from "../../../src/components/NotesPanel";
 import { COLORS, RADIUS } from "../../../src/constants/theme";
+import ScreenContainer from "../../../src/components/ScreenContainer";
+import ProcessingOverlay from "../../../src/components/ProcessingOverlay";
+import { LOADING_STYLE } from "../../../src/constants/ui";
 
 type Tab = "details" | "attendance" | "notes";
 
@@ -182,115 +185,118 @@ export default function StaffSiteDetailScreen() {
   }
 
   return (
-    <View style={styles.screen}>
-      <View style={styles.topBar}>
-        <BackButton onPress={() => router.replace("/(staff)/sites")} />
+    <ScreenContainer>
+      <View style={styles.screen}>
+        <View style={styles.topBar}>
+          <BackButton onPress={() => router.replace("/(staff)/sites")} />
 
-        <View style={styles.header}>
-          <Text style={styles.name}>{site.name}</Text>
-          {isActiveHere ? (
-            <View style={[styles.badge, styles.badgeActive]}>
-              <Text style={styles.badgeText}>Clocked In</Text>
-            </View>
-          ) : null}
-        </View>
-
-        <View style={styles.tabBar}>
-          {TABS.map((t) => {
-            const active = activeTab === t.key;
-            return (
-              <TouchableOpacity
-                key={t.key}
-                style={[styles.tab, active && styles.tabActive]}
-                onPress={() => setActiveTab(t.key)}
-              >
-                <Text style={[styles.tabText, active && styles.tabTextActive]}>{t.label}</Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-      </View>
-
-      <View style={styles.tabContent}>
-        {activeTab === "details" && (
-          <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-            <View style={styles.section}>
-              <Row label="Address" value={site.address} />
-              <Row label="Client" value={site.client?.full_name ?? "Not assigned"} />
-              <Row label="Distance" value={formatDistance(distanceKm)} />
-            </View>
-
-            <View
-              style={[
-                styles.statusCard,
-                isActiveHere ? styles.statusCardActive : styles.statusCardInactive,
-              ]}
-            >
-              <Text style={isActiveHere ? styles.statusCardText : styles.statusCardTextInactive}>
-                {isActiveHere
-                  ? `Clocked in · ${formatElapsed(activeAttendance!.attendance!.clock_in)}`
-                  : activeElsewhere
-                    ? "Clocked in at another site"
-                    : "Not clocked in"}
-              </Text>
-            </View>
-
+          <View style={styles.header}>
+            <Text style={styles.name}>{site.name}</Text>
             {isActiveHere ? (
-              <TouchableOpacity
-                style={styles.clockOutButton}
-                onPress={handleClockOut}
-                disabled={acting}
-              >
-                {acting ? (
-                  <ActivityIndicator color={COLORS.danger} size="small" />
-                ) : (
-                  <Text style={styles.clockOutButtonText}>Clock Out</Text>
-                )}
-              </TouchableOpacity>
-            ) : (
-              <TouchableOpacity
-                style={[styles.clockInButton, activeElsewhere && styles.clockInButtonDisabled]}
-                onPress={handleClockIn}
-                disabled={activeElsewhere || acting}
-              >
-                {acting ? (
-                  <ActivityIndicator color="#1A1A1A" size="small" />
-                ) : (
-                  <Text style={styles.clockInButtonText}>Clock In</Text>
-                )}
-              </TouchableOpacity>
-            )}
+              <View style={[styles.badge, styles.badgeActive]}>
+                <Text style={styles.badgeText}>Clocked In</Text>
+              </View>
+            ) : null}
+          </View>
 
-            <View style={styles.section}>
+          <View style={styles.tabBar}>
+            {TABS.map((t) => {
+              const active = activeTab === t.key;
+              return (
+                <TouchableOpacity
+                  key={t.key}
+                  style={[styles.tab, active && styles.tabActive]}
+                  onPress={() => setActiveTab(t.key)}
+                >
+                  <Text style={[styles.tabText, active && styles.tabTextActive]}>{t.label}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </View>
+
+        <View style={styles.tabContent}>
+          {activeTab === "details" && (
+            <ScrollView keyboardShouldPersistTaps="handled" style={styles.container} contentContainerStyle={styles.content}>
+              <View style={styles.section}>
+                <Row label="Address" value={site.address} />
+                <Row label="Client" value={site.client?.full_name ?? "Not assigned"} />
+                <Row label="Distance" value={formatDistance(distanceKm)} />
+              </View>
+
+              <View
+                style={[
+                  styles.statusCard,
+                  isActiveHere ? styles.statusCardActive : styles.statusCardInactive,
+                ]}
+              >
+                <Text style={isActiveHere ? styles.statusCardText : styles.statusCardTextInactive}>
+                  {isActiveHere
+                    ? `Clocked in · ${formatElapsed(activeAttendance!.attendance!.clock_in)}`
+                    : activeElsewhere
+                      ? "Clocked in at another site"
+                      : "Not clocked in"}
+                </Text>
+              </View>
+
               {isActiveHere ? (
                 <TouchableOpacity
-                  style={styles.uploadButton}
-                  onPress={() => setPhotoModalVisible(true)}
+                  style={[styles.clockOutButton, acting && LOADING_STYLE]}
+                  onPress={handleClockOut}
+                  disabled={acting}
                 >
-                  <Text style={styles.uploadButtonText}>Manage Photos</Text>
+                  {acting ? (
+                    <ActivityIndicator color={COLORS.gold} size="small" />
+                  ) : (
+                    <Text style={styles.clockOutButtonText}>Clock Out</Text>
+                  )}
                 </TouchableOpacity>
               ) : (
-                <Text style={styles.emptyText}>Clock in at this site to add before/after photos.</Text>
+                <TouchableOpacity
+                  style={[styles.clockInButton, activeElsewhere && styles.clockInButtonDisabled, acting && LOADING_STYLE]}
+                  onPress={handleClockIn}
+                  disabled={activeElsewhere || acting}
+                >
+                  {acting ? (
+                    <ActivityIndicator color="#1A1A1A" size="small" />
+                  ) : (
+                    <Text style={styles.clockInButtonText}>Clock In</Text>
+                  )}
+                </TouchableOpacity>
               )}
-            </View>
-          </ScrollView>
-        )}
 
-        {activeTab === "attendance" && <AttendanceHistory siteId={id} />}
+              <View style={styles.section}>
+                {isActiveHere ? (
+                  <TouchableOpacity
+                    style={styles.uploadButton}
+                    onPress={() => setPhotoModalVisible(true)}
+                  >
+                    <Text style={styles.uploadButtonText}>Manage Photos</Text>
+                  </TouchableOpacity>
+                ) : (
+                  <Text style={styles.emptyText}>Clock in at this site to add before/after photos.</Text>
+                )}
+              </View>
+            </ScrollView>
+          )}
 
-        {activeTab === "notes" && <NotesPanel siteId={id} />}
+          {activeTab === "attendance" && <AttendanceHistory siteId={id} />}
+
+          {activeTab === "notes" && <NotesPanel siteId={id} />}
+        </View>
+
+        <PhotoUploadModal
+          visible={photoModalVisible}
+          attendanceId={attendanceId}
+          siteName={site.name}
+          onClose={() => {
+            setPhotoModalVisible(false);
+            fetchActive();
+          }}
+        />
+        <ProcessingOverlay visible={acting} />
       </View>
-
-      <PhotoUploadModal
-        visible={photoModalVisible}
-        attendanceId={attendanceId}
-        siteName={site.name}
-        onClose={() => {
-          setPhotoModalVisible(false);
-          fetchActive();
-        }}
-      />
-    </View>
+    </ScreenContainer>
   );
 }
 
@@ -330,7 +336,7 @@ function AttendanceHistory({ siteId }: { siteId: string }) {
   }
 
   return (
-    <FlatList
+    <FlatList keyboardShouldPersistTaps="handled"
       data={history}
       keyExtractor={(item) => item.id}
       contentContainerStyle={styles.content}

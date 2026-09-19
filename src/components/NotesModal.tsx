@@ -1,3 +1,4 @@
+import { SafeAreaView } from "react-native-safe-area-context";
 import { Modal, View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import NotesPanel from "./NotesPanel";
 import { COLORS } from "../constants/theme";
@@ -11,7 +12,7 @@ interface NotesModalProps {
 export default function NotesModal({ visible, siteId, onClose }: NotesModalProps) {
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
-      <View style={styles.container}>
+      <SafeAreaView style={styles.container}>
         <View style={styles.header}>
           <Text style={styles.title}>Site Notes</Text>
           <TouchableOpacity onPress={onClose}>
@@ -20,7 +21,7 @@ export default function NotesModal({ visible, siteId, onClose }: NotesModalProps
         </View>
 
         <NotesPanel siteId={siteId} active={visible} />
-      </View>
+      </SafeAreaView>
     </Modal>
   );
 }

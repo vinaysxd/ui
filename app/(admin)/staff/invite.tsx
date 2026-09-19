@@ -13,6 +13,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { inviteStaff } from "../../../src/services/staff.service";
 import { showSuccess, showError } from "../../../src/utils/toast";
 import { COLORS, RADIUS } from "../../../src/constants/theme";
+import ScreenContainer from "../../../src/components/ScreenContainer";
+import { LOADING_STYLE } from "../../../src/constants/ui";
 
 export default function InviteStaffScreen() {
   const router = useRouter();
@@ -51,62 +53,64 @@ export default function InviteStaffScreen() {
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <View style={styles.maxWidthWrap}>
-        <TouchableOpacity style={styles.backButton} onPress={handleBack}>
-          <Ionicons name="arrow-back" size={22} color={COLORS.gold} />
-        </TouchableOpacity>
-
-        <Text style={styles.eyebrow}>INVITE</Text>
-        <Text style={styles.title}>New Staff Member</Text>
-
-        <View style={styles.card}>
-          <FormField
-            label="Full Name"
-            value={fullName}
-            onChangeText={setFullName}
-            editable={!submitting}
-            focused={focusedField === "fullName"}
-            onFocus={() => setFocusedField("fullName")}
-            onBlur={() => setFocusedField(null)}
-          />
-
-          <FormField
-            label="Email"
-            value={email}
-            onChangeText={setEmail}
-            autoCapitalize="none"
-            keyboardType="email-address"
-            editable={!submitting}
-            focused={focusedField === "email"}
-            onFocus={() => setFocusedField("email")}
-            onBlur={() => setFocusedField(null)}
-          />
-
-          <FormField
-            label="Phone"
-            value={phone}
-            onChangeText={setPhone}
-            keyboardType="phone-pad"
-            editable={!submitting}
-            focused={focusedField === "phone"}
-            onFocus={() => setFocusedField("phone")}
-            onBlur={() => setFocusedField(null)}
-            last
-          />
-
-          <TouchableOpacity style={styles.submitButton} onPress={handleSubmit} disabled={submitting}>
-            {submitting ? (
-              <ActivityIndicator color="#1A1A1A" />
-            ) : (
-              <Text style={styles.submitButtonText}>SEND INVITATION</Text>
-            )}
+    <ScreenContainer>
+      <ScrollView keyboardShouldPersistTaps="handled" style={styles.container} contentContainerStyle={styles.content}>
+        <View style={styles.maxWidthWrap}>
+          <TouchableOpacity style={styles.backButton} onPress={handleBack}>
+            <Ionicons name="arrow-back" size={22} color={COLORS.gold} />
           </TouchableOpacity>
 
-          {error ? <Text style={styles.errorText}>{error}</Text> : null}
+          <Text style={styles.eyebrow}>INVITE</Text>
+          <Text style={styles.title}>New Staff Member</Text>
+
+          <View style={styles.card}>
+            <FormField
+              label="Full Name"
+              value={fullName}
+              onChangeText={setFullName}
+              editable={!submitting}
+              focused={focusedField === "fullName"}
+              onFocus={() => setFocusedField("fullName")}
+              onBlur={() => setFocusedField(null)}
+            />
+
+            <FormField
+              label="Email"
+              value={email}
+              onChangeText={setEmail}
+              autoCapitalize="none"
+              keyboardType="email-address"
+              editable={!submitting}
+              focused={focusedField === "email"}
+              onFocus={() => setFocusedField("email")}
+              onBlur={() => setFocusedField(null)}
+            />
+
+            <FormField
+              label="Phone"
+              value={phone}
+              onChangeText={setPhone}
+              keyboardType="phone-pad"
+              editable={!submitting}
+              focused={focusedField === "phone"}
+              onFocus={() => setFocusedField("phone")}
+              onBlur={() => setFocusedField(null)}
+              last
+            />
+
+            <TouchableOpacity style={[styles.submitButton, submitting && LOADING_STYLE]} onPress={handleSubmit} disabled={submitting}>
+              {submitting ? (
+                <ActivityIndicator color="#1A1A1A" />
+              ) : (
+                <Text style={styles.submitButtonText}>SEND INVITATION</Text>
+              )}
+            </TouchableOpacity>
+
+            {error ? <Text style={styles.errorText}>{error}</Text> : null}
+          </View>
         </View>
-      </View>
-    </ScrollView>
+      </ScrollView>
+    </ScreenContainer>
   );
 }
 

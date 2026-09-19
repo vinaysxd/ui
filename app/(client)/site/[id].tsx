@@ -18,6 +18,7 @@ import { formatDateTime } from "../../../src/utils/datetime";
 import PhotoThumb from "../../../src/components/PhotoThumb";
 import NotesPanel from "../../../src/components/NotesPanel";
 import { COLORS, RADIUS } from "../../../src/constants/theme";
+import ScreenContainer from "../../../src/components/ScreenContainer";
 
 type Tab = "details" | "attendance" | "notes";
 
@@ -88,66 +89,68 @@ export default function ClientSiteDetailScreen() {
   }
 
   return (
-    <View style={styles.screen}>
-      <View style={styles.topBar}>
-        <BackButton onPress={() => router.replace("/(client)/sites")} />
+    <ScreenContainer>
+      <View style={styles.screen}>
+        <View style={styles.topBar}>
+          <BackButton onPress={() => router.replace("/(client)/sites")} />
 
-        <Text style={styles.name}>{site.name}</Text>
+          <Text style={styles.name}>{site.name}</Text>
 
-        <View style={styles.tabBar}>
-          {TABS.map((t) => {
-            const active = activeTab === t.key;
-            return (
-              <TouchableOpacity
-                key={t.key}
-                style={[styles.tab, active && styles.tabActive]}
-                onPress={() => setActiveTab(t.key)}
-              >
-                <Text style={[styles.tabText, active && styles.tabTextActive]}>{t.label}</Text>
-              </TouchableOpacity>
-            );
-          })}
+          <View style={styles.tabBar}>
+            {TABS.map((t) => {
+              const active = activeTab === t.key;
+              return (
+                <TouchableOpacity
+                  key={t.key}
+                  style={[styles.tab, active && styles.tabActive]}
+                  onPress={() => setActiveTab(t.key)}
+                >
+                  <Text style={[styles.tabText, active && styles.tabTextActive]}>{t.label}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </View>
+
+        <View style={styles.tabContent}>
+          {activeTab === "details" && (
+            <ScrollView keyboardShouldPersistTaps="handled" style={styles.container} contentContainerStyle={styles.content}>
+              <View style={styles.section}>
+                <Row label="Address" value={site.address} />
+                <Row label="Latitude" value={String(site.latitude)} />
+                <Row label="Longitude" value={String(site.longitude)} />
+              </View>
+
+              <Text style={styles.sectionLabel}>Assigned Staff</Text>
+              {!site.staff || site.staff.length === 0 ? (
+                <Text style={styles.emptyText}>No staff assigned</Text>
+              ) : (
+                site.staff.map((member) => (
+                  <View key={member.id} style={styles.staffCard}>
+                    <View style={styles.avatarCircle}>
+                      <Text style={styles.avatarText}>{getInitials(member.full_name)}</Text>
+                    </View>
+                    <View style={styles.staffCardInfo}>
+                      <Text style={styles.staffName}>{member.full_name}</Text>
+                      <Text style={styles.staffPhone}>{member.phone}</Text>
+                    </View>
+                    {member.is_active ? (
+                      <View style={[styles.badge, styles.badgeActive]}>
+                        <Text style={styles.badgeText}>Active</Text>
+                      </View>
+                    ) : null}
+                  </View>
+                ))
+              )}
+            </ScrollView>
+          )}
+
+          {activeTab === "attendance" && <AttendanceHistory siteId={id} />}
+
+          {activeTab === "notes" && <NotesPanel siteId={id} role="client" />}
         </View>
       </View>
-
-      <View style={styles.tabContent}>
-        {activeTab === "details" && (
-          <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-            <View style={styles.section}>
-              <Row label="Address" value={site.address} />
-              <Row label="Latitude" value={String(site.latitude)} />
-              <Row label="Longitude" value={String(site.longitude)} />
-            </View>
-
-            <Text style={styles.sectionLabel}>Assigned Staff</Text>
-            {!site.staff || site.staff.length === 0 ? (
-              <Text style={styles.emptyText}>No staff assigned</Text>
-            ) : (
-              site.staff.map((member) => (
-                <View key={member.id} style={styles.staffCard}>
-                  <View style={styles.avatarCircle}>
-                    <Text style={styles.avatarText}>{getInitials(member.full_name)}</Text>
-                  </View>
-                  <View style={styles.staffCardInfo}>
-                    <Text style={styles.staffName}>{member.full_name}</Text>
-                    <Text style={styles.staffPhone}>{member.phone}</Text>
-                  </View>
-                  {member.is_active ? (
-                    <View style={[styles.badge, styles.badgeActive]}>
-                      <Text style={styles.badgeText}>Active</Text>
-                    </View>
-                  ) : null}
-                </View>
-              ))
-            )}
-          </ScrollView>
-        )}
-
-        {activeTab === "attendance" && <AttendanceHistory siteId={id} />}
-
-        {activeTab === "notes" && <NotesPanel siteId={id} role="client" />}
-      </View>
-    </View>
+    </ScreenContainer>
   );
 }
 
@@ -187,7 +190,7 @@ function AttendanceHistory({ siteId }: { siteId: string }) {
   }
 
   return (
-    <FlatList
+    <FlatList keyboardShouldPersistTaps="handled"
       data={history}
       keyExtractor={(item) => item.id}
       contentContainerStyle={styles.content}

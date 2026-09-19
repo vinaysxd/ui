@@ -15,6 +15,8 @@ import * as ImagePicker from "expo-image-picker";
 import { getProfile, updateProfile, uploadAvatar } from "../../../src/services/profile.service";
 import { showSuccess, showError } from "../../../src/utils/toast";
 import { COLORS, RADIUS } from "../../../src/constants/theme";
+import ScreenContainer from "../../../src/components/ScreenContainer";
+import { LOADING_STYLE } from "../../../src/constants/ui";
 
 const getInitials = (fullName: string): string => {
   const parts = fullName.trim().split(/\s+/).filter(Boolean);
@@ -117,107 +119,109 @@ export default function ClientEditProfileScreen() {
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <BackButton onPress={() => router.replace("/(client)/profile")} />
+    <ScreenContainer>
+      <ScrollView keyboardShouldPersistTaps="handled" style={styles.container} contentContainerStyle={styles.content}>
+        <BackButton onPress={() => router.replace("/(client)/profile")} />
 
-      <Text style={styles.eyebrow}>EDIT</Text>
-      <Text style={styles.title}>Edit Profile</Text>
+        <Text style={styles.eyebrow}>EDIT</Text>
+        <Text style={styles.title}>Edit Profile</Text>
 
-      {loading ? (
-        <ActivityIndicator style={styles.loading} size="large" color={COLORS.gold} />
-      ) : (
-        <View style={styles.card}>
-          <View style={styles.avatarSection}>
-            {avatarPreviewUri && !avatarLoadFailed ? (
-              <Image
-                source={{ uri: avatarPreviewUri }}
-                style={styles.avatarImage}
-                onError={() => setAvatarLoadFailed(true)}
-              />
-            ) : (
-              <View style={styles.avatarPlaceholder}>
-                <Text style={styles.avatarPlaceholderText}>{getInitials(fullName)}</Text>
-              </View>
-            )}
-            <TouchableOpacity
-              style={styles.changePhotoButton}
-              onPress={handleChangePhoto}
-              disabled={uploading}
-            >
-              {uploading ? (
-                <ActivityIndicator color={COLORS.gold} size="small" />
+        {loading ? (
+          <ActivityIndicator style={styles.loading} size="large" color={COLORS.gold} />
+        ) : (
+          <View style={styles.card}>
+            <View style={styles.avatarSection}>
+              {avatarPreviewUri && !avatarLoadFailed ? (
+                <Image
+                  source={{ uri: avatarPreviewUri }}
+                  style={styles.avatarImage}
+                  onError={() => setAvatarLoadFailed(true)}
+                />
               ) : (
-                <Text style={styles.changePhotoButtonText}>Change Photo</Text>
+                <View style={styles.avatarPlaceholder}>
+                  <Text style={styles.avatarPlaceholderText}>{getInitials(fullName)}</Text>
+                </View>
               )}
-            </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.changePhotoButton, uploading && LOADING_STYLE]}
+                onPress={handleChangePhoto}
+                disabled={uploading}
+              >
+                {uploading ? (
+                  <ActivityIndicator color={COLORS.gold} size="small" />
+                ) : (
+                  <Text style={styles.changePhotoButtonText}>Change Photo</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+
+            <FormField
+              label="Full Name"
+              value={fullName}
+              onChangeText={setFullName}
+              focused={focusedField === "fullName"}
+              onFocus={() => setFocusedField("fullName")}
+              onBlur={() => setFocusedField(null)}
+            />
+
+            <FormField
+              label="Phone"
+              value={phone}
+              onChangeText={setPhone}
+              keyboardType="phone-pad"
+              focused={focusedField === "phone"}
+              onFocus={() => setFocusedField("phone")}
+              onBlur={() => setFocusedField(null)}
+            />
+
+            <FormField
+              label="Company Name"
+              value={companyName}
+              onChangeText={setCompanyName}
+              focused={focusedField === "companyName"}
+              onFocus={() => setFocusedField("companyName")}
+              onBlur={() => setFocusedField(null)}
+            />
+
+            <FormField
+              label="Billing Address"
+              value={billingAddress}
+              onChangeText={setBillingAddress}
+              focused={focusedField === "billingAddress"}
+              onFocus={() => setFocusedField("billingAddress")}
+              onBlur={() => setFocusedField(null)}
+            />
+
+            <FormField
+              label="Contact Person"
+              value={contactPerson}
+              onChangeText={setContactPerson}
+              focused={focusedField === "contactPerson"}
+              onFocus={() => setFocusedField("contactPerson")}
+              onBlur={() => setFocusedField(null)}
+              last
+            />
+
+            <View style={styles.buttonRow}>
+              <TouchableOpacity
+                style={[styles.cancelButton, saving && LOADING_STYLE]}
+                onPress={() => router.replace("/(client)/profile")}
+                disabled={saving}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.saveButton, saving && LOADING_STYLE]} onPress={handleSave} disabled={saving}>
+                {saving ? (
+                  <ActivityIndicator color="#1A1A1A" />
+                ) : (
+                  <Text style={styles.saveButtonText}>Save</Text>
+                )}
+              </TouchableOpacity>
+            </View>
           </View>
-
-          <FormField
-            label="Full Name"
-            value={fullName}
-            onChangeText={setFullName}
-            focused={focusedField === "fullName"}
-            onFocus={() => setFocusedField("fullName")}
-            onBlur={() => setFocusedField(null)}
-          />
-
-          <FormField
-            label="Phone"
-            value={phone}
-            onChangeText={setPhone}
-            keyboardType="phone-pad"
-            focused={focusedField === "phone"}
-            onFocus={() => setFocusedField("phone")}
-            onBlur={() => setFocusedField(null)}
-          />
-
-          <FormField
-            label="Company Name"
-            value={companyName}
-            onChangeText={setCompanyName}
-            focused={focusedField === "companyName"}
-            onFocus={() => setFocusedField("companyName")}
-            onBlur={() => setFocusedField(null)}
-          />
-
-          <FormField
-            label="Billing Address"
-            value={billingAddress}
-            onChangeText={setBillingAddress}
-            focused={focusedField === "billingAddress"}
-            onFocus={() => setFocusedField("billingAddress")}
-            onBlur={() => setFocusedField(null)}
-          />
-
-          <FormField
-            label="Contact Person"
-            value={contactPerson}
-            onChangeText={setContactPerson}
-            focused={focusedField === "contactPerson"}
-            onFocus={() => setFocusedField("contactPerson")}
-            onBlur={() => setFocusedField(null)}
-            last
-          />
-
-          <View style={styles.buttonRow}>
-            <TouchableOpacity
-              style={styles.cancelButton}
-              onPress={() => router.replace("/(client)/profile")}
-              disabled={saving}
-            >
-              <Text style={styles.cancelButtonText}>Cancel</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.saveButton} onPress={handleSave} disabled={saving}>
-              {saving ? (
-                <ActivityIndicator color="#1A1A1A" />
-              ) : (
-                <Text style={styles.saveButtonText}>Save</Text>
-              )}
-            </TouchableOpacity>
-          </View>
-        </View>
-      )}
-    </ScrollView>
+        )}
+      </ScrollView>
+    </ScreenContainer>
   );
 }
 

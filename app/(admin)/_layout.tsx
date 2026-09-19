@@ -1,4 +1,5 @@
-import { View, Text, Image, TouchableOpacity, StyleSheet, useWindowDimensions } from "react-native";
+import { View, Text, Image, TouchableOpacity, StyleSheet, useWindowDimensions, StatusBar } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { Stack, Slot, usePathname, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import Constants from "expo-constants";
@@ -25,7 +26,7 @@ function Sidebar() {
             style={styles.favicon}
             resizeMode="cover"
           />
-          <Text style={styles.brandText}>BROTHERS</Text>
+          {/* <Text style={styles.brandText}>BROTHERS</Text> */}
         </View>
         <View style={styles.divider} />
       </View>
@@ -71,15 +72,18 @@ function SidebarLayout() {
 
 function StackLayout() {
   return (
-    <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="(tabs)" />
-      <Stack.Screen name="staff/[id]" />
-      <Stack.Screen name="staff/invite" />
-      <Stack.Screen name="clients/[id]" />
-      <Stack.Screen name="clients/invite" />
-      <Stack.Screen name="sites/[id]" />
-      <Stack.Screen name="sites/create" />
-    </Stack>
+    <SafeAreaView style={styles.safeArea} edges={["top", "left", "right"]}>
+      <StatusBar backgroundColor="#1A1A1A" barStyle="light-content" />
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="staff/[id]" />
+        <Stack.Screen name="staff/invite" />
+        <Stack.Screen name="clients/[id]" />
+        <Stack.Screen name="clients/invite" />
+        <Stack.Screen name="sites/[id]" />
+        <Stack.Screen name="sites/create" />
+      </Stack>
+    </SafeAreaView>
   );
 }
 
@@ -91,6 +95,10 @@ export default function AdminLayout() {
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: "#1A1A1A",
+  },
   root: {
     flex: 1,
     flexDirection: "row",
@@ -116,8 +124,9 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.md,
   },
   favicon: {
-    width: 40,
-    height: 40,
+    marginTop:20,
+    width: 180,
+    height:80,
     borderRadius: 8,
   },
   brandText: {

@@ -81,7 +81,7 @@ export default function ClientHomeScreen() {
   }
 
   return (
-    <ScrollView
+    <ScrollView keyboardShouldPersistTaps="handled"
       style={styles.container}
       contentContainerStyle={styles.content}
       refreshControl={

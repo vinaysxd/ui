@@ -1,3 +1,4 @@
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useCallback, useEffect, useState } from "react";
 import {
   Modal,
@@ -21,6 +22,7 @@ import {
 import { showSuccess, showError } from "../utils/toast";
 import PhotoThumb from "./PhotoThumb";
 import { COLORS, RADIUS } from "../constants/theme";
+import { LOADING_STYLE } from "../constants/ui";
 
 interface PhotoUploadModalProps {
   visible: boolean;
@@ -150,7 +152,7 @@ export default function PhotoUploadModal({
 
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
-      <View style={styles.container}>
+      <SafeAreaView style={styles.container}>
         <View style={styles.header}>
           <Text style={styles.title} numberOfLines={1}>
             {siteName ? `${siteName} Photos` : "Photos"}
@@ -165,7 +167,7 @@ export default function PhotoUploadModal({
             <ActivityIndicator size="large" color={COLORS.gold} />
           </View>
         ) : (
-          <FlatList
+          <FlatList keyboardShouldPersistTaps="handled"
             data={photos}
             keyExtractor={(item) => item.id}
             contentContainerStyle={styles.listContent}
@@ -193,14 +195,14 @@ export default function PhotoUploadModal({
                     />
                     <View style={styles.addPairButtons}>
                       <TouchableOpacity
-                        style={styles.cancelButton}
+                        style={[styles.cancelButton, uploadingBefore && LOADING_STYLE]}
                         onPress={handleCancelAddPair}
                         disabled={uploadingBefore}
                       >
                         <Text style={styles.cancelButtonText}>Cancel</Text>
                       </TouchableOpacity>
                       <TouchableOpacity
-                        style={styles.choosePhotoButton}
+                        style={[styles.choosePhotoButton, uploadingBefore && LOADING_STYLE]}
                         onPress={handlePickBeforePhoto}
                         disabled={uploadingBefore}
                       >
@@ -225,7 +227,7 @@ export default function PhotoUploadModal({
             }
           />
         )}
-      </View>
+      </SafeAreaView>
     </Modal>
   );
 }
@@ -259,7 +261,7 @@ function PhotoPairCard({
             <PhotoThumb path={photo.after_photo_url} />
           ) : (
             <TouchableOpacity
-              style={styles.uploadAfterThumb}
+              style={[styles.uploadAfterThumb, uploadingAfter && LOADING_STYLE]}
               onPress={onUploadAfter}
               disabled={uploadingAfter}
             >

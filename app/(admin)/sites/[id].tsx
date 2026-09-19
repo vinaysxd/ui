@@ -33,6 +33,8 @@ import { getAttendanceBySite, Attendance } from "../../../src/services/attendanc
 import { getSiteNotes, deleteNote, SiteNote } from "../../../src/services/notes.service";
 import { showSuccess, showError } from "../../../src/utils/toast";
 import { COLORS, RADIUS } from "../../../src/constants/theme";
+import ScreenContainer from "../../../src/components/ScreenContainer";
+import { LOADING_STYLE } from "../../../src/constants/ui";
 
 type Tab = "details" | "staff" | "attendance" | "notes";
 type IconName = ComponentProps<typeof Ionicons>["name"];
@@ -381,449 +383,451 @@ export default function SiteDetailScreen() {
   }
 
   return (
-    <View style={styles.screen}>
-      <View style={styles.topBar}>
-        <BackButton onPress={() => router.replace("/(admin)/sites")} />
+    <ScreenContainer>
+      <View style={styles.screen}>
+        <View style={styles.topBar}>
+          <BackButton onPress={() => router.replace("/(admin)/sites")} />
 
-        <View style={styles.header}>
-          <View style={styles.headerInfo}>
-            <Text style={styles.name}>{site.name}</Text>
-            <Text style={styles.addressText}>{site.address}</Text>
+          <View style={styles.header}>
+            <View style={styles.headerInfo}>
+              <Text style={styles.name}>{site.name}</Text>
+              <Text style={styles.addressText}>{site.address}</Text>
+            </View>
+            <View style={[styles.badge, site.is_active ? styles.badgeActive : styles.badgeInactive]}>
+              <Text
+                style={[
+                  styles.badgeText,
+                  site.is_active ? styles.badgeTextActive : styles.badgeTextInactive,
+                ]}
+              >
+                {site.is_active ? "Active" : "Inactive"}
+              </Text>
+            </View>
           </View>
-          <View style={[styles.badge, site.is_active ? styles.badgeActive : styles.badgeInactive]}>
-            <Text
-              style={[
-                styles.badgeText,
-                site.is_active ? styles.badgeTextActive : styles.badgeTextInactive,
-              ]}
-            >
-              {site.is_active ? "Active" : "Inactive"}
-            </Text>
-          </View>
+
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabBar}>
+            {TABS.map((tab) => {
+              const active = activeTab === tab.key;
+              return (
+                <TouchableOpacity
+                  key={tab.key}
+                  style={[styles.tab, active && styles.tabActive]}
+                  onPress={() => setActiveTab(tab.key)}
+                >
+                  <Text style={[styles.tabText, active && styles.tabTextActive]}>{tab.label}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
         </View>
 
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabBar}>
-          {TABS.map((tab) => {
-            const active = activeTab === tab.key;
-            return (
-              <TouchableOpacity
-                key={tab.key}
-                style={[styles.tab, active && styles.tabActive]}
-                onPress={() => setActiveTab(tab.key)}
-              >
-                <Text style={[styles.tabText, active && styles.tabTextActive]}>{tab.label}</Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
-      </View>
-
-      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-        {activeTab === "details" && (
-          <>
-            <Text style={styles.sectionTitle}>Site Details</Text>
-            <View style={styles.goldDivider} />
-            <View style={styles.section}>
-              <FieldInput
-                label="Name"
-                icon="business-outline"
-                value={name}
-                onChangeText={setName}
-                editable={isEditing}
-                focused={focusedField === "name"}
-                onFocus={() => setFocusedField("name")}
-                onBlur={() => setFocusedField(null)}
-              />
-              <FieldInput
-                label="Address"
-                icon="location-outline"
-                value={address}
-                onChangeText={setAddress}
-                editable={isEditing}
-                focused={focusedField === "address"}
-                onFocus={() => setFocusedField("address")}
-                onBlur={() => setFocusedField(null)}
-              />
-              <FieldInput
-                label="Latitude"
-                icon="navigate-outline"
-                value={latitude}
-                onChangeText={setLatitude}
-                editable={isEditing}
-                keyboardType="numbers-and-punctuation"
-                focused={focusedField === "latitude"}
-                onFocus={() => setFocusedField("latitude")}
-                onBlur={() => setFocusedField(null)}
-              />
-              <FieldInput
-                label="Longitude"
-                icon="navigate-outline"
-                value={longitude}
-                onChangeText={setLongitude}
-                editable={isEditing}
-                keyboardType="numbers-and-punctuation"
-                focused={focusedField === "longitude"}
-                onFocus={() => setFocusedField("longitude")}
-                onBlur={() => setFocusedField(null)}
-              />
-              <View style={styles.fieldRow}>
-                <View style={styles.labelRow}>
-                  <Ionicons name="briefcase-outline" size={16} color={COLORS.gold} />
-                  <Text style={styles.rowLabel}>Client</Text>
-                </View>
-                {isEditing ? (
-                  <TouchableOpacity
-                    style={styles.dropdown}
-                    onPress={() => setClientPickerVisible(true)}
-                  >
-                    <Text
-                      style={selectedClientLabel ? styles.dropdownText : styles.dropdownPlaceholder}
+        <ScrollView keyboardShouldPersistTaps="handled" style={styles.container} contentContainerStyle={styles.content}>
+          {activeTab === "details" && (
+            <>
+              <Text style={styles.sectionTitle}>Site Details</Text>
+              <View style={styles.goldDivider} />
+              <View style={styles.section}>
+                <FieldInput
+                  label="Name"
+                  icon="business-outline"
+                  value={name}
+                  onChangeText={setName}
+                  editable={isEditing}
+                  focused={focusedField === "name"}
+                  onFocus={() => setFocusedField("name")}
+                  onBlur={() => setFocusedField(null)}
+                />
+                <FieldInput
+                  label="Address"
+                  icon="location-outline"
+                  value={address}
+                  onChangeText={setAddress}
+                  editable={isEditing}
+                  focused={focusedField === "address"}
+                  onFocus={() => setFocusedField("address")}
+                  onBlur={() => setFocusedField(null)}
+                />
+                <FieldInput
+                  label="Latitude"
+                  icon="navigate-outline"
+                  value={latitude}
+                  onChangeText={setLatitude}
+                  editable={isEditing}
+                  keyboardType="numbers-and-punctuation"
+                  focused={focusedField === "latitude"}
+                  onFocus={() => setFocusedField("latitude")}
+                  onBlur={() => setFocusedField(null)}
+                />
+                <FieldInput
+                  label="Longitude"
+                  icon="navigate-outline"
+                  value={longitude}
+                  onChangeText={setLongitude}
+                  editable={isEditing}
+                  keyboardType="numbers-and-punctuation"
+                  focused={focusedField === "longitude"}
+                  onFocus={() => setFocusedField("longitude")}
+                  onBlur={() => setFocusedField(null)}
+                />
+                <View style={styles.fieldRow}>
+                  <View style={styles.labelRow}>
+                    <Ionicons name="briefcase-outline" size={16} color={COLORS.gold} />
+                    <Text style={styles.rowLabel}>Client</Text>
+                  </View>
+                  {isEditing ? (
+                    <TouchableOpacity
+                      style={styles.dropdown}
+                      onPress={() => setClientPickerVisible(true)}
                     >
-                      {selectedClientLabel || "Select a client"}
-                    </Text>
-                    <Ionicons name="chevron-down-outline" size={18} color={COLORS.textMuted} />
-                  </TouchableOpacity>
+                      <Text
+                        style={selectedClientLabel ? styles.dropdownText : styles.dropdownPlaceholder}
+                      >
+                        {selectedClientLabel || "Select a client"}
+                      </Text>
+                      <Ionicons name="chevron-down-outline" size={18} color={COLORS.textMuted} />
+                    </TouchableOpacity>
+                  ) : (
+                    <Text style={styles.rowValueBlock}>{selectedClientLabel || "No client"}</Text>
+                  )}
+                </View>
+
+                {isEditing ? (
+                  <>
+                    <TouchableOpacity style={[styles.saveButton, saving && LOADING_STYLE]} onPress={handleSave} disabled={saving}>
+                      {saving ? (
+                        <ActivityIndicator color="#1A1A1A" />
+                      ) : (
+                        <Text style={styles.saveButtonText}>Save</Text>
+                      )}
+                    </TouchableOpacity>
+                    <TouchableOpacity style={[styles.cancelButton, saving && LOADING_STYLE]} onPress={handleCancel} disabled={saving}>
+                      <Text style={styles.cancelButtonText}>Cancel</Text>
+                    </TouchableOpacity>
+                  </>
                 ) : (
-                  <Text style={styles.rowValueBlock}>{selectedClientLabel || "No client"}</Text>
+                  <>
+                    <TouchableOpacity style={styles.editButton} onPress={handleEdit}>
+                      <Text style={styles.editButtonText}>Edit</Text>
+                    </TouchableOpacity>
+                    {site.is_active ? (
+                      <TouchableOpacity
+                        style={[styles.deactivateButton, deactivating && LOADING_STYLE]}
+                        onPress={handleDeactivate}
+                        disabled={deactivating}
+                      >
+                        {deactivating ? (
+                          <ActivityIndicator color={COLORS.gold} />
+                        ) : (
+                          <Text style={styles.deactivateButtonText}>Deactivate</Text>
+                        )}
+                      </TouchableOpacity>
+                    ) : (
+                      <TouchableOpacity
+                        style={[styles.reactivateButton, reactivating && LOADING_STYLE]}
+                        onPress={handleReactivate}
+                        disabled={reactivating}
+                      >
+                        {reactivating ? (
+                          <ActivityIndicator color={COLORS.gold} />
+                        ) : (
+                          <Text style={styles.reactivateButtonText}>Reactivate</Text>
+                        )}
+                      </TouchableOpacity>
+                    )}
+                  </>
                 )}
               </View>
 
-              {isEditing ? (
-                <>
-                  <TouchableOpacity style={styles.saveButton} onPress={handleSave} disabled={saving}>
-                    {saving ? (
-                      <ActivityIndicator color="#1A1A1A" />
-                    ) : (
-                      <Text style={styles.saveButtonText}>Save</Text>
-                    )}
-                  </TouchableOpacity>
-                  <TouchableOpacity style={styles.cancelButton} onPress={handleCancel} disabled={saving}>
-                    <Text style={styles.cancelButtonText}>Cancel</Text>
-                  </TouchableOpacity>
-                </>
+              <Text style={styles.sectionTitle}>Client Details</Text>
+              <View style={styles.clientCard}>
+                <View style={styles.goldBar} />
+                {site.client ? (
+                  <>
+                    <Row label="Full Name" icon="person-outline" value={site.client.full_name} />
+                    <Row label="Email" icon="mail-outline" value={site.client.email} />
+                    <Row label="Phone" icon="call-outline" value={site.client.phone} />
+                    <Row
+                      label="Company Name"
+                      icon="briefcase-outline"
+                      value={site.client.company_name ?? "—"}
+                    />
+                    <Row
+                      label="Billing Address"
+                      icon="location-outline"
+                      value={site.client.billing_address ?? "—"}
+                    />
+                    <Row
+                      label="Contact Person"
+                      icon="person-circle-outline"
+                      value={site.client.contact_person ?? "—"}
+                    />
+                  </>
+                ) : (
+                  <Text style={styles.emptyText}>No client assigned.</Text>
+                )}
+              </View>
+            </>
+          )}
+
+          {activeTab === "staff" && (
+            <>
+              <View style={styles.staffSectionHeader}>
+                <Text style={styles.sectionTitle}>Assigned Staff</Text>
+                <TouchableOpacity style={styles.assignButton} onPress={handleOpenAssignModal}>
+                  <Ionicons name="person-add-outline" size={16} color="#1A1A1A" />
+                  <Text style={styles.assignButtonText}>Assign Staff</Text>
+                </TouchableOpacity>
+              </View>
+
+              {assignedStaffLoading ? (
+                <ActivityIndicator style={styles.staffLoading} color={COLORS.gold} />
+              ) : assignedStaff.length === 0 ? (
+                <Text style={styles.emptyText}>No staff assigned to this site.</Text>
               ) : (
-                <>
-                  <TouchableOpacity style={styles.editButton} onPress={handleEdit}>
-                    <Text style={styles.editButtonText}>Edit</Text>
-                  </TouchableOpacity>
-                  {site.is_active ? (
-                    <TouchableOpacity
-                      style={styles.deactivateButton}
-                      onPress={handleDeactivate}
-                      disabled={deactivating}
-                    >
-                      {deactivating ? (
-                        <ActivityIndicator color={COLORS.danger} />
-                      ) : (
-                        <Text style={styles.deactivateButtonText}>Deactivate</Text>
-                      )}
-                    </TouchableOpacity>
-                  ) : (
-                    <TouchableOpacity
-                      style={styles.reactivateButton}
-                      onPress={handleReactivate}
-                      disabled={reactivating}
-                    >
-                      {reactivating ? (
-                        <ActivityIndicator color={COLORS.success} />
-                      ) : (
-                        <Text style={styles.reactivateButtonText}>Reactivate</Text>
-                      )}
-                    </TouchableOpacity>
-                  )}
-                </>
-              )}
-            </View>
-
-            <Text style={styles.sectionTitle}>Client Details</Text>
-            <View style={styles.clientCard}>
-              <View style={styles.goldBar} />
-              {site.client ? (
-                <>
-                  <Row label="Full Name" icon="person-outline" value={site.client.full_name} />
-                  <Row label="Email" icon="mail-outline" value={site.client.email} />
-                  <Row label="Phone" icon="call-outline" value={site.client.phone} />
-                  <Row
-                    label="Company Name"
-                    icon="briefcase-outline"
-                    value={site.client.company_name ?? "—"}
-                  />
-                  <Row
-                    label="Billing Address"
-                    icon="location-outline"
-                    value={site.client.billing_address ?? "—"}
-                  />
-                  <Row
-                    label="Contact Person"
-                    icon="person-circle-outline"
-                    value={site.client.contact_person ?? "—"}
-                  />
-                </>
-              ) : (
-                <Text style={styles.emptyText}>No client assigned.</Text>
-              )}
-            </View>
-          </>
-        )}
-
-        {activeTab === "staff" && (
-          <>
-            <View style={styles.staffSectionHeader}>
-              <Text style={styles.sectionTitle}>Assigned Staff</Text>
-              <TouchableOpacity style={styles.assignButton} onPress={handleOpenAssignModal}>
-                <Ionicons name="person-add-outline" size={16} color="#1A1A1A" />
-                <Text style={styles.assignButtonText}>Assign Staff</Text>
-              </TouchableOpacity>
-            </View>
-
-            {assignedStaffLoading ? (
-              <ActivityIndicator style={styles.staffLoading} color={COLORS.gold} />
-            ) : assignedStaff.length === 0 ? (
-              <Text style={styles.emptyText}>No staff assigned to this site.</Text>
-            ) : (
-              assignedStaff.map((member) => (
-                <View key={member.id} style={styles.cardShadow}>
-                  <View style={styles.staffCard}>
-                    <View style={styles.goldBar} />
-                    <View style={styles.avatarCircle}>
-                      <Text style={styles.avatarText}>{getInitials(member.full_name)}</Text>
-                    </View>
-                    <View style={styles.staffCardInfo}>
-                      <Text style={styles.staffName}>{member.full_name}</Text>
-                      <Text style={styles.detailSecondary}>{member.phone}</Text>
-                      <View
-                        style={[
-                          styles.badge,
-                          styles.staffBadge,
-                          member.is_active ? styles.badgeActive : styles.badgeInactive,
-                        ]}
-                      >
-                        <Text
-                          style={[
-                            styles.badgeText,
-                            member.is_active ? styles.badgeTextActive : styles.badgeTextInactive,
-                          ]}
-                        >
-                          {member.is_active ? "Active" : "Inactive"}
-                        </Text>
+                assignedStaff.map((member) => (
+                  <View key={member.id} style={styles.cardShadow}>
+                    <View style={styles.staffCard}>
+                      <View style={styles.goldBar} />
+                      <View style={styles.avatarCircle}>
+                        <Text style={styles.avatarText}>{getInitials(member.full_name)}</Text>
                       </View>
-                    </View>
-                    <TouchableOpacity
-                      style={styles.unassignButton}
-                      onPress={() => handleUnassign(member.id)}
-                      disabled={unassigningId === member.id}
-                    >
-                      {unassigningId === member.id ? (
-                        <ActivityIndicator color={COLORS.danger} size="small" />
-                      ) : (
-                        <Text style={styles.unassignButtonText}>Unassign</Text>
-                      )}
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              ))
-            )}
-          </>
-        )}
-
-        {activeTab === "attendance" && (
-          <>
-            {attendanceLoading ? (
-              <ActivityIndicator style={styles.staffLoading} color={COLORS.gold} />
-            ) : attendance.length === 0 ? (
-              <Text style={styles.emptyText}>No attendance records.</Text>
-            ) : (
-              attendance.map((record) => (
-                <View key={record.id} style={styles.attendanceCardShadow}>
-                  <View style={styles.attendanceCard}>
-                    <View style={styles.goldBar} />
-                    <View style={styles.attendanceLeft}>
-                      <View style={styles.attendanceAvatar}>
-                        <Text style={styles.attendanceAvatarText}>
-                          {getInitials(record.staff?.full_name ?? "?")}
-                        </Text>
-                      </View>
-                      <View>
-                        <Text style={styles.attendanceStaffName}>
-                          {record.staff?.full_name ?? "Unknown staff"}
-                        </Text>
-                        <Text style={styles.attendanceSiteName}>{record.site?.name ?? "Today"}</Text>
-                      </View>
-                    </View>
-                    <View style={styles.attendanceRight}>
-                      <View style={styles.attendanceStatusRow}>
+                      <View style={styles.staffCardInfo}>
+                        <Text style={styles.staffName}>{member.full_name}</Text>
+                        <Text style={styles.detailSecondary}>{member.phone}</Text>
                         <View
                           style={[
-                            styles.attendanceStatusDot,
-                            record.clock_out
-                              ? styles.attendanceStatusDotMuted
-                              : styles.attendanceStatusDotActive,
+                            styles.badge,
+                            styles.staffBadge,
+                            member.is_active ? styles.badgeActive : styles.badgeInactive,
                           ]}
-                        />
-                        <Text
-                          style={[
-                            styles.attendanceStatusText,
-                            record.clock_out
-                              ? styles.attendanceStatusTextMuted
-                              : styles.attendanceStatusTextActive,
-                          ]}
-                        >
-                          {record.clock_out ? formatDateTime(record.clock_out) : "Active"}
-                        </Text>
-                      </View>
-                      <Text style={styles.attendanceClockIn}>{formatDateTime(record.clock_in)}</Text>
-                      {record.clock_out ? (
-                        <Text style={styles.attendanceDuration}>
-                          {formatDuration(record.clock_in, record.clock_out)}
-                        </Text>
-                      ) : null}
-                    </View>
-                  </View>
-                </View>
-              ))
-            )}
-          </>
-        )}
-
-        {activeTab === "notes" && (
-          <>
-            {notesLoading ? (
-              <ActivityIndicator style={styles.staffLoading} color={COLORS.gold} />
-            ) : notes.length === 0 ? (
-              <Text style={styles.emptyText}>No notes for this site.</Text>
-            ) : (
-              notes.map((note) => {
-                const isClient = note.type === "client";
-                const card = (
-                  <View style={[styles.card, isClient ? styles.cardClient : styles.cardStaff]}>
-                    <View style={isClient ? styles.goldBar : styles.staffBar} />
-                    <View style={styles.cardHeader}>
-                      <Text style={styles.authorName}>{note.author?.full_name ?? "Unknown author"}</Text>
-                      <View style={styles.cardHeaderRight}>
-                        <View
-                          style={[styles.noteBadge, isClient ? styles.noteBadgeClient : styles.noteBadgeStaff]}
                         >
                           <Text
                             style={[
-                              styles.noteBadgeText,
-                              isClient ? styles.noteBadgeTextClient : styles.noteBadgeTextStaff,
+                              styles.badgeText,
+                              member.is_active ? styles.badgeTextActive : styles.badgeTextInactive,
                             ]}
                           >
-                            {isClient ? "CLIENT" : "STAFF"}
+                            {member.is_active ? "Active" : "Inactive"}
                           </Text>
                         </View>
-                        <Pressable
-                          onPress={(e: any) => {
-                            e.stopPropagation();
-                            console.log("delete button pressed", note.id);
-                            console.log("site_id:", id);
-                            confirmDelete(note.id);
-                          }}
-                          {...(Platform.OS === "web"
-                            ? {
-                                onClick: (e: any) => {
-                                  e.stopPropagation();
-                                  console.log("delete button pressed", note.id);
-                                  console.log("site_id:", id);
-                                  confirmDelete(note.id);
-                                },
-                              }
-                            : {})}
-                          style={styles.deleteNoteButton}
-                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                        >
-                          <Ionicons name="trash-outline" size={16} color={COLORS.danger} />
-                        </Pressable>
+                      </View>
+                      <TouchableOpacity
+                        style={[styles.unassignButton, unassigningId === member.id && LOADING_STYLE]}
+                        onPress={() => handleUnassign(member.id)}
+                        disabled={unassigningId !== ""}
+                      >
+                        {unassigningId === member.id ? (
+                          <ActivityIndicator color={COLORS.gold} size="small" />
+                        ) : (
+                          <Text style={styles.unassignButtonText}>Unassign</Text>
+                        )}
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                ))
+              )}
+            </>
+          )}
+
+          {activeTab === "attendance" && (
+            <>
+              {attendanceLoading ? (
+                <ActivityIndicator style={styles.staffLoading} color={COLORS.gold} />
+              ) : attendance.length === 0 ? (
+                <Text style={styles.emptyText}>No attendance records.</Text>
+              ) : (
+                attendance.map((record) => (
+                  <View key={record.id} style={styles.attendanceCardShadow}>
+                    <View style={styles.attendanceCard}>
+                      <View style={styles.goldBar} />
+                      <View style={styles.attendanceLeft}>
+                        <View style={styles.attendanceAvatar}>
+                          <Text style={styles.attendanceAvatarText}>
+                            {getInitials(record.staff?.full_name ?? "?")}
+                          </Text>
+                        </View>
+                        <View>
+                          <Text style={styles.attendanceStaffName}>
+                            {record.staff?.full_name ?? "Unknown staff"}
+                          </Text>
+                          <Text style={styles.attendanceSiteName}>{record.site?.name ?? "Today"}</Text>
+                        </View>
+                      </View>
+                      <View style={styles.attendanceRight}>
+                        <View style={styles.attendanceStatusRow}>
+                          <View
+                            style={[
+                              styles.attendanceStatusDot,
+                              record.clock_out
+                                ? styles.attendanceStatusDotMuted
+                                : styles.attendanceStatusDotActive,
+                            ]}
+                          />
+                          <Text
+                            style={[
+                              styles.attendanceStatusText,
+                              record.clock_out
+                                ? styles.attendanceStatusTextMuted
+                                : styles.attendanceStatusTextActive,
+                            ]}
+                          >
+                            {record.clock_out ? formatDateTime(record.clock_out) : "Active"}
+                          </Text>
+                        </View>
+                        <Text style={styles.attendanceClockIn}>{formatDateTime(record.clock_in)}</Text>
+                        {record.clock_out ? (
+                          <Text style={styles.attendanceDuration}>
+                            {formatDuration(record.clock_in, record.clock_out)}
+                          </Text>
+                        ) : null}
                       </View>
                     </View>
-                    <Text style={styles.noteText}>{note.note}</Text>
-                    <Text style={styles.noteTimestamp}>{formatDateTime(note.created_at)}</Text>
                   </View>
-                );
-                return isClient ? (
-                  <View key={note.id} style={styles.cardShadow}>
-                    {card}
-                  </View>
-                ) : (
-                  <View key={note.id}>{card}</View>
-                );
-              })
-            )}
-          </>
-        )}
-      </ScrollView>
+                ))
+              )}
+            </>
+          )}
 
-      <Modal visible={clientPickerVisible} animationType="slide" transparent>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Select Client</Text>
-              <TouchableOpacity onPress={() => setClientPickerVisible(false)}>
-                <Ionicons name="close-outline" size={24} color={COLORS.gold} />
-              </TouchableOpacity>
-            </View>
-            <FlatList
-              data={clients}
-              keyExtractor={(item) => item.id}
-              ListEmptyComponent={<Text style={styles.emptyText}>No active clients found.</Text>}
-              renderItem={({ item }) => {
-                const isSelected = item.id === clientId;
-                return (
-                  <TouchableOpacity style={styles.modalRow} onPress={() => handleSelectClient(item)}>
-                    <Text style={[styles.modalRowText, isSelected && styles.modalRowTextSelected]}>
-                      {clientDisplayLabel(item)}
-                    </Text>
-                    {isSelected ? (
-                      <Ionicons name="checkmark" size={18} color={COLORS.gold} />
-                    ) : null}
-                  </TouchableOpacity>
-                );
-              }}
-            />
-          </View>
-        </View>
-      </Modal>
+          {activeTab === "notes" && (
+            <>
+              {notesLoading ? (
+                <ActivityIndicator style={styles.staffLoading} color={COLORS.gold} />
+              ) : notes.length === 0 ? (
+                <Text style={styles.emptyText}>No notes for this site.</Text>
+              ) : (
+                notes.map((note) => {
+                  const isClient = note.type === "client";
+                  const card = (
+                    <View style={[styles.card, isClient ? styles.cardClient : styles.cardStaff]}>
+                      <View style={isClient ? styles.goldBar : styles.staffBar} />
+                      <View style={styles.cardHeader}>
+                        <Text style={styles.authorName}>{note.author?.full_name ?? "Unknown author"}</Text>
+                        <View style={styles.cardHeaderRight}>
+                          <View
+                            style={[styles.noteBadge, isClient ? styles.noteBadgeClient : styles.noteBadgeStaff]}
+                          >
+                            <Text
+                              style={[
+                                styles.noteBadgeText,
+                                isClient ? styles.noteBadgeTextClient : styles.noteBadgeTextStaff,
+                              ]}
+                            >
+                              {isClient ? "CLIENT" : "STAFF"}
+                            </Text>
+                          </View>
+                          <Pressable
+                            onPress={(e: any) => {
+                              e.stopPropagation();
+                              console.log("delete button pressed", note.id);
+                              console.log("site_id:", id);
+                              confirmDelete(note.id);
+                            }}
+                            {...(Platform.OS === "web"
+                              ? {
+                                  onClick: (e: any) => {
+                                    e.stopPropagation();
+                                    console.log("delete button pressed", note.id);
+                                    console.log("site_id:", id);
+                                    confirmDelete(note.id);
+                                  },
+                                }
+                              : {})}
+                            style={styles.deleteNoteButton}
+                            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                          >
+                            <Ionicons name="trash-outline" size={16} color={COLORS.danger} />
+                          </Pressable>
+                        </View>
+                      </View>
+                      <Text style={styles.noteText}>{note.note}</Text>
+                      <Text style={styles.noteTimestamp}>{formatDateTime(note.created_at)}</Text>
+                    </View>
+                  );
+                  return isClient ? (
+                    <View key={note.id} style={styles.cardShadow}>
+                      {card}
+                    </View>
+                  ) : (
+                    <View key={note.id}>{card}</View>
+                  );
+                })
+              )}
+            </>
+          )}
+        </ScrollView>
 
-      <Modal visible={assignModalVisible} animationType="slide" transparent>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Assign Staff</Text>
-              <TouchableOpacity onPress={() => setAssignModalVisible(false)}>
-                <Ionicons name="close-outline" size={24} color={COLORS.gold} />
-              </TouchableOpacity>
-            </View>
-            {allStaffLoading ? (
-              <ActivityIndicator style={styles.staffLoading} color={COLORS.gold} />
-            ) : (
-              <FlatList
-                data={unassignedActiveStaff}
-                keyExtractor={(item) => item.profile_id ?? item.id}
-                ListEmptyComponent={
-                  <Text style={styles.emptyText}>No unassigned active staff available.</Text>
-                }
-                renderItem={({ item }) => (
-                  <View style={styles.modalRow}>
-                    <Text style={styles.modalRowText}>{item.full_name}</Text>
-                    <TouchableOpacity
-                      style={styles.assignRowButton}
-                      onPress={() => handleAssign(item.profile_id!)}
-                      disabled={assigningId === item.profile_id}
-                    >
-                      {assigningId === item.profile_id ? (
-                        <ActivityIndicator color="#1A1A1A" size="small" />
-                      ) : (
-                        <Text style={styles.assignRowButtonText}>Assign</Text>
-                      )}
+        <Modal visible={clientPickerVisible} animationType="slide" transparent>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Select Client</Text>
+                <TouchableOpacity onPress={() => setClientPickerVisible(false)}>
+                  <Ionicons name="close-outline" size={24} color={COLORS.gold} />
+                </TouchableOpacity>
+              </View>
+              <FlatList keyboardShouldPersistTaps="handled"
+                data={clients}
+                keyExtractor={(item) => item.id}
+                ListEmptyComponent={<Text style={styles.emptyText}>No active clients found.</Text>}
+                renderItem={({ item }) => {
+                  const isSelected = item.id === clientId;
+                  return (
+                    <TouchableOpacity style={styles.modalRow} onPress={() => handleSelectClient(item)}>
+                      <Text style={[styles.modalRowText, isSelected && styles.modalRowTextSelected]}>
+                        {clientDisplayLabel(item)}
+                      </Text>
+                      {isSelected ? (
+                        <Ionicons name="checkmark" size={18} color={COLORS.gold} />
+                      ) : null}
                     </TouchableOpacity>
-                  </View>
-                )}
+                  );
+                }}
               />
-            )}
+            </View>
           </View>
-        </View>
-      </Modal>
-    </View>
+        </Modal>
+
+        <Modal visible={assignModalVisible} animationType="slide" transparent>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Assign Staff</Text>
+                <TouchableOpacity onPress={() => setAssignModalVisible(false)}>
+                  <Ionicons name="close-outline" size={24} color={COLORS.gold} />
+                </TouchableOpacity>
+              </View>
+              {allStaffLoading ? (
+                <ActivityIndicator style={styles.staffLoading} color={COLORS.gold} />
+              ) : (
+                <FlatList keyboardShouldPersistTaps="handled"
+                  data={unassignedActiveStaff}
+                  keyExtractor={(item) => item.profile_id ?? item.id}
+                  ListEmptyComponent={
+                    <Text style={styles.emptyText}>No unassigned active staff available.</Text>
+                  }
+                  renderItem={({ item }) => (
+                    <View style={styles.modalRow}>
+                      <Text style={styles.modalRowText}>{item.full_name}</Text>
+                      <TouchableOpacity
+                        style={[styles.assignRowButton, assigningId === item.profile_id && LOADING_STYLE]}
+                        onPress={() => handleAssign(item.profile_id!)}
+                        disabled={assigningId !== ""}
+                      >
+                        {assigningId === item.profile_id ? (
+                          <ActivityIndicator color="#1A1A1A" size="small" />
+                        ) : (
+                          <Text style={styles.assignRowButtonText}>Assign</Text>
+                        )}
+                      </TouchableOpacity>
+                    </View>
+                  )}
+                />
+              )}
+            </View>
+          </View>
+        </Modal>
+      </View>
+    </ScreenContainer>
   );
 }
 

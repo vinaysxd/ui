@@ -127,7 +127,7 @@ export default function StaffSitesScreen() {
         ) : null}
       </View>
 
-      <FlatList
+      <FlatList keyboardShouldPersistTaps="handled"
         data={filteredSites}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}

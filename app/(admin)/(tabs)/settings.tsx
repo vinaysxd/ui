@@ -10,6 +10,8 @@ import {
   StyleSheet,
   AppState,
   useWindowDimensions,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -23,6 +25,7 @@ import { showSuccess, showError } from "../../../src/utils/toast";
 import { COLORS, RADIUS } from "../../../src/constants/theme";
 import { getErrorMessage } from "../../../src/constants/errors";
 import api from "../../../src/lib/api";
+import { LOADING_STYLE } from "../../../src/constants/ui";
 
 const QB_GREEN = "#2CA01C";
 
@@ -251,7 +254,7 @@ export default function SettingsScreen() {
 
           {isEditing ? (
             <TouchableOpacity
-              style={styles.changePhotoButton}
+              style={[styles.changePhotoButton, uploading && LOADING_STYLE]}
               onPress={handleChangePhoto}
               disabled={uploading}
             >
@@ -299,10 +302,10 @@ export default function SettingsScreen() {
 
           {isEditing ? (
             <View style={styles.editActionsRow}>
-              <TouchableOpacity style={styles.cancelButton} onPress={handleCancel} disabled={saving}>
+              <TouchableOpacity style={[styles.cancelButton, saving && LOADING_STYLE]} onPress={handleCancel} disabled={saving}>
                 <Text style={styles.cancelButtonText}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.saveButton} onPress={handleSave} disabled={saving}>
+              <TouchableOpacity style={[styles.saveButton, saving && LOADING_STYLE]} onPress={handleSave} disabled={saving}>
                 {saving ? (
                   <ActivityIndicator size="small" color="#1A1A1A" />
                 ) : (
@@ -337,7 +340,7 @@ export default function SettingsScreen() {
               <Text style={styles.qbStatusText}>Connected to QuickBooks</Text>
             </View>
             <TouchableOpacity
-              style={styles.qbDisconnectButton}
+              style={[styles.qbDisconnectButton, qbActionLoading && LOADING_STYLE]}
               onPress={handleDisconnectQb}
               disabled={qbActionLoading}
             >
@@ -354,7 +357,7 @@ export default function SettingsScreen() {
               Connect QuickBooks to sync invoices and billing for clients.
             </Text>
             <TouchableOpacity
-              style={styles.qbConnectButton}
+              style={[styles.qbConnectButton, qbActionLoading && LOADING_STYLE]}
               onPress={handleConnectQb}
               disabled={qbActionLoading}
             >
@@ -372,7 +375,7 @@ export default function SettingsScreen() {
       </View>
 
       <Text style={styles.sectionLabel}>Danger Zone</Text>
-      <TouchableOpacity style={styles.logoutButton} onPress={handleLogout} disabled={loggingOut}>
+      <TouchableOpacity style={[styles.logoutButton, loggingOut && LOADING_STYLE]} onPress={handleLogout} disabled={loggingOut}>
         {loggingOut ? (
           <ActivityIndicator color={COLORS.danger} />
         ) : (
@@ -386,16 +389,19 @@ export default function SettingsScreen() {
     return (
       <LinearGradient colors={["#1A1A1A", "#0D0D0D"]} style={styles.desktopScreen}>
         <View style={styles.desktopCard}>
-          <ScrollView contentContainerStyle={styles.webContent}>{content}</ScrollView>
+          <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.webContent}>{content}</ScrollView>
         </View>
       </LinearGradient>
     );
   }
 
   return (
-    <View style={styles.mobileScreen}>
-      <ScrollView contentContainerStyle={styles.mobileContent}>{content}</ScrollView>
-    </View>
+    <KeyboardAvoidingView
+      style={styles.mobileScreen}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+    >
+      <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.mobileContent}>{content}</ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
