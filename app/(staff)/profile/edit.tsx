@@ -11,7 +11,7 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import * as ImagePicker from "expo-image-picker";
+import ImageSourceSheet from "../../../src/components/ImageSourceSheet";
 import { getProfile, updateProfile, uploadAvatar } from "../../../src/services/profile.service";
 import { showSuccess, showError } from "../../../src/utils/toast";
 import { COLORS, RADIUS } from "../../../src/constants/theme";
@@ -42,6 +42,7 @@ export default function StaffEditProfileScreen() {
   const [loading, setLoading] = useState<boolean>(true);
   const [saving, setSaving] = useState<boolean>(false);
   const [uploading, setUploading] = useState<boolean>(false);
+  const [photoSheetVisible, setPhotoSheetVisible] = useState<boolean>(false);
   const [avatarLoadFailed, setAvatarLoadFailed] = useState<boolean>(false);
   const [focusedField, setFocusedField] = useState<string | null>(null);
 
@@ -65,32 +66,22 @@ export default function StaffEditProfileScreen() {
     fetchProfile();
   }, [fetchProfile]);
 
-  const handleChangePhoto = async () => {
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permission.granted) {
-      showError("Permission to access photos is required");
-      return;
-    }
+  const handleChangePhoto = () => {
+    console.log("Image picker opened for avatar");
+    setPhotoSheetVisible(true);
+  };
 
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ["images"],
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.8,
-    });
-
-    if (result.canceled || result.assets.length === 0) {
-      return;
-    }
-
+  const handlePhotoPicked = async (uri: string) => {
+    console.log("Avatar image selected:", uri);
     setAvatarLoadFailed(false);
-    setAvatarPreviewUri(result.assets[0].uri);
+    setAvatarPreviewUri(uri);
 
     setUploading(true);
     try {
-      const uploadedPath = await uploadAvatar(result.assets[0].uri);
+      const uploadedPath = await uploadAvatar(uri);
       setAvatarPath(uploadedPath);
     } catch (err: any) {
+      console.log("Avatar upload error (screen):", err);
       showError(err.message);
     } finally {
       setUploading(false);
@@ -212,6 +203,12 @@ export default function StaffEditProfileScreen() {
           </>
         )}
       </ScrollView>
+      <ImageSourceSheet
+        visible={photoSheetVisible}
+        onClose={() => setPhotoSheetVisible(false)}
+        onPicked={handlePhotoPicked}
+        aspect={[1, 1]}
+      />
     </ScreenContainer>
   );
 }

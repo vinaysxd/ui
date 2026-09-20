@@ -1,5 +1,5 @@
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Modal,
   View,
@@ -12,7 +12,7 @@ import {
   StyleSheet,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import * as ImagePicker from "expo-image-picker";
+import ImageSourceSheet from "./ImageSourceSheet";
 import {
   getAttendancePhotos,
   uploadBeforePhoto,
@@ -44,6 +44,8 @@ export default function PhotoUploadModal({
   const [addingPair, setAddingPair] = useState<boolean>(false);
   const [newLabel, setNewLabel] = useState<string>("");
   const [uploadingBefore, setUploadingBefore] = useState<boolean>(false);
+  const [sheetVisible, setSheetVisible] = useState<boolean>(false);
+  const pickTarget = useRef<{ type: "before" } | { type: "after"; photoId: string } | null>(null);
   const [uploadingAfterId, setUploadingAfterId] = useState<string>("");
 
   const fetchPhotos = useCallback(async () => {
@@ -93,54 +95,40 @@ export default function PhotoUploadModal({
       return;
     }
 
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permission.granted) {
-      showError("Permission to access photos is required");
+    pickTarget.current = { type: "before" };
+    setSheetVisible(true);
+  };
+
+  const uploadBefore = async (uri: string) => {
+    console.log("uploadBefore called:", { attendanceId, label: newLabel.trim(), uri });
+    if (!attendanceId) {
+      console.log("Upload aborted: attendanceId is missing");
       return;
     }
-
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ["images"],
-      quality: 0.8,
-    });
-
-    if (result.canceled || result.assets.length === 0) {
-      return;
-    }
-
     setUploadingBefore(true);
     try {
-      await uploadBeforePhoto(attendanceId, newLabel.trim(), result.assets[0].uri);
+      await uploadBeforePhoto(attendanceId, newLabel.trim(), uri);
       showSuccess("Before photo uploaded");
       setAddingPair(false);
       setNewLabel("");
       await fetchPhotos();
     } catch (err: any) {
+      console.log("Upload error (modal):", err);
       showError(err.message);
     } finally {
       setUploadingBefore(false);
     }
   };
 
-  const handleUploadAfter = async (photoId: string) => {
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permission.granted) {
-      showError("Permission to access photos is required");
-      return;
-    }
+  const handleUploadAfter = (photoId: string) => {
+    pickTarget.current = { type: "after", photoId };
+    setSheetVisible(true);
+  };
 
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ["images"],
-      quality: 0.8,
-    });
-
-    if (result.canceled || result.assets.length === 0) {
-      return;
-    }
-
+  const uploadAfter = async (photoId: string, uri: string) => {
     setUploadingAfterId(photoId);
     try {
-      await uploadAfterPhoto(photoId, result.assets[0].uri);
+      await uploadAfterPhoto(photoId, uri);
       showSuccess("After photo uploaded");
       await fetchPhotos();
     } catch (err: any) {
@@ -148,6 +136,18 @@ export default function PhotoUploadModal({
     } finally {
       setUploadingAfterId("");
     }
+  };
+
+  const handlePicked = (uri: string) => {
+    const target = pickTarget.current;
+    pickTarget.current = null;
+    console.log("handlePicked:", { uri, target });
+    if (!target) {
+      console.log("Upload aborted: no pick target");
+      return;
+    }
+    if (target.type === "before") uploadBefore(uri);
+    else uploadAfter(target.photoId, uri);
   };
 
   return (
@@ -227,6 +227,11 @@ export default function PhotoUploadModal({
             }
           />
         )}
+        <ImageSourceSheet
+          visible={sheetVisible}
+          onClose={() => setSheetVisible(false)}
+          onPicked={handlePicked}
+        />
       </SafeAreaView>
     </Modal>
   );

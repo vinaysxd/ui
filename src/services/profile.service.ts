@@ -53,18 +53,34 @@ export const updateProfile = async (data: ProfileUpdatePayload): Promise<Profile
 
 export const uploadAvatar = async (uri: string): Promise<string> => {
   try {
+    console.log("Starting avatar upload", uri);
     const filename = uri.split("/").pop() ?? `avatar-${Date.now()}.jpg`;
-    const imageResponse = await fetch(uri);
-    const blob = await imageResponse.blob();
+    const ext = filename.split(".").pop()?.toLowerCase();
+    const type = ext === "png" ? "image/png" : ext === "webp" ? "image/webp" : "image/jpeg";
 
     const formData = new FormData();
-    formData.append("avatar", blob, filename);
+    // React Native needs a { uri, name, type } object; blobs from fetch(uri) are not sent reliably.
+    formData.append("avatar", { uri, name: filename, type } as any);
+    console.log("Avatar FormData parts:", (formData as any).getParts?.() ?? formData);
 
+    console.log("Calling POST /profile/avatar");
     const response = await api.post("/profile/avatar", formData, {
       headers: { "Content-Type": "multipart/form-data" },
+      transformRequest: (data, headers) => {
+        console.log("Avatar request headers:", JSON.stringify(headers));
+        return data;
+      },
     });
+    console.log("Avatar upload response:", response.status, response.data);
     return response.data.avatar_url;
   } catch (error: any) {
+    console.log(
+      "Avatar upload error:",
+      error?.message,
+      error?.code,
+      error?.response?.status,
+      error?.response?.data
+    );
     const code = error?.response?.data?.code;
     throw new Error(getErrorMessage(code));
   }

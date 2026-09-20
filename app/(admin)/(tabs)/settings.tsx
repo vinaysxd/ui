@@ -16,7 +16,7 @@ import {
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import * as ImagePicker from "expo-image-picker";
+import ImageSourceSheet from "../../../src/components/ImageSourceSheet";
 import * as WebBrowser from "expo-web-browser";
 import Constants from "expo-constants";
 import { getProfile, updateProfile, uploadAvatar, ProfileMe } from "../../../src/services/profile.service";
@@ -53,6 +53,7 @@ export default function SettingsScreen() {
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const [saving, setSaving] = useState<boolean>(false);
   const [uploading, setUploading] = useState<boolean>(false);
+  const [photoSheetVisible, setPhotoSheetVisible] = useState<boolean>(false);
   const [avatarPreviewUri, setAvatarPreviewUri] = useState<string | null>(null);
 
   const [fullName, setFullName] = useState<string>("");
@@ -154,32 +155,22 @@ export default function SettingsScreen() {
     }
   };
 
-  const handleChangePhoto = async () => {
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permission.granted) {
-      showError("Permission to access photos is required");
-      return;
-    }
+  const handleChangePhoto = () => {
+    console.log("Image picker opened for avatar");
+    setPhotoSheetVisible(true);
+  };
 
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ["images"],
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.8,
-    });
-
-    if (result.canceled || result.assets.length === 0) {
-      return;
-    }
-
+  const handlePhotoPicked = async (uri: string) => {
+    console.log("Avatar image selected:", uri);
     setAvatarLoadFailed(false);
-    setAvatarPreviewUri(result.assets[0].uri);
+    setAvatarPreviewUri(uri);
 
     setUploading(true);
     try {
-      const uploadedPath = await uploadAvatar(result.assets[0].uri);
+      const uploadedPath = await uploadAvatar(uri);
       setAvatarUrl(uploadedPath);
     } catch (err: any) {
+      console.log("Avatar upload error (screen):", err);
       showError(err.message);
     } finally {
       setUploading(false);
@@ -402,6 +393,12 @@ export default function SettingsScreen() {
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} contentContainerStyle={styles.mobileContent}>{content}</ScrollView>
+      <ImageSourceSheet
+        visible={photoSheetVisible}
+        onClose={() => setPhotoSheetVisible(false)}
+        onPicked={handlePhotoPicked}
+        aspect={[1, 1]}
+      />
     </KeyboardAvoidingView>
   );
 }

@@ -17,8 +17,8 @@ import { login } from '../../src/services/auth.service';
 import { showError } from '../../src/utils/toast';
 
 export default function LoginScreen() {
-  const [email, setEmail] = useState<string>("vinaysandesh35@gmail.com");
-  const [password, setPassword] = useState<string>("qwerty123!");
+  const [email, setEmail] = useState<string>("");
+  const [password, setPassword] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
   const router = useRouter();
@@ -89,6 +89,10 @@ export default function LoginScreen() {
           ) : (
             <Text style={styles.loginButtonText}>LOGIN</Text>
           )}
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.forgotLink} onPress={() => router.push("/auth/forgot-password")}>
+          <Text style={styles.forgotText}>Forgot Password?</Text>
         </TouchableOpacity>
 
         {error ? <Text style={styles.errorText}>{error}</Text> : null}
@@ -172,6 +176,14 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     letterSpacing: 2,
     fontSize: 15,
+  },
+  forgotLink: {
+    alignSelf: "center",
+    marginTop: 16,
+  },
+  forgotText: {
+    color: "#C9A84C",
+    fontSize: 13,
   },
   errorText: {
     color: "#E53935",

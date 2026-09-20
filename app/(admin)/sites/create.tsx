@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import * as Location from "expo-location";
 import { createSite } from "../../../src/services/sites.service";
 import { getAllClients, Client } from "../../../src/services/client.service";
 import { showSuccess, showError } from "../../../src/utils/toast";
@@ -26,6 +27,7 @@ export default function CreateSiteScreen() {
   const [address, setAddress] = useState<string>("");
   const [latitude, setLatitude] = useState<string>("");
   const [longitude, setLongitude] = useState<string>("");
+  const [locating, setLocating] = useState<boolean>(false);
   const [clientId, setClientId] = useState<string>("");
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
 
@@ -108,6 +110,39 @@ export default function CreateSiteScreen() {
     }
   };
 
+  const handleUseCurrentLocation = async () => {
+    setLocating(true);
+    try {
+      const permission = await Location.requestForegroundPermissionsAsync();
+      if (!permission.granted) {
+        showError("Location permission denied");
+        return;
+      }
+
+      const position = await Location.getCurrentPositionAsync({});
+      const { latitude: lat, longitude: lng } = position.coords;
+      setLatitude(String(lat));
+      setLongitude(String(lng));
+
+      try {
+        const [place] = await Location.reverseGeocodeAsync({ latitude: lat, longitude: lng });
+        if (place) {
+          const street = [place.streetNumber, place.street].filter(Boolean).join(" ") || place.name;
+          const formatted = [street, place.city, place.region, place.postalCode]
+            .filter(Boolean)
+            .join(", ");
+          if (formatted) setAddress(formatted);
+        }
+      } catch {
+        // Address lookup is best-effort; coordinates are already filled in.
+      }
+    } catch (err: any) {
+      showError(err.message ?? "Failed to get current location");
+    } finally {
+      setLocating(false);
+    }
+  };
+
   const clientDisplayLabel = (client: Client): string =>
     client.company_name ? `${client.full_name} (${client.company_name})` : client.full_name;
 
@@ -164,6 +199,21 @@ export default function CreateSiteScreen() {
               onFocus={() => setFocusedField("longitude")}
               onBlur={() => setFocusedField(null)}
             />
+
+            <TouchableOpacity
+              style={[styles.locationButton, (locating || submitting) && LOADING_STYLE]}
+              onPress={handleUseCurrentLocation}
+              disabled={locating || submitting}
+            >
+              {locating ? (
+                <ActivityIndicator color={COLORS.gold} size="small" />
+              ) : (
+                <>
+                  <Ionicons name="location-outline" size={18} color={COLORS.gold} />
+                  <Text style={styles.locationButtonText}>Use Current Location</Text>
+                </>
+              )}
+            </TouchableOpacity>
 
             <View style={styles.fieldSpacing}>
               <Text style={styles.label}>Client</Text>
@@ -270,6 +320,21 @@ function FormField({
 }
 
 const styles = StyleSheet.create({
+  locationButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    backgroundColor: "#2E2A1A",
+    borderRadius: RADIUS.md,
+    paddingVertical: 12,
+    marginBottom: 16,
+  },
+  locationButtonText: {
+    color: COLORS.gold,
+    fontSize: 14,
+    fontWeight: "600",
+  },
   container: {
     flex: 1,
     backgroundColor: "#1A1A1A",

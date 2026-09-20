@@ -24,3 +24,12 @@ export const logout = async () => {
     await clearAuth();
   }
 };
+
+export const forgotPassword = async (email: string) => {
+  try {
+    await api.post("/auth/forgot-password", { email });
+  } catch (error: any) {
+    const code = error?.response?.data?.code;
+    throw new Error(getErrorMessage(code));
+  }
+};

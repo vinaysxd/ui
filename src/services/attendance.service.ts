@@ -111,26 +111,41 @@ export const getAttendancePhotos = async (attendance_id: string): Promise<Attend
   }
 };
 
+const mimeFromFilename = (filename: string): string => {
+  const ext = filename.split(".").pop()?.toLowerCase();
+  if (ext === "png") return "image/png";
+  if (ext === "webp") return "image/webp";
+  if (ext === "heic") return "image/heic";
+  return "image/jpeg";
+};
+
 export const uploadBeforePhoto = async (
   attendance_id: string,
   label: string,
   uri: string
 ): Promise<AttendancePhoto> => {
   try {
+    console.log("Starting upload for attendance_id:", attendance_id);
     const filename = uri.split("/").pop() ?? `before-${Date.now()}.jpg`;
-    const imageResponse = await fetch(uri);
-    const blob = await imageResponse.blob();
-
     const formData = new FormData();
     formData.append("attendance_id", attendance_id);
     formData.append("label", label);
-    formData.append("photo", blob, filename);
+    // React Native needs a { uri, name, type } object; blobs from fetch(uri) are not sent reliably.
+    formData.append("photo", { uri, name: filename, type: mimeFromFilename(filename) } as any);
+    console.log("FormData parts:", (formData as any).getParts?.() ?? formData);
 
+    console.log("Calling POST /attendance/photos/before");
     const response = await api.post("/attendance/photos/before", formData, {
       headers: { "Content-Type": "multipart/form-data" },
+      transformRequest: (data, headers) => {
+        console.log("Axios request headers:", JSON.stringify(headers));
+        return data;
+      },
     });
+    console.log("Upload response:", response.status, response.data);
     return response.data.photo;
   } catch (error: any) {
+    console.log("Upload error:", error?.message, error?.code, error?.response?.status, error?.response?.data);
     const code = error?.response?.data?.code;
     throw new Error(getErrorMessage(code));
   }
@@ -138,18 +153,20 @@ export const uploadBeforePhoto = async (
 
 export const uploadAfterPhoto = async (photo_id: string, uri: string): Promise<AttendancePhoto> => {
   try {
+    console.log("Starting after upload for photo_id:", photo_id);
     const filename = uri.split("/").pop() ?? `after-${Date.now()}.jpg`;
-    const imageResponse = await fetch(uri);
-    const blob = await imageResponse.blob();
-
     const formData = new FormData();
-    formData.append("after_photo", blob, filename);
+    formData.append("after_photo", { uri, name: filename, type: mimeFromFilename(filename) } as any);
+    console.log("FormData parts:", (formData as any).getParts?.() ?? formData);
 
+    console.log(`Calling PATCH /attendance/photos/${photo_id}/after`);
     const response = await api.patch(`/attendance/photos/${photo_id}/after`, formData, {
       headers: { "Content-Type": "multipart/form-data" },
     });
+    console.log("Upload response:", response.status, response.data);
     return response.data.photo;
   } catch (error: any) {
+    console.log("Upload error:", error?.message, error?.code, error?.response?.status, error?.response?.data);
     const code = error?.response?.data?.code;
     throw new Error(getErrorMessage(code));
   }

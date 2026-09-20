@@ -25,7 +25,7 @@ function Sidebar() {
             style={styles.favicon}
             resizeMode="cover"
           />
-          <Text style={styles.brandText}>BROTHERS</Text>
+         
         </View>
         <View style={styles.divider} />
       </View>
@@ -119,8 +119,9 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.md,
   },
   favicon: {
-    width: 40,
-    height: 40,
+    marginTop:20,
+    width: 180, 
+    height:80,
     borderRadius: 8,
   },
   brandText: {

@@ -36,6 +36,8 @@
           "backgroundColor": "#000000"
         }
       ],
+      ["expo-image-picker", { "photosPermission": "Allow Brothers to access your photos.", "cameraPermission": "Allow Brothers to use your camera to take photos." }],
+      ["expo-location", { "locationWhenInUsePermission": "Allow Brothers to use your location." }],
       "expo-asset",
       "expo-font"
     ],
