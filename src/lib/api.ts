@@ -1,4 +1,5 @@
 import axios from "axios";
+import { router } from "expo-router";
 import { getToken, getRefreshToken, setAuth, clearAuth } from "../store/auth";
 import app_constants from "../constants/app_constants";
 
@@ -17,32 +18,60 @@ api.interceptors.request.use(async (config) => {
   return config;
 });
 
-api.interceptors.response.use( 
+// Shared so concurrent 401s trigger a single refresh (refresh tokens are rotated).
+let refreshPromise: Promise<string> | null = null;
+
+const refreshAccessToken = async (): Promise<string> => {
+  const refreshToken = await getRefreshToken();
+  console.log("Refresh token:", refreshToken);
+  if (!refreshToken) {
+    throw new Error("No refresh token");
+  }
+
+  // Plain axios (not `api`) so this call never goes through the interceptors below.
+  const response = await axios.post(`${app_constants.baseUrl}/auth/refresh`, {
+    refresh_token: refreshToken,
+  });
+  console.log("Refresh response:", response.data);
+
+  const { access_token, refresh_token, user } = response.data;
+  await setAuth(access_token, refresh_token, user);
+  return access_token;
+};
+
+const redirectToLogin = async () => {
+  await clearAuth();
+  try {
+    router.replace("/auth/login");
+  } catch (navError) {
+    console.log("Redirect to login failed:", navError);
+  }
+};
+
+api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
+    const url: string = originalRequest?.url ?? "";
+    const skipRefresh = url.includes("/auth/refresh") || url.includes("/auth/login");
 
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    if (error.response?.status === 401 && originalRequest && !originalRequest._retry && !skipRefresh) {
       originalRequest._retry = true;
-
-      const refreshToken = await getRefreshToken();
-      if (!refreshToken) {
-        await clearAuth();
-        return Promise.reject(error);
-      }
+      console.log("401 received, attempting refresh");
 
       try {
-        const response = await axios.post("http://localhost:3000/auth/refresh", {
-          refresh_token: refreshToken,
-        });
+        if (!refreshPromise) {
+          refreshPromise = refreshAccessToken().finally(() => {
+            refreshPromise = null;
+          });
+        }
+        const accessToken = await refreshPromise;
 
-        const { access_token, refresh_token, user } = response.data;
-        await setAuth(access_token, refresh_token, user);
-
-        originalRequest.headers.Authorization = `Bearer ${access_token}`;
+        originalRequest.headers.Authorization = `Bearer ${accessToken}`;
         return api(originalRequest);
-      } catch {
-        await clearAuth();
+      } catch (refreshError) {
+        console.log("Refresh error:", refreshError);
+        await redirectToLogin();
         return Promise.reject(error);
       }
     }
