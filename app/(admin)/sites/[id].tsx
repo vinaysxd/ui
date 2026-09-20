@@ -421,7 +421,7 @@ export default function SiteDetailScreen() {
           </ScrollView>
         </View>
 
-        <ScrollView keyboardShouldPersistTaps="handled" style={styles.container} contentContainerStyle={styles.content}>
+        <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} style={styles.container} contentContainerStyle={styles.content}>
           {activeTab === "details" && (
             <>
               <Text style={styles.sectionTitle}>Site Details</Text>

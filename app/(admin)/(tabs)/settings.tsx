@@ -119,7 +119,8 @@ export default function SettingsScreen() {
     qbPendingConnect.current = true;
     try {
       const url = `${api.defaults.baseURL}/integrations/quickbooks/connect`;
-      await WebBrowser.openBrowserAsync(url);
+      // The backend callback redirects to this deep link, which closes the auth browser.
+      await WebBrowser.openAuthSessionAsync(url, "brothers://integrations/quickbooks");
     } catch (err: any) {
       showError(err.message ?? "Failed to open QuickBooks connection");
     } finally {
@@ -389,7 +390,7 @@ export default function SettingsScreen() {
     return (
       <LinearGradient colors={["#1A1A1A", "#0D0D0D"]} style={styles.desktopScreen}>
         <View style={styles.desktopCard}>
-          <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.webContent}>{content}</ScrollView>
+          <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} contentContainerStyle={styles.webContent}>{content}</ScrollView>
         </View>
       </LinearGradient>
     );
@@ -400,7 +401,7 @@ export default function SettingsScreen() {
       style={styles.mobileScreen}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
-      <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.mobileContent}>{content}</ScrollView>
+      <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} contentContainerStyle={styles.mobileContent}>{content}</ScrollView>
     </KeyboardAvoidingView>
   );
 }

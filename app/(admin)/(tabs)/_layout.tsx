@@ -1,6 +1,7 @@
 import { useWindowDimensions } from "react-native";
 import { Tabs, Slot } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { COLORS } from "../../../src/constants/theme";
 
 const NAV_ITEMS = [
@@ -11,7 +12,7 @@ const NAV_ITEMS = [
   { name: "settings", label: "Settings", icon: "settings-outline" as const },
 ];
 
-const TAB_BAR_STYLE = {
+const getTabBarStyle = (insets: { bottom: number }) => ({
   display: "flex" as const,
   flexDirection: "row" as const,
   justifyContent: "space-around" as const,
@@ -19,8 +20,10 @@ const TAB_BAR_STYLE = {
   backgroundColor: COLORS.surface,
   borderTopColor: COLORS.border,
   borderTopWidth: 1,
-  height: 64,
-};
+  height: 60 + insets.bottom,
+  paddingBottom: insets.bottom,
+  paddingTop: 8,
+});
 
 const TAB_BAR_ITEM_STYLE = {
   flex: 1,
@@ -38,6 +41,7 @@ const TAB_BAR_LABEL_STYLE = {
 
 export default function TabsGroupLayout() {
   const { width } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   const isDesktop = width >= 768;
 
   if (isDesktop) {
@@ -50,7 +54,7 @@ export default function TabsGroupLayout() {
         headerShown: false,
         tabBarActiveTintColor: COLORS.gold,
         tabBarInactiveTintColor: COLORS.textMuted,
-        tabBarStyle: TAB_BAR_STYLE,
+        tabBarStyle: getTabBarStyle(insets),
         tabBarItemStyle: TAB_BAR_ITEM_STYLE,
         tabBarLabelStyle: TAB_BAR_LABEL_STYLE,
       }}

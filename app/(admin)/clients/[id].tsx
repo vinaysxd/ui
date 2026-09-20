@@ -298,7 +298,7 @@ export default function ClientDetailScreen() {
           </ScrollView>
         </View>
 
-        <ScrollView keyboardShouldPersistTaps="handled" style={styles.container} contentContainerStyle={styles.content}>
+        <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} style={styles.container} contentContainerStyle={styles.content}>
           {activeTab === "details" && (
             <>
               <View style={styles.section}>

@@ -54,7 +54,7 @@ export default function InviteStaffScreen() {
 
   return (
     <ScreenContainer>
-      <ScrollView keyboardShouldPersistTaps="handled" style={styles.container} contentContainerStyle={styles.content}>
+      <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} style={styles.container} contentContainerStyle={styles.content}>
         <View style={styles.maxWidthWrap}>
           <TouchableOpacity style={styles.backButton} onPress={handleBack}>
             <Ionicons name="arrow-back" size={22} color={COLORS.gold} />

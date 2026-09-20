@@ -6,6 +6,9 @@ import {
   ActivityIndicator,
   Image,
   StyleSheet,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
 } from 'react-native';
 import { useState } from 'react';
 import { useRouter } from 'expo-router';
@@ -38,6 +41,15 @@ export default function LoginScreen() {
 
   return (
     <SafeAreaView style={styles.screen}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+      >
+        <ScrollView
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+        >
       <View style={styles.form}>
         <Image
           source={require('../../assets/brothers_logo.png')}
@@ -81,6 +93,8 @@ export default function LoginScreen() {
 
         {error ? <Text style={styles.errorText}>{error}</Text> : null}
       </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -89,6 +103,9 @@ const styles = StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: "#000000",
+  },
+  scrollContent: {
+    flexGrow: 1,
     justifyContent: "center",
     paddingHorizontal: 24,
   },

@@ -120,7 +120,7 @@ export default function ClientEditProfileScreen() {
 
   return (
     <ScreenContainer>
-      <ScrollView keyboardShouldPersistTaps="handled" style={styles.container} contentContainerStyle={styles.content}>
+      <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} style={styles.container} contentContainerStyle={styles.content}>
         <BackButton onPress={() => router.replace("/(client)/profile")} />
 
         <Text style={styles.eyebrow}>EDIT</Text>

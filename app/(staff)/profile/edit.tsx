@@ -117,7 +117,7 @@ export default function StaffEditProfileScreen() {
 
   return (
     <ScreenContainer>
-      <ScrollView keyboardShouldPersistTaps="handled" style={styles.container} contentContainerStyle={styles.content}>
+      <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} style={styles.container} contentContainerStyle={styles.content}>
         <BackButton onPress={() => router.replace("/(staff)/profile")} />
 
         <Text style={styles.title}>Edit Profile</Text>
