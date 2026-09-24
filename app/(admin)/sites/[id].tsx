@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { ComponentProps } from "react";
 import {
   View,
@@ -29,12 +29,15 @@ import {
 } from "../../../src/services/sites.service";
 import { getAllClients, Client } from "../../../src/services/client.service";
 import { getAllStaff, Staff } from "../../../src/services/staff.service";
+import PaginationControls from "../../../src/components/PaginationControls";
 import { getAttendanceBySite, Attendance } from "../../../src/services/attendance.service";
 import { getSiteNotes, deleteNote, SiteNote } from "../../../src/services/notes.service";
 import { showSuccess, showError } from "../../../src/utils/toast";
 import { COLORS, RADIUS } from "../../../src/constants/theme";
 import ScreenContainer from "../../../src/components/ScreenContainer";
 import { LOADING_STYLE } from "../../../src/constants/ui";
+
+const ATTENDANCE_PAGE_SIZE = 10;
 
 type Tab = "details" | "staff" | "attendance" | "notes";
 type IconName = ComponentProps<typeof Ionicons>["name"];
@@ -116,6 +119,10 @@ export default function SiteDetailScreen() {
   const [attendance, setAttendance] = useState<Attendance[]>([]);
   const [attendanceLoading, setAttendanceLoading] = useState<boolean>(false);
   const [attendanceLoaded, setAttendanceLoaded] = useState<boolean>(false);
+  const [attendancePage, setAttendancePage] = useState<number>(1);
+  const [attendanceTotalPages, setAttendanceTotalPages] = useState<number>(1);
+  const [attendanceTotal, setAttendanceTotal] = useState<number>(0);
+  const scrollRef = useRef<ScrollView>(null);
 
   const [notes, setNotes] = useState<SiteNote[]>([]);
   const [notesLoading, setNotesLoading] = useState<boolean>(false);
@@ -164,12 +171,16 @@ export default function SiteDetailScreen() {
     fetchAssignedStaff();
   }, [fetchSite, fetchAssignedStaff]);
 
-  const fetchAttendance = useCallback(async () => {
+  const fetchAttendance = useCallback(async (page: number = 1) => {
     setAttendanceLoading(true);
     try {
-      const data = await getAttendanceBySite(id);
-      setAttendance(data);
+      const result = await getAttendanceBySite(id, page, ATTENDANCE_PAGE_SIZE);
+      setAttendance(result.attendance);
+      setAttendancePage(page);
+      setAttendanceTotal(result.total);
+      setAttendanceTotalPages(result.total_pages);
       setAttendanceLoaded(true);
+      scrollRef.current?.scrollTo({ y: 0, animated: true });
     } catch (err: any) {
       showError(err.message);
     } finally {
@@ -219,7 +230,7 @@ export default function SiteDetailScreen() {
 
   useEffect(() => {
     if (activeTab === "attendance" && !attendanceLoaded) {
-      fetchAttendance();
+      fetchAttendance(1);
     }
     if (activeTab === "notes" && !notesLoaded) {
       fetchNotes();
@@ -421,7 +432,7 @@ export default function SiteDetailScreen() {
           </ScrollView>
         </View>
 
-        <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} style={styles.container} contentContainerStyle={styles.content}>
+        <ScrollView ref={scrollRef} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} style={styles.container} contentContainerStyle={styles.content}>
           {activeTab === "details" && (
             <>
               <Text style={styles.sectionTitle}>Site Details</Text>
@@ -685,6 +696,14 @@ export default function SiteDetailScreen() {
                   </View>
                 ))
               )}
+              <PaginationControls
+                page={attendancePage}
+                totalPages={attendanceTotalPages}
+                total={attendanceTotal}
+                limit={ATTENDANCE_PAGE_SIZE}
+                disabled={attendanceLoading}
+                onPageChange={fetchAttendance}
+              />
             </>
           )}
 

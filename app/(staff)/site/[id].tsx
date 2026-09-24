@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -35,6 +35,7 @@ import NotesPanel from "../../../src/components/NotesPanel";
 import { COLORS, RADIUS } from "../../../src/constants/theme";
 import ScreenContainer from "../../../src/components/ScreenContainer";
 import ProcessingOverlay from "../../../src/components/ProcessingOverlay";
+import PaginationControls from "../../../src/components/PaginationControls";
 import { LOADING_STYLE } from "../../../src/constants/ui";
 
 type Tab = "details" | "attendance" | "notes";
@@ -300,31 +301,51 @@ export default function StaffSiteDetailScreen() {
   );
 }
 
+const HISTORY_PAGE_SIZE = 10;
+
 function AttendanceHistory({ siteId }: { siteId: string }) {
   const [history, setHistory] = useState<Attendance[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [page, setPage] = useState<number>(1);
+  const [totalPages, setTotalPages] = useState<number>(1);
+  const [total, setTotal] = useState<number>(0);
+  const [pageLoading, setPageLoading] = useState<boolean>(false);
+  const listRef = useRef<FlatList<Attendance>>(null);
 
-  const fetchHistory = useCallback(async () => {
-    try {
-      const all = await getMyHistory();
-      setHistory(all.filter((record) => record.site_id === siteId));
-    } catch (err: any) {
-      showError(err.message);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, [siteId]);
+  const fetchHistory = useCallback(
+    async (targetPage: number) => {
+      try {
+        const result = await getMyHistory(targetPage, HISTORY_PAGE_SIZE, siteId);
+        setHistory(result.attendance);
+        setPage(targetPage);
+        setTotal(result.total);
+        setTotalPages(result.total_pages);
+      } catch (err: any) {
+        showError(err.message);
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
+        setPageLoading(false);
+      }
+    },
+    [siteId]
+  );
 
   useEffect(() => {
-    fetchHistory();
+    fetchHistory(1);
   }, [fetchHistory]);
 
   const onRefresh = () => {
     setRefreshing(true);
-    fetchHistory();
+    fetchHistory(page);
+  };
+
+  const handlePageChange = async (nextPage: number) => {
+    setPageLoading(true);
+    await fetchHistory(nextPage);
+    listRef.current?.scrollToOffset({ offset: 0, animated: true });
   };
 
   if (loading) {
@@ -337,9 +358,20 @@ function AttendanceHistory({ siteId }: { siteId: string }) {
 
   return (
     <FlatList keyboardShouldPersistTaps="handled"
+      ref={listRef}
       data={history}
       keyExtractor={(item) => item.id}
       contentContainerStyle={styles.content}
+      ListFooterComponent={
+        <PaginationControls
+          page={page}
+          totalPages={totalPages}
+          total={total}
+          limit={HISTORY_PAGE_SIZE}
+          disabled={pageLoading}
+          onPageChange={handlePageChange}
+        />
+      }
       refreshControl={
         <RefreshControl
           refreshing={refreshing}
