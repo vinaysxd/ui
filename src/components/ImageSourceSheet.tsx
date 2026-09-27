@@ -26,8 +26,8 @@ export default function ImageSourceSheet({
   const pickerOptions: ImagePicker.ImagePickerOptions = {
     mediaTypes: ["images"],
     quality: 0.8,
-    allowsEditing: true,
-    aspect,
+    allowsEditing: false,
+    
     base64: false,
   };
 

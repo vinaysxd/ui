@@ -2,7 +2,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
-  Image,
   ScrollView,
   FlatList,
   ActivityIndicator,
@@ -23,6 +22,7 @@ import {
 import { showError } from "../../../src/utils/toast";
 import { formatDateTime } from "../../../src/utils/datetime";
 import NotesPanel from "../../../src/components/NotesPanel";
+import PhotoThumb from "../../../src/components/PhotoThumb";
 import { COLORS, RADIUS } from "../../../src/constants/theme";
 import ScreenContainer from "../../../src/components/ScreenContainer";
 import PaginationControls from "../../../src/components/PaginationControls";
@@ -300,40 +300,17 @@ function AttendanceCard({
 }
 
 function HistoryPhotoPair({ photo }: { photo: AttendancePhoto }) {
-  const [beforeFailed, setBeforeFailed] = useState<boolean>(false);
-  const [afterFailed, setAfterFailed] = useState<boolean>(false);
-  console.log("beforeFailed",beforeFailed)
   return (
     <View style={styles.photoPair}>
       <Text style={styles.photoPairLabel}>{photo.label}</Text>
       <View style={styles.thumbRow}>
         <View style={styles.thumbColumn}>
           <Text style={styles.thumbCaption}>Before</Text>
-          {photo.before_photo_url && !beforeFailed ? (
-            <Image
-              source={{ uri: photo.before_photo_url }}
-              style={styles.thumb}
-              onError={() => setBeforeFailed(true)}
-            />
-          ) : (
-            <View style={styles.thumbPlaceholder}>
-              <Ionicons name="image-outline" size={20} color={COLORS.textMuted} />
-            </View>
-          )}
+          <PhotoThumb path={photo.before_photo_url} />
         </View>
         <View style={styles.thumbColumn}>
           <Text style={styles.thumbCaption}>After</Text>
-          {photo.after_photo_url && !afterFailed ? (
-            <Image
-              source={{ uri: photo.after_photo_url }}
-              style={styles.thumb}
-              onError={() => setAfterFailed(true)}
-            />
-          ) : (
-            <View style={styles.thumbPlaceholder}>
-              <Ionicons name="image-outline" size={20} color={COLORS.textMuted} />
-            </View>
-          )}
+          <PhotoThumb path={photo.after_photo_url} />
         </View>
       </View>
     </View>
@@ -538,23 +515,5 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: COLORS.textMuted,
     marginBottom: 6,
-  },
-  thumb: {
-    width: "100%",
-    height: 100,
-    borderRadius: RADIUS.md,
-    backgroundColor: COLORS.surfaceElevated,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  thumbPlaceholder: {
-    width: "100%",
-    height: 100,
-    borderRadius: RADIUS.md,
-    backgroundColor: COLORS.surfaceElevated,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    justifyContent: "center",
-    alignItems: "center",
   },
 });
