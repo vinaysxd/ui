@@ -12,6 +12,7 @@ import {
   Modal,
   FlatList,
   Platform,
+  RefreshControl,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -35,6 +36,7 @@ import {
   AttendancePhoto,
 } from "../../../src/services/attendance.service";
 import { getSiteNotes, deleteNote, SiteNote } from "../../../src/services/notes.service";
+import { getSiteTasks, addSiteTask, deleteSiteTask, SiteTask } from "../../../src/services/tasks.service";
 import { showSuccess, showError } from "../../../src/utils/toast";
 import { COLORS, RADIUS } from "../../../src/constants/theme";
 import ScreenContainer from "../../../src/components/ScreenContainer";
@@ -44,7 +46,7 @@ import { LOADING_STYLE } from "../../../src/constants/ui";
 
 const ATTENDANCE_PAGE_SIZE = 10;
 
-type Tab = "details" | "staff" | "attendance" | "notes";
+type Tab = "details" | "staff" | "attendance" | "notes" | "tasks";
 type IconName = ComponentProps<typeof Ionicons>["name"];
 
 const getInitials = (fullName: string): string => {
@@ -63,6 +65,7 @@ const TABS: { key: Tab; label: string }[] = [
   { key: "staff", label: "Staff" },
   { key: "attendance", label: "Attendance" },
   { key: "notes", label: "Notes" },
+  { key: "tasks", label: "Tasks" },
 ];
 
 const clientDisplayLabel = (client: { full_name: string; company_name?: string | null }): string =>
@@ -134,6 +137,13 @@ export default function SiteDetailScreen() {
   const [notesLoading, setNotesLoading] = useState<boolean>(false);
   const [notesLoaded, setNotesLoaded] = useState<boolean>(false);
 
+  const [tasks, setTasks] = useState<SiteTask[]>([]);
+  const [tasksLoading, setTasksLoading] = useState<boolean>(false);
+  const [tasksLoaded, setTasksLoaded] = useState<boolean>(false);
+  const [tasksRefreshing, setTasksRefreshing] = useState<boolean>(false);
+  const [newTaskLabel, setNewTaskLabel] = useState<string>("");
+  const [addingTask, setAddingTask] = useState<boolean>(false);
+
   const [loading, setLoading] = useState<boolean>(true);
   const [saving, setSaving] = useState<boolean>(false);
   const [deactivating, setDeactivating] = useState<boolean>(false);
@@ -144,6 +154,9 @@ export default function SiteDetailScreen() {
   const [noteToDelete, setNoteToDelete] = useState<string | null>(null);
   const [deleteNoteModalVisible, setDeleteNoteModalVisible] = useState<boolean>(false);
   const [deleteNoteModalLoading, setDeleteNoteModalLoading] = useState<boolean>(false);
+  const [taskToDelete, setTaskToDelete] = useState<string | null>(null);
+  const [deleteTaskModalVisible, setDeleteTaskModalVisible] = useState<boolean>(false);
+  const [deleteTaskModalLoading, setDeleteTaskModalLoading] = useState<boolean>(false);
 
   const applyFields = (data: Site) => {
     setName(data.name ?? "");
@@ -212,6 +225,20 @@ export default function SiteDetailScreen() {
     }
   }, [id]);
 
+  const fetchTasks = useCallback(async () => {
+    setTasksLoading(true);
+    try {
+      const data = await getSiteTasks(id);
+      setTasks(data);
+      setTasksLoaded(true);
+    } catch (err: any) {
+      showError(err.message);
+    } finally {
+      setTasksLoading(false);
+      setTasksRefreshing(false);
+    }
+  }, [id]);
+
   const openDeleteNoteModal = (noteId: string) => {
     setNoteToDelete(noteId);
     setDeleteNoteModalVisible(true);
@@ -240,6 +267,57 @@ export default function SiteDetailScreen() {
     }
   };
 
+  const openDeleteTaskModal = (taskId: string) => {
+    setTaskToDelete(taskId);
+    setDeleteTaskModalVisible(true);
+  };
+
+  const closeDeleteTaskModal = () => {
+    setDeleteTaskModalVisible(false);
+    setTaskToDelete(null);
+  };
+
+  const performDeleteTask = async () => {
+    if (!taskToDelete) {
+      return;
+    }
+    setDeleteTaskModalLoading(true);
+    try {
+      await deleteSiteTask(id, taskToDelete);
+      setTasks((prev) => prev.filter((t) => t.id !== taskToDelete));
+      setDeleteTaskModalVisible(false);
+      setTaskToDelete(null);
+      showSuccess("Task deleted");
+    } catch (err: any) {
+      showError(err.message);
+    } finally {
+      setDeleteTaskModalLoading(false);
+    }
+  };
+
+  const handleAddTask = async () => {
+    if (!newTaskLabel.trim()) {
+      showError("Enter a task label");
+      return;
+    }
+    setAddingTask(true);
+    try {
+      const task = await addSiteTask(id, newTaskLabel.trim());
+      setTasks((prev) => [...prev, task]);
+      setNewTaskLabel("");
+      showSuccess("Task added");
+    } catch (err: any) {
+      showError(err.message);
+    } finally {
+      setAddingTask(false);
+    }
+  };
+
+  const onRefreshTasks = () => {
+    setTasksRefreshing(true);
+    fetchTasks();
+  };
+
   useEffect(() => {
     if (activeTab === "attendance" && !attendanceLoaded) {
       fetchAttendance(1);
@@ -247,7 +325,10 @@ export default function SiteDetailScreen() {
     if (activeTab === "notes" && !notesLoaded) {
       fetchNotes();
     }
-  }, [activeTab, attendanceLoaded, notesLoaded, fetchAttendance, fetchNotes]);
+    if (activeTab === "tasks" && !tasksLoaded) {
+      fetchTasks();
+    }
+  }, [activeTab, attendanceLoaded, notesLoaded, tasksLoaded, fetchAttendance, fetchNotes, fetchTasks]);
 
   const ensureClientsLoaded = async () => {
     if (clients.length > 0) {
@@ -445,7 +526,23 @@ export default function SiteDetailScreen() {
           </ScrollView>
         </View>
 
-        <ScrollView ref={scrollRef} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} style={styles.container} contentContainerStyle={styles.content}>
+        <ScrollView
+          ref={scrollRef}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+          style={styles.container}
+          contentContainerStyle={styles.content}
+          refreshControl={
+            activeTab === "tasks" ? (
+              <RefreshControl
+                refreshing={tasksRefreshing}
+                onRefresh={onRefreshTasks}
+                tintColor={COLORS.gold}
+                colors={[COLORS.gold]}
+              />
+            ) : undefined
+          }
+        >
           {activeTab === "details" && (
             <>
               <Text style={styles.sectionTitle}>Site Details</Text>
@@ -821,6 +918,53 @@ export default function SiteDetailScreen() {
               )}
             </>
           )}
+
+          {activeTab === "tasks" && (
+            <>
+              <Text style={styles.sectionTitle}>Tasks</Text>
+              <View style={styles.goldDivider} />
+              {tasksLoading && !tasksRefreshing ? (
+                <ActivityIndicator style={styles.staffLoading} color={COLORS.gold} />
+              ) : tasks.length === 0 ? (
+                <Text style={styles.emptyText}>No tasks added yet</Text>
+              ) : (
+                tasks.map((task) => (
+                  <View key={task.id} style={styles.taskCard}>
+                    <Text style={styles.taskLabel}>{task.label}</Text>
+                    <TouchableOpacity
+                      style={styles.taskDeleteButton}
+                      onPress={() => openDeleteTaskModal(task.id)}
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    >
+                      <Ionicons name="trash-outline" size={18} color={COLORS.danger} />
+                    </TouchableOpacity>
+                  </View>
+                ))
+              )}
+
+              <View style={styles.addTaskRow}>
+                <TextInput
+                  style={styles.addTaskInput}
+                  value={newTaskLabel}
+                  onChangeText={setNewTaskLabel}
+                  placeholder="Enter task label e.g. Kitchen, Bathroom"
+                  placeholderTextColor={COLORS.textMuted}
+                  editable={!addingTask}
+                />
+                <TouchableOpacity
+                  style={[styles.addTaskButton, addingTask && LOADING_STYLE]}
+                  onPress={handleAddTask}
+                  disabled={addingTask}
+                >
+                  {addingTask ? (
+                    <ActivityIndicator color="#000000" size="small" />
+                  ) : (
+                    <Text style={styles.addTaskButtonText}>Add</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </>
+          )}
         </ScrollView>
 
         <Modal visible={clientPickerVisible} animationType="slide" transparent>
@@ -914,6 +1058,17 @@ export default function SiteDetailScreen() {
           loading={deleteNoteModalLoading}
           onConfirm={performDeleteNote}
           onCancel={closeDeleteNoteModal}
+        />
+
+        <ConfirmModal
+          visible={deleteTaskModalVisible}
+          title="Delete Task"
+          message="Are you sure you want to delete this task?"
+          confirmText="Delete"
+          confirmStyle="destructive"
+          loading={deleteTaskModalLoading}
+          onConfirm={performDeleteTask}
+          onCancel={closeDeleteTaskModal}
         />
       </View>
     </ScreenContainer>
@@ -1354,6 +1509,52 @@ const styles = StyleSheet.create({
   },
   noteBadgeTextStaff: {
     color: COLORS.textMuted,
+  },
+  taskCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: COLORS.surface,
+    borderRadius: RADIUS.md,
+    padding: 16,
+    marginBottom: 12,
+  },
+  taskLabel: {
+    color: "#FFFFFF",
+    fontSize: 15,
+    fontWeight: "600",
+    flexShrink: 1,
+  },
+  taskDeleteButton: {
+    padding: 4,
+    marginLeft: 12,
+  },
+  addTaskRow: {
+    flexDirection: "row",
+    gap: 8,
+    marginTop: 8,
+  },
+  addTaskInput: {
+    flex: 1,
+    backgroundColor: "#2E2E2E",
+    color: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: COLORS.gold,
+    borderRadius: RADIUS.md,
+    padding: 12,
+    fontSize: 14,
+  },
+  addTaskButton: {
+    backgroundColor: COLORS.gold,
+    borderRadius: RADIUS.md,
+    paddingHorizontal: 20,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  addTaskButtonText: {
+    color: "#000000",
+    fontWeight: "700",
+    fontSize: 14,
   },
   row: {
     flexDirection: "row",

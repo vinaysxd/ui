@@ -63,9 +63,11 @@ export default function StaffHomeScreen() {
   const [actingSiteId, setActingSiteId] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [elapsedSeconds, setElapsedSeconds] = useState<number>(0);
-  const [photoModalSite, setPhotoModalSite] = useState<{ attendanceId: string; name: string } | null>(
-    null
-  );
+  const [photoModalSite, setPhotoModalSite] = useState<{
+    attendanceId: string;
+    siteId: string;
+    name: string;
+  } | null>(null);
   const [notesModalSiteId, setNotesModalSiteId] = useState<string | null>(null);
 
   const [clockOutTargetSite, setClockOutTargetSite] = useState<SiteWithDistance | null>(null);
@@ -324,6 +326,7 @@ export default function StaffHomeScreen() {
                       if (activeAttendance.attendance) {
                         setPhotoModalSite({
                           attendanceId: activeAttendance.attendance.id,
+                          siteId: activeSite.id,
                           name: activeSite.name,
                         });
                       }
@@ -397,6 +400,7 @@ export default function StaffHomeScreen() {
       <PhotoUploadModal
         visible={!!photoModalSite}
         attendanceId={photoModalSite?.attendanceId ?? null}
+        siteId={photoModalSite?.siteId ?? null}
         siteName={photoModalSite?.name}
         onClose={() => setPhotoModalSite(null)}
       />

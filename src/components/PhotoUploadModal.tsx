@@ -6,6 +6,7 @@ import {
   Text,
   TextInput,
   FlatList,
+  ScrollView,
   ActivityIndicator,
   RefreshControl,
   TouchableOpacity,
@@ -19,6 +20,7 @@ import {
   uploadAfterPhoto,
   AttendancePhoto,
 } from "../services/attendance.service";
+import { getSiteTasks, SiteTask } from "../services/tasks.service";
 import { showSuccess, showError } from "../utils/toast";
 import PhotoThumb from "./PhotoThumb";
 import { COLORS, RADIUS } from "../constants/theme";
@@ -27,6 +29,7 @@ import { LOADING_STYLE } from "../constants/ui";
 interface PhotoUploadModalProps {
   visible: boolean;
   attendanceId: string | null;
+  siteId?: string | null;
   siteName?: string;
   onClose: () => void;
 }
@@ -34,12 +37,17 @@ interface PhotoUploadModalProps {
 export default function PhotoUploadModal({
   visible,
   attendanceId,
+  siteId,
   siteName,
   onClose,
 }: PhotoUploadModalProps) {
   const [photos, setPhotos] = useState<AttendancePhoto[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
+
+  const [tasks, setTasks] = useState<SiteTask[]>([]);
+  const [tasksLoading, setTasksLoading] = useState<boolean>(false);
+  const [selectedTaskLabel, setSelectedTaskLabel] = useState<string>("");
 
   const [addingPair, setAddingPair] = useState<boolean>(false);
   const [newLabel, setNewLabel] = useState<string>("");
@@ -66,14 +74,33 @@ export default function PhotoUploadModal({
     }
   }, [attendanceId]);
 
+  const fetchTasks = useCallback(async () => {
+    if (!siteId) {
+      setTasks([]);
+      setTasksLoading(false);
+      return;
+    }
+    setTasksLoading(true);
+    try {
+      const data = await getSiteTasks(siteId);
+      setTasks(data);
+    } catch (err: any) {
+      showError(err.message);
+    } finally {
+      setTasksLoading(false);
+    }
+  }, [siteId]);
+
   useEffect(() => {
     if (visible) {
       setLoading(true);
       setAddingPair(false);
       setNewLabel("");
+      setSelectedTaskLabel("");
       fetchPhotos();
+      fetchTasks();
     }
-  }, [visible, fetchPhotos]);
+  }, [visible, fetchPhotos, fetchTasks]);
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -83,15 +110,19 @@ export default function PhotoUploadModal({
   const handleCancelAddPair = () => {
     setAddingPair(false);
     setNewLabel("");
+    setSelectedTaskLabel("");
   };
+
+  const getCurrentLabel = () => (tasks.length > 0 ? selectedTaskLabel : newLabel.trim());
 
   const handlePickBeforePhoto = async () => {
     if (!attendanceId) {
       showError("No active attendance to attach photos to");
       return;
     }
-    if (!newLabel.trim()) {
-      showError("Enter a label for this photo pair");
+    const label = getCurrentLabel();
+    if (!label) {
+      showError(tasks.length > 0 ? "Select a task before uploading" : "Enter a label for this photo pair");
       return;
     }
 
@@ -100,17 +131,19 @@ export default function PhotoUploadModal({
   };
 
   const uploadBefore = async (uri: string) => {
-    console.log("uploadBefore called:", { attendanceId, label: newLabel.trim(), uri });
+    const label = getCurrentLabel();
+    console.log("uploadBefore called:", { attendanceId, label, uri });
     if (!attendanceId) {
       console.log("Upload aborted: attendanceId is missing");
       return;
     }
     setUploadingBefore(true);
     try {
-      await uploadBeforePhoto(attendanceId, newLabel.trim(), uri);
+      await uploadBeforePhoto(attendanceId, label, uri);
       showSuccess("Before photo uploaded");
       setAddingPair(false);
       setNewLabel("");
+      setSelectedTaskLabel("");
       await fetchPhotos();
     } catch (err: any) {
       console.log("Upload error (modal):", err);
@@ -184,15 +217,53 @@ export default function PhotoUploadModal({
               <View style={styles.footer}>
                 {addingPair ? (
                   <View style={styles.addPairForm}>
-                    <TextInput
-                      style={styles.input}
-                      value={newLabel}
-                      onChangeText={setNewLabel}
-                      placeholder='e.g. "Kitchen" or "Bathroom"'
-                      placeholderTextColor={COLORS.textMuted}
-                      autoFocus
-                      editable={!uploadingBefore}
-                    />
+                    {tasksLoading ? (
+                      <ActivityIndicator
+                        style={styles.taskLoadingIndicator}
+                        color={COLORS.gold}
+                      />
+                    ) : tasks.length > 0 ? (
+                      <ScrollView
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        style={styles.taskPillRow}
+                        contentContainerStyle={styles.taskPillRowContent}
+                      >
+                        {tasks.map((task) => {
+                          const selected = selectedTaskLabel === task.label;
+                          return (
+                            <TouchableOpacity
+                              key={task.id}
+                              style={[
+                                styles.taskPill,
+                                selected ? styles.taskPillSelected : styles.taskPillUnselected,
+                              ]}
+                              onPress={() => setSelectedTaskLabel(task.label)}
+                              disabled={uploadingBefore}
+                            >
+                              <Text
+                                style={[
+                                  styles.taskPillText,
+                                  selected ? styles.taskPillTextSelected : styles.taskPillTextUnselected,
+                                ]}
+                              >
+                                {task.label}
+                              </Text>
+                            </TouchableOpacity>
+                          );
+                        })}
+                      </ScrollView>
+                    ) : (
+                      <TextInput
+                        style={styles.input}
+                        value={newLabel}
+                        onChangeText={setNewLabel}
+                        placeholder="Enter label e.g. Kitchen, Bathroom"
+                        placeholderTextColor={COLORS.textMuted}
+                        autoFocus
+                        editable={!uploadingBefore}
+                      />
+                    )}
                     <View style={styles.addPairButtons}>
                       <TouchableOpacity
                         style={[styles.cancelButton, uploadingBefore && LOADING_STYLE]}
@@ -414,6 +485,40 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.surfaceElevated,
     color: COLORS.textPrimary,
     marginBottom: 12,
+  },
+  taskLoadingIndicator: {
+    marginBottom: 12,
+  },
+  taskPillRow: {
+    marginBottom: 12,
+  },
+  taskPillRowContent: {
+    gap: 8,
+    paddingRight: 8,
+  },
+  taskPill: {
+    borderRadius: RADIUS.full,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderWidth: 1,
+  },
+  taskPillUnselected: {
+    backgroundColor: "#2E2E2E",
+    borderColor: "#333333",
+  },
+  taskPillSelected: {
+    backgroundColor: COLORS.gold,
+    borderColor: COLORS.gold,
+  },
+  taskPillText: {
+    fontSize: 14,
+  },
+  taskPillTextUnselected: {
+    color: "#9A9A9A",
+  },
+  taskPillTextSelected: {
+    color: "#000000",
+    fontWeight: "700",
   },
   addPairButtons: {
     flexDirection: "row",

@@ -13,6 +13,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { getClientSite, Site } from "../../../src/services/sites.service";
 import { getClientHistory, Attendance, AttendancePhoto } from "../../../src/services/attendance.service";
+import { getSiteTasks, SiteTask } from "../../../src/services/tasks.service";
 import { showError } from "../../../src/utils/toast";
 import { formatDateTime } from "../../../src/utils/datetime";
 import PhotoThumb from "../../../src/components/PhotoThumb";
@@ -21,12 +22,13 @@ import { COLORS, RADIUS } from "../../../src/constants/theme";
 import PaginationControls from "../../../src/components/PaginationControls";
 import ScreenContainer from "../../../src/components/ScreenContainer";
 
-type Tab = "details" | "attendance" | "notes";
+type Tab = "details" | "attendance" | "notes" | "tasks";
 
 const TABS: { key: Tab; label: string }[] = [
   { key: "details", label: "Details" },
   { key: "attendance", label: "Attendance" },
   { key: "notes", label: "Notes" },
+  { key: "tasks", label: "Tasks" },
 ];
 
 const getInitials = (fullName: string): string => {
@@ -149,6 +151,8 @@ export default function ClientSiteDetailScreen() {
           {activeTab === "attendance" && <AttendanceHistory siteId={id} />}
 
           {activeTab === "notes" && <NotesPanel siteId={id} role="client" />}
+
+          {activeTab === "tasks" && <TasksList siteId={id} />}
         </View>
       </View>
     </ScreenContainer>
@@ -234,6 +238,66 @@ function AttendanceHistory({ siteId }: { siteId: string }) {
           expanded={expandedId === item.id}
           onToggle={() => setExpandedId(expandedId === item.id ? null : item.id)}
         />
+      )}
+    />
+  );
+}
+
+function TasksList({ siteId }: { siteId: string }) {
+  const [tasks, setTasks] = useState<SiteTask[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [refreshing, setRefreshing] = useState<boolean>(false);
+
+  const fetchTasks = useCallback(async () => {
+    try {
+      const data = await getSiteTasks(siteId);
+      setTasks(data);
+    } catch (err: any) {
+      showError(err.message);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, [siteId]);
+
+  useEffect(() => {
+    fetchTasks();
+  }, [fetchTasks]);
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    fetchTasks();
+  };
+
+  if (loading) {
+    return (
+      <View style={styles.centered}>
+        <ActivityIndicator size="large" color={COLORS.gold} />
+      </View>
+    );
+  }
+
+  return (
+    <FlatList
+      data={tasks}
+      keyExtractor={(item) => item.id}
+      contentContainerStyle={styles.content}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          tintColor={COLORS.gold}
+          colors={[COLORS.gold]}
+        />
+      }
+      ListEmptyComponent={
+        <Text style={styles.emptyText}>No tasks assigned for this site</Text>
+      }
+      renderItem={({ item }) => (
+        <View style={styles.taskCard}>
+          <View style={styles.goldBar} />
+          <Text style={styles.taskLabel}>{item.label}</Text>
+        </View>
       )}
     />
   );
@@ -481,6 +545,23 @@ const styles = StyleSheet.create({
     color: "#9A9A9A",
     fontSize: 13,
     marginTop: 2,
+  },
+  taskCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: COLORS.surface,
+    borderRadius: RADIUS.md,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    padding: 16,
+    paddingLeft: 19,
+    marginBottom: 12,
+    overflow: "hidden",
+  },
+  taskLabel: {
+    color: "#FFFFFF",
+    fontSize: 15,
+    fontWeight: "600",
   },
   historyCard: {
     backgroundColor: COLORS.surface,
