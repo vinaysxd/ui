@@ -29,12 +29,17 @@ import {
 import { getAllClients, Client } from "../../../src/services/client.service";
 import { getAllStaff, Staff } from "../../../src/services/staff.service";
 import PaginationControls from "../../../src/components/PaginationControls";
-import { getAttendanceBySite, Attendance } from "../../../src/services/attendance.service";
+import {
+  getAttendanceBySite,
+  Attendance,
+  AttendancePhoto,
+} from "../../../src/services/attendance.service";
 import { getSiteNotes, deleteNote, SiteNote } from "../../../src/services/notes.service";
 import { showSuccess, showError } from "../../../src/utils/toast";
 import { COLORS, RADIUS } from "../../../src/constants/theme";
 import ScreenContainer from "../../../src/components/ScreenContainer";
 import ConfirmModal from "../../../src/components/ConfirmModal";
+import PhotoThumb from "../../../src/components/PhotoThumb";
 import { LOADING_STYLE } from "../../../src/constants/ui";
 
 const ATTENDANCE_PAGE_SIZE = 10;
@@ -122,6 +127,7 @@ export default function SiteDetailScreen() {
   const [attendancePage, setAttendancePage] = useState<number>(1);
   const [attendanceTotalPages, setAttendanceTotalPages] = useState<number>(1);
   const [attendanceTotal, setAttendanceTotal] = useState<number>(0);
+  const [expandedAttendanceId, setExpandedAttendanceId] = useState<string | null>(null);
   const scrollRef = useRef<ScrollView>(null);
 
   const [notes, setNotes] = useState<SiteNote[]>([]);
@@ -649,54 +655,94 @@ export default function SiteDetailScreen() {
               ) : attendance.length === 0 ? (
                 <Text style={styles.emptyText}>No attendance records.</Text>
               ) : (
-                attendance.map((record) => (
-                  <View key={record.id} style={styles.attendanceCardShadow}>
-                    <View style={styles.attendanceCard}>
-                      <View style={styles.goldBar} />
-                      <View style={styles.attendanceLeft}>
-                        <View style={styles.attendanceAvatar}>
-                          <Text style={styles.attendanceAvatarText}>
-                            {getInitials(record.staff?.full_name ?? "?")}
-                          </Text>
+                attendance.map((record) => {
+                  const isExpanded = expandedAttendanceId === record.id;
+                  return (
+                    <View key={record.id} style={styles.attendanceCardShadow}>
+                      <TouchableOpacity
+                        style={styles.attendanceCard}
+                        activeOpacity={0.7}
+                        onPress={() =>
+                          setExpandedAttendanceId(isExpanded ? null : record.id)
+                        }
+                      >
+                        <View style={styles.goldBar} />
+                        <View style={styles.attendanceCardTop}>
+                          <View style={styles.attendanceLeft}>
+                            <View style={styles.attendanceAvatar}>
+                              <Text style={styles.attendanceAvatarText}>
+                                {getInitials(record.staff?.full_name ?? "?")}
+                              </Text>
+                            </View>
+                            <View>
+                              <Text style={styles.attendanceStaffName}>
+                                {record.staff?.full_name ?? "Unknown staff"}
+                              </Text>
+                              <Text style={styles.attendanceSiteName}>
+                                {record.site?.name ?? "Today"}
+                              </Text>
+                              <View style={styles.attendancePhotoCount}>
+                                <Ionicons name="camera-outline" size={12} color={COLORS.textMuted} />
+                                <Text style={styles.attendancePhotoCountText}>
+                                  {record.photos.length}{" "}
+                                  {record.photos.length === 1 ? "photo pair" : "photo pairs"}
+                                </Text>
+                              </View>
+                            </View>
+                          </View>
+                          <View style={styles.attendanceRight}>
+                            <Ionicons
+                              name={isExpanded ? "chevron-up" : "chevron-down"}
+                              size={16}
+                              color={COLORS.textMuted}
+                              style={styles.attendanceChevron}
+                            />
+                            <View style={styles.attendanceStatusRow}>
+                              <View
+                                style={[
+                                  styles.attendanceStatusDot,
+                                  record.clock_out
+                                    ? styles.attendanceStatusDotMuted
+                                    : styles.attendanceStatusDotActive,
+                                ]}
+                              />
+                              <Text
+                                style={[
+                                  styles.attendanceStatusText,
+                                  record.clock_out
+                                    ? styles.attendanceStatusTextMuted
+                                    : styles.attendanceStatusTextActive,
+                                ]}
+                              >
+                                {record.clock_out ? formatDateTime(record.clock_out) : "Active"}
+                              </Text>
+                            </View>
+                            <Text style={styles.attendanceClockIn}>
+                              {formatDateTime(record.clock_in)}
+                            </Text>
+                            {record.clock_out ? (
+                              <Text style={styles.attendanceDuration}>
+                                {formatDuration(record.clock_in, record.clock_out)}
+                              </Text>
+                            ) : null}
+                          </View>
                         </View>
-                        <View>
-                          <Text style={styles.attendanceStaffName}>
-                            {record.staff?.full_name ?? "Unknown staff"}
-                          </Text>
-                          <Text style={styles.attendanceSiteName}>{record.site?.name ?? "Today"}</Text>
-                        </View>
-                      </View>
-                      <View style={styles.attendanceRight}>
-                        <View style={styles.attendanceStatusRow}>
-                          <View
-                            style={[
-                              styles.attendanceStatusDot,
-                              record.clock_out
-                                ? styles.attendanceStatusDotMuted
-                                : styles.attendanceStatusDotActive,
-                            ]}
-                          />
-                          <Text
-                            style={[
-                              styles.attendanceStatusText,
-                              record.clock_out
-                                ? styles.attendanceStatusTextMuted
-                                : styles.attendanceStatusTextActive,
-                            ]}
-                          >
-                            {record.clock_out ? formatDateTime(record.clock_out) : "Active"}
-                          </Text>
-                        </View>
-                        <Text style={styles.attendanceClockIn}>{formatDateTime(record.clock_in)}</Text>
-                        {record.clock_out ? (
-                          <Text style={styles.attendanceDuration}>
-                            {formatDuration(record.clock_in, record.clock_out)}
-                          </Text>
+
+                        {isExpanded ? (
+                          record.photos.length > 0 ? (
+                            <View style={styles.photoPairsContainer}>
+                              {record.photos.map((photo) => (
+                                <AttendancePhotoPair key={photo.id} photo={photo} />
+                              ))}
+                            </View>
+                          ) : (
+                            <Text style={styles.noPhotosText}>No photos for this record.</Text>
+                          )
                         ) : null}
-                      </View>
+                      </TouchableOpacity>
                     </View>
-                  </View>
-                ))
+                  );
+                })
               )}
               <PaginationControls
                 page={attendancePage}
@@ -871,6 +917,24 @@ export default function SiteDetailScreen() {
         />
       </View>
     </ScreenContainer>
+  );
+}
+
+function AttendancePhotoPair({ photo }: { photo: AttendancePhoto }) {
+  return (
+    <View style={styles.photoPair}>
+      <Text style={styles.photoPairLabel}>{photo.label}</Text>
+      <View style={styles.thumbRow}>
+        <View style={styles.thumbColumn}>
+          <Text style={styles.thumbCaption}>Before</Text>
+          <PhotoThumb path={photo.before_photo_url} />
+        </View>
+        <View style={styles.thumbColumn}>
+          <Text style={styles.thumbCaption}>After</Text>
+          <PhotoThumb path={photo.after_photo_url} />
+        </View>
+      </View>
+    </View>
   );
 }
 
@@ -1128,14 +1192,20 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   attendanceCard: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
     backgroundColor: COLORS.surface,
     borderRadius: RADIUS.md,
     paddingVertical: 12,
     paddingHorizontal: 16,
     overflow: "hidden",
+  },
+  attendanceCardTop: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+  },
+  attendanceChevron: {
+    alignSelf: "flex-end",
+    marginBottom: 4,
   },
   attendanceLeft: {
     flexDirection: "row",
@@ -1164,6 +1234,16 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: COLORS.textMuted,
     marginTop: 2,
+  },
+  attendancePhotoCount: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    marginTop: 4,
+  },
+  attendancePhotoCountText: {
+    fontSize: 11,
+    color: COLORS.textMuted,
   },
   attendanceRight: {
     alignItems: "flex-end",
@@ -1203,6 +1283,41 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: COLORS.gold,
     marginTop: 2,
+  },
+  photoPairsContainer: {
+    marginTop: 12,
+    gap: 12,
+  },
+  photoPair: {
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+    paddingTop: 12,
+  },
+  photoPairLabel: {
+    fontSize: 13,
+    fontWeight: "600",
+    marginBottom: 8,
+    color: COLORS.textPrimary,
+  },
+  thumbRow: {
+    flexDirection: "row",
+    gap: 16,
+  },
+  thumbColumn: {
+    alignItems: "flex-start",
+  },
+  thumbCaption: {
+    fontSize: 12,
+    color: COLORS.textMuted,
+    marginBottom: 6,
+  },
+  noPhotosText: {
+    fontSize: 12,
+    color: COLORS.textMuted,
+    marginTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+    paddingTop: 12,
   },
   noteText: {
     fontSize: 14,
