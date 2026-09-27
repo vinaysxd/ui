@@ -604,15 +604,17 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   clockInButton: {
-    flex: 1,
+    alignSelf: "flex-start",
     backgroundColor: COLORS.gold,
-    paddingVertical: 12,
+    paddingVertical: 11,
+    paddingHorizontal: 18,
     borderRadius: RADIUS.md,
     alignItems: "center",
   },
   clockInButtonText: {
     color: "#1A1A1A",
     fontWeight: "600",
+    fontSize: 14,
   },
   activeButtonRow: {
     flexDirection: "row",

@@ -10,6 +10,9 @@ interface ImageSourceSheetProps {
   onClose: () => void;
   onPicked: (uri: string) => void;
   aspect?: [number, number];
+  // When true, only the camera option is offered (e.g. attendance before/after
+  // photos must be taken live, not picked from the gallery).
+  cameraOnly?: boolean;
 }
 
 // Bottom sheet offering camera or gallery; calls onPicked with the chosen image uri.
@@ -18,6 +21,7 @@ export default function ImageSourceSheet({
   onClose,
   onPicked,
   aspect = [4, 3],
+  cameraOnly = false,
 }: ImageSourceSheetProps) {
   const pickerOptions: ImagePicker.ImagePickerOptions = {
     mediaTypes: ["images"],
@@ -69,10 +73,12 @@ export default function ImageSourceSheet({
               <Ionicons name="camera-outline" size={22} color={COLORS.gold} />
               <Text style={styles.optionText}>Take Photo</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.option} onPress={() => launch("gallery")}>
-              <Ionicons name="images-outline" size={22} color={COLORS.gold} />
-              <Text style={styles.optionText}>Choose from Gallery</Text>
-            </TouchableOpacity>
+            {!cameraOnly ? (
+              <TouchableOpacity style={styles.option} onPress={() => launch("gallery")}>
+                <Ionicons name="images-outline" size={22} color={COLORS.gold} />
+                <Text style={styles.optionText}>Choose from Gallery</Text>
+              </TouchableOpacity>
+            ) : null}
             <TouchableOpacity style={styles.cancel} onPress={onClose}>
               <Text style={styles.cancelText}>Cancel</Text>
             </TouchableOpacity>

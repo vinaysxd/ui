@@ -26,13 +26,17 @@ export default function PhotoThumb({ path }: PhotoThumbProps) {
     setFailed(false);
     setLoading(true);
 
+    console.log("[PhotoThumb] requesting signed URL for path:", path);
+
     getSignedPhotoUrl(path)
       .then((url) => {
+        console.log("[PhotoThumb] signed URL received for path:", path, "->", url);
         if (!cancelled) {
           setSignedUrl(url);
         }
       })
-      .catch(() => {
+      .catch((err) => {
+        console.log("[PhotoThumb] getSignedPhotoUrl FAILED for path:", path, err?.message, err);
         if (!cancelled) {
           setFailed(true);
         }
@@ -65,7 +69,14 @@ export default function PhotoThumb({ path }: PhotoThumbProps) {
   }
 
   return (
-    <Image source={{ uri: signedUrl }} style={styles.thumb} onError={() => setFailed(true)} />
+    <Image
+      source={{ uri: signedUrl }}
+      style={styles.thumb}
+      onError={(e) => {
+        console.log("[PhotoThumb] Image failed to load:", signedUrl, e.nativeEvent?.error);
+        setFailed(true);
+      }}
+    />
   );
 }
 

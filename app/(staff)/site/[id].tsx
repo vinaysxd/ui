@@ -13,30 +13,19 @@ import {
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { getMySite, Site } from "../../../src/services/sites.service";
-import {
-  getActiveAttendance,
-  clockIn,
-  clockOut,
-  getMyHistory,
-  ActiveAttendanceResponse,
-  Attendance,
-  AttendancePhoto,
-} from "../../../src/services/attendance.service";
+import { getMyHistory, Attendance, AttendancePhoto } from "../../../src/services/attendance.service";
 import {
   requestLocationPermission,
   getCurrentLocation,
   calculateDistance,
   Coordinates,
 } from "../../../src/services/location.service";
-import { showSuccess, showError } from "../../../src/utils/toast";
+import { showError } from "../../../src/utils/toast";
 import { formatDateTime } from "../../../src/utils/datetime";
-import PhotoUploadModal from "../../../src/components/PhotoUploadModal";
 import NotesPanel from "../../../src/components/NotesPanel";
 import { COLORS, RADIUS } from "../../../src/constants/theme";
 import ScreenContainer from "../../../src/components/ScreenContainer";
-import ProcessingOverlay from "../../../src/components/ProcessingOverlay";
 import PaginationControls from "../../../src/components/PaginationControls";
-import { LOADING_STYLE } from "../../../src/constants/ui";
 
 type Tab = "details" | "attendance" | "notes";
 
@@ -51,13 +40,6 @@ const formatDistance = (distanceKm: number | null): string => {
     return "Distance unavailable";
   }
   return `${distanceKm.toFixed(1)} km away`;
-};
-
-const formatElapsed = (clockInIso: string): string => {
-  const totalMinutes = Math.max(0, Math.floor((Date.now() - new Date(clockInIso).getTime()) / 60000));
-  const hours = Math.floor(totalMinutes / 60);
-  const minutes = totalMinutes % 60;
-  return hours === 0 ? `${minutes}m` : `${hours}h ${minutes}m`;
 };
 
 const formatDuration = (startIso: string, endIso: string): string => {
@@ -77,13 +59,7 @@ export default function StaffSiteDetailScreen() {
 
   const [site, setSite] = useState<Site | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
-
-  const [activeAttendance, setActiveAttendance] = useState<ActiveAttendanceResponse | null>(null);
   const [location, setLocation] = useState<Coordinates | null>(null);
-  const [acting, setActing] = useState<boolean>(false);
-  const [, setTick] = useState<number>(0);
-
-  const [photoModalVisible, setPhotoModalVisible] = useState<boolean>(false);
 
   const fetchSite = useCallback(async () => {
     try {
@@ -93,15 +69,6 @@ export default function StaffSiteDetailScreen() {
       showError(err.message);
     }
   }, [id]);
-
-  const fetchActive = useCallback(async () => {
-    try {
-      const data = await getActiveAttendance();
-      setActiveAttendance(data);
-    } catch (err: any) {
-      showError(err.message);
-    }
-  }, []);
 
   useEffect(() => {
     const loadAll = async () => {
@@ -114,60 +81,16 @@ export default function StaffSiteDetailScreen() {
           showError("Unable to get current location");
         }
       }
-      await Promise.all([fetchSite(), fetchActive()]);
+      await fetchSite();
       setLoading(false);
     };
     loadAll();
-  }, [fetchSite, fetchActive]);
-
-  useEffect(() => {
-    const interval = setInterval(() => setTick((t) => t + 1), 30000);
-    return () => clearInterval(interval);
-  }, []);
-
-  const isActiveHere =
-    !!activeAttendance?.active && activeAttendance.attendance?.site_id === id;
-  const activeElsewhere = !!activeAttendance?.active && !isActiveHere;
-  const attendanceId = isActiveHere ? activeAttendance!.attendance!.id : null;
+  }, [fetchSite]);
 
   const distanceKm =
     location && site
       ? calculateDistance(location.latitude, location.longitude, site.latitude, site.longitude)
       : null;
-
-  const handleClockIn = async () => {
-    if (!location) {
-      showError("Current location is unavailable");
-      return;
-    }
-    setActing(true);
-    try {
-      await clockIn(id, location.latitude, location.longitude);
-      showSuccess(`Clocked in at ${site?.name ?? "site"}`);
-      await fetchActive();
-    } catch (err: any) {
-      showError(err.message);
-    } finally {
-      setActing(false);
-    }
-  };
-
-  const handleClockOut = async () => {
-    if (!location) {
-      showError("Current location is unavailable");
-      return;
-    }
-    setActing(true);
-    try {
-      await clockOut(id, location.latitude, location.longitude);
-      showSuccess(`Clocked out of ${site?.name ?? "site"}`);
-      await fetchActive();
-    } catch (err: any) {
-      showError(err.message);
-    } finally {
-      setActing(false);
-    }
-  };
 
   if (loading) {
     return (
@@ -193,11 +116,6 @@ export default function StaffSiteDetailScreen() {
 
           <View style={styles.header}>
             <Text style={styles.name}>{site.name}</Text>
-            {isActiveHere ? (
-              <View style={[styles.badge, styles.badgeActive]}>
-                <Text style={styles.badgeText}>Clocked In</Text>
-              </View>
-            ) : null}
           </View>
 
           <View style={styles.tabBar}>
@@ -224,60 +142,6 @@ export default function StaffSiteDetailScreen() {
                 <Row label="Client" value={site.client?.full_name ?? "Not assigned"} />
                 <Row label="Distance" value={formatDistance(distanceKm)} />
               </View>
-
-              <View
-                style={[
-                  styles.statusCard,
-                  isActiveHere ? styles.statusCardActive : styles.statusCardInactive,
-                ]}
-              >
-                <Text style={isActiveHere ? styles.statusCardText : styles.statusCardTextInactive}>
-                  {isActiveHere
-                    ? `Clocked in · ${formatElapsed(activeAttendance!.attendance!.clock_in)}`
-                    : activeElsewhere
-                      ? "Clocked in at another site"
-                      : "Not clocked in"}
-                </Text>
-              </View>
-
-              {isActiveHere ? (
-                <TouchableOpacity
-                  style={[styles.clockOutButton, acting && LOADING_STYLE]}
-                  onPress={handleClockOut}
-                  disabled={acting}
-                >
-                  {acting ? (
-                    <ActivityIndicator color={COLORS.gold} size="small" />
-                  ) : (
-                    <Text style={styles.clockOutButtonText}>Clock Out</Text>
-                  )}
-                </TouchableOpacity>
-              ) : (
-                <TouchableOpacity
-                  style={[styles.clockInButton, activeElsewhere && styles.clockInButtonDisabled, acting && LOADING_STYLE]}
-                  onPress={handleClockIn}
-                  disabled={activeElsewhere || acting}
-                >
-                  {acting ? (
-                    <ActivityIndicator color="#1A1A1A" size="small" />
-                  ) : (
-                    <Text style={styles.clockInButtonText}>Clock In</Text>
-                  )}
-                </TouchableOpacity>
-              )}
-
-              <View style={styles.section}>
-                {isActiveHere ? (
-                  <TouchableOpacity
-                    style={styles.uploadButton}
-                    onPress={() => setPhotoModalVisible(true)}
-                  >
-                    <Text style={styles.uploadButtonText}>Manage Photos</Text>
-                  </TouchableOpacity>
-                ) : (
-                  <Text style={styles.emptyText}>Clock in at this site to add before/after photos.</Text>
-                )}
-              </View>
             </ScrollView>
           )}
 
@@ -285,17 +149,6 @@ export default function StaffSiteDetailScreen() {
 
           {activeTab === "notes" && <NotesPanel siteId={id} />}
         </View>
-
-        <PhotoUploadModal
-          visible={photoModalVisible}
-          attendanceId={attendanceId}
-          siteName={site.name}
-          onClose={() => {
-            setPhotoModalVisible(false);
-            fetchActive();
-          }}
-        />
-        <ProcessingOverlay visible={acting} />
       </View>
     </ScreenContainer>
   );
@@ -614,62 +467,6 @@ const styles = StyleSheet.create({
     textAlign: "right",
     flexShrink: 1,
     marginLeft: 16,
-  },
-  statusCard: {
-    borderRadius: RADIUS.md,
-    padding: 16,
-    marginBottom: 16,
-  },
-  statusCardActive: {
-    backgroundColor: COLORS.successBg,
-  },
-  statusCardInactive: {
-    backgroundColor: COLORS.surface,
-  },
-  statusCardText: {
-    color: COLORS.success,
-    fontSize: 15,
-    fontWeight: "600",
-  },
-  statusCardTextInactive: {
-    color: COLORS.textMuted,
-    fontSize: 15,
-    fontWeight: "600",
-  },
-  clockInButton: {
-    backgroundColor: COLORS.gold,
-    paddingVertical: 14,
-    borderRadius: RADIUS.md,
-    alignItems: "center",
-    marginBottom: 16,
-  },
-  clockInButtonDisabled: {
-    opacity: 0.5,
-  },
-  clockInButtonText: {
-    color: "#1A1A1A",
-    fontWeight: "600",
-  },
-  clockOutButton: {
-    backgroundColor: COLORS.dangerBg,
-    paddingVertical: 14,
-    borderRadius: RADIUS.md,
-    alignItems: "center",
-    marginBottom: 16,
-  },
-  clockOutButtonText: {
-    color: COLORS.danger,
-    fontWeight: "600",
-  },
-  uploadButton: {
-    backgroundColor: COLORS.surfaceElevated,
-    padding: 14,
-    borderRadius: RADIUS.md,
-    alignItems: "center",
-  },
-  uploadButtonText: {
-    color: COLORS.textSecondary,
-    fontWeight: "bold",
   },
   emptyText: {
     color: COLORS.textMuted,

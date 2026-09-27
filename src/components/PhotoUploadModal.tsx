@@ -231,6 +231,7 @@ export default function PhotoUploadModal({
           visible={sheetVisible}
           onClose={() => setSheetVisible(false)}
           onPicked={handlePicked}
+          cameraOnly
         />
       </SafeAreaView>
     </Modal>

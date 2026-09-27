@@ -110,6 +110,16 @@ export const getSignedPhotoUrl = async (path: string): Promise<string> => {
     const response = await api.get("/attendance/photos/signed-url", { params: { path } });
     return response.data.signed_url;
   } catch (error: any) {
+    console.log(
+      "[getSignedPhotoUrl] request failed for path:",
+      path,
+      "status:",
+      error?.response?.status,
+      "data:",
+      error?.response?.data,
+      "message:",
+      error?.message
+    );
     const code = error?.response?.data?.code;
     throw new Error(getErrorMessage(code));
   }
