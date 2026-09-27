@@ -10,6 +10,7 @@ import {
   StyleSheet,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import {
   requestLocationPermission,
   getCurrentLocation,
@@ -300,16 +301,25 @@ export default function StaffHomeScreen() {
                   <Text style={styles.timerText}>{formatTimer(elapsedSeconds)}</Text>
                 </View>
 
-                <TouchableOpacity
-                  style={styles.clockOutButtonFull}
-                  onPress={() => openClockOutModal(activeSite)}
-                >
-                  <Text style={styles.clockOutButtonText}>Clock Out</Text>
-                </TouchableOpacity>
-
-                <View style={styles.buttonRow}>
+                <View style={styles.activeButtonRow}>
                   <TouchableOpacity
-                    style={styles.secondaryButton}
+                    activeOpacity={0.85}
+                    onPress={() => openClockOutModal(activeSite)}
+                  >
+                    <LinearGradient
+                      colors={["#EF4444", "#B91C1C"]}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                      style={styles.clockOutButtonCompact}
+                    >
+                      <Ionicons name="exit-outline" size={16} color="#FFFFFF" />
+                      <Text style={styles.clockOutButtonText}>Clock Out</Text>
+                    </LinearGradient>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    activeOpacity={0.7}
+                    style={styles.secondaryButtonCompact}
                     onPress={() => {
                       if (activeAttendance.attendance) {
                         setPhotoModalSite({
@@ -319,12 +329,16 @@ export default function StaffHomeScreen() {
                       }
                     }}
                   >
+                    <Ionicons name="images-outline" size={15} color={COLORS.gold} />
                     <Text style={styles.secondaryButtonText}>Photos</Text>
                   </TouchableOpacity>
+
                   <TouchableOpacity
-                    style={styles.secondaryButton}
+                    activeOpacity={0.7}
+                    style={styles.secondaryButtonCompact}
                     onPress={() => setNotesModalSiteId(activeSite.id)}
                   >
+                    <Ionicons name="document-text-outline" size={15} color={COLORS.gold} />
                     <Text style={styles.secondaryButtonText}>Notes</Text>
                   </TouchableOpacity>
                 </View>
@@ -466,12 +480,16 @@ const styles = StyleSheet.create({
   },
   activeCard: {
     backgroundColor: COLORS.surface,
-    borderRadius: RADIUS.md,
-    borderWidth: 1.5,
-    borderColor: COLORS.gold,
-    padding: 16,
+    borderRadius: RADIUS.lg,
+    borderWidth: 1,
+    borderColor: "rgba(201,168,76,0.35)",
+    padding: 20,
     marginBottom: 12,
-    overflow: "hidden",
+    shadowColor: "#000000",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.35,
+    shadowRadius: 16,
+    elevation: 8,
   },
   activeName: {
     fontSize: 16,
@@ -491,7 +509,7 @@ const styles = StyleSheet.create({
   timerContainer: {
     alignItems: "center",
     marginTop: 16,
-    marginBottom: 16,
+    marginBottom: 20,
   },
   timerLabel: {
     color: COLORS.textMuted,
@@ -507,16 +525,25 @@ const styles = StyleSheet.create({
     letterSpacing: 4,
     marginTop: 4,
   },
-  clockOutButtonFull: {
-    backgroundColor: COLORS.dangerBg,
-    paddingVertical: 12,
-    borderRadius: RADIUS.md,
+  clockOutButtonCompact: {
+    flexDirection: "row",
     alignItems: "center",
-    width: "100%",
+    justifyContent: "center",
+    gap: 6,
+    paddingVertical: 11,
+    paddingHorizontal: 18,
+    borderRadius: RADIUS.md,
+    shadowColor: "#B91C1C",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 10,
+    elevation: 6,
   },
   clockOutButtonText: {
-    color: COLORS.danger,
-    fontWeight: "600",
+    color: "#FFFFFF",
+    fontWeight: "700",
+    fontSize: 14,
+    letterSpacing: 0.3,
   },
   divider: {
     height: 1,
@@ -587,15 +614,29 @@ const styles = StyleSheet.create({
     color: "#1A1A1A",
     fontWeight: "600",
   },
-  secondaryButton: {
-    flex: 1,
-    backgroundColor: COLORS.surfaceElevated,
-    paddingVertical: 12,
-    borderRadius: RADIUS.md,
+  activeButtonRow: {
+    flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
+    flexWrap: "wrap",
+    gap: 10,
+    marginTop: 18,
+  },
+  secondaryButtonCompact: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    backgroundColor: "rgba(201,168,76,0.08)",
+    borderWidth: 1,
+    borderColor: "rgba(201,168,76,0.3)",
+    paddingVertical: 11,
+    paddingHorizontal: 16,
+    borderRadius: RADIUS.md,
   },
   secondaryButtonText: {
-    color: COLORS.textSecondary,
+    color: COLORS.gold,
     fontWeight: "600",
+    fontSize: 13,
   },
 });
