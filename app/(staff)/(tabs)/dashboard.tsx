@@ -21,11 +21,14 @@ import {
   getActiveAttendance,
   clockIn,
   clockOut,
+  forceClockOut,
   ActiveAttendanceResponse,
 } from "../../../src/services/attendance.service";
 import { showSuccess, showError } from "../../../src/utils/toast";
+import { ERRORS } from "../../../src/constants/errors";
 import PhotoUploadModal from "../../../src/components/PhotoUploadModal";
 import NotesModal from "../../../src/components/NotesModal";
+import ConfirmModal from "../../../src/components/ConfirmModal";
 import { COLORS, RADIUS } from "../../../src/constants/theme";
 import ProcessingOverlay from "../../../src/components/ProcessingOverlay";
 import { LOADING_STYLE } from "../../../src/constants/ui";
@@ -41,15 +44,12 @@ const formatDistance = (distanceKm: number | null): string => {
   return `${distanceKm.toFixed(1)} km away`;
 };
 
-const formatDuration = (clockInIso: string): string => {
-  const elapsedMs = Date.now() - new Date(clockInIso).getTime();
-  const totalMinutes = Math.max(0, Math.floor(elapsedMs / 60000));
-  const hours = Math.floor(totalMinutes / 60);
-  const minutes = totalMinutes % 60;
-  if (hours === 0) {
-    return `${minutes}m`;
-  }
-  return `${hours}h ${minutes}m`;
+const formatTimer = (totalSeconds: number): string => {
+  const seconds = Math.max(0, totalSeconds);
+  const hours = Math.floor(seconds / 3600);
+  const mins = Math.floor((seconds % 3600) / 60);
+  const secs = seconds % 60;
+  return `${String(hours).padStart(2, "0")}:${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
 };
 
 export default function StaffHomeScreen() {
@@ -61,11 +61,17 @@ export default function StaffHomeScreen() {
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [actingSiteId, setActingSiteId] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState<string>("");
-  const [, setTick] = useState<number>(0);
+  const [elapsedSeconds, setElapsedSeconds] = useState<number>(0);
   const [photoModalSite, setPhotoModalSite] = useState<{ attendanceId: string; name: string } | null>(
     null
   );
   const [notesModalSiteId, setNotesModalSiteId] = useState<string | null>(null);
+
+  const [clockOutTargetSite, setClockOutTargetSite] = useState<SiteWithDistance | null>(null);
+  const [clockOutModalVisible, setClockOutModalVisible] = useState<boolean>(false);
+  const [clockOutModalLoading, setClockOutModalLoading] = useState<boolean>(false);
+  const [outOfRangeModalVisible, setOutOfRangeModalVisible] = useState<boolean>(false);
+  const [outOfRangeModalLoading, setOutOfRangeModalLoading] = useState<boolean>(false);
 
   const loadAll = useCallback(async () => {
     try {
@@ -115,27 +121,44 @@ export default function StaffHomeScreen() {
   }, [loadAll]);
 
   useEffect(() => {
-    const interval = setInterval(() => setTick((t) => t + 1), 30000);
+    if (!activeAttendance?.active || !activeAttendance.attendance) {
+      setElapsedSeconds(0);
+      return;
+    }
+    const clockInMs = new Date(activeAttendance.attendance.clock_in).getTime();
+    const update = () => setElapsedSeconds(Math.floor((Date.now() - clockInMs) / 1000));
+    update();
+    const interval = setInterval(update, 1000);
     return () => clearInterval(interval);
-  }, []);
+  }, [activeAttendance?.active, activeAttendance?.attendance?.clock_in]);
 
   const onRefresh = () => {
     setRefreshing(true);
     loadAll();
   };
 
-  const filteredSites = useMemo(() => {
-    const query = searchQuery.trim().toLowerCase();
-    if (!query) {
-      return sites;
-    }
-    return sites.filter((site) => site.name.toLowerCase().includes(query));
-  }, [sites, searchQuery]);
-
   const activeSiteId =
     activeAttendance?.active && activeAttendance.attendance
       ? activeAttendance.attendance.site_id
       : null;
+
+  const activeSite = useMemo(
+    () => sites.find((site) => site.id === activeSiteId) ?? null,
+    [sites, activeSiteId]
+  );
+
+  const otherSites = useMemo(
+    () => sites.filter((site) => site.id !== activeSiteId),
+    [sites, activeSiteId]
+  );
+
+  const filteredOtherSites = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) {
+      return otherSites;
+    }
+    return otherSites.filter((site) => site.name.toLowerCase().includes(query));
+  }, [otherSites, searchQuery]);
 
   const handleClockIn = async (site: SiteWithDistance) => {
     if (!location) {
@@ -154,21 +177,71 @@ export default function StaffHomeScreen() {
     }
   };
 
-  const handleClockOut = async (site: SiteWithDistance) => {
+  const openClockOutModal = (site: SiteWithDistance) => {
+    setClockOutTargetSite(site);
+    setClockOutModalVisible(true);
+  };
+
+  const closeClockOutModal = () => {
+    setClockOutModalVisible(false);
+  };
+
+  const closeOutOfRangeModal = () => {
+    setOutOfRangeModalVisible(false);
+  };
+
+  const performClockOut = async () => {
+    const site = clockOutTargetSite;
+    if (!site) {
+      return;
+    }
     if (!location) {
       showError("Current location is unavailable");
       return;
     }
-    setActingSiteId(site.id);
+    setClockOutModalLoading(true);
     try {
       await clockOut(site.id, location.latitude, location.longitude);
+      setClockOutModalVisible(false);
+      showSuccess(`Clocked out of ${site.name}`);
+      await loadAll();
+    } catch (err: any) {
+      setClockOutModalVisible(false);
+      if (err.message === ERRORS.ATTENDANCE_OUT_OF_RANGE.message) {
+        setOutOfRangeModalVisible(true);
+      } else {
+        showError(err.message);
+      }
+    } finally {
+      setClockOutModalLoading(false);
+    }
+  };
+
+  const performForceClockOut = async () => {
+    const site = clockOutTargetSite;
+    if (!site) {
+      return;
+    }
+    if (!location) {
+      showError("Current location is unavailable");
+      return;
+    }
+    setOutOfRangeModalLoading(true);
+    try {
+      await forceClockOut(site.id, location.latitude, location.longitude);
+      setOutOfRangeModalVisible(false);
       showSuccess(`Clocked out of ${site.name}`);
       await loadAll();
     } catch (err: any) {
       showError(err.message);
     } finally {
-      setActingSiteId("");
+      setOutOfRangeModalLoading(false);
     }
+  };
+
+  const retryClockOut = () => {
+    setOutOfRangeModalVisible(false);
+    performClockOut();
   };
 
   if (loading) {
@@ -179,22 +252,11 @@ export default function StaffHomeScreen() {
     );
   }
 
+  const isClockedIn = !!activeAttendance?.active;
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Home</Text>
-
-      {activeAttendance?.active && activeAttendance.attendance ? (
-        <View style={[styles.statusCard, styles.statusCardActive]}>
-          <Text style={styles.statusCardText}>
-            Clocked in at {activeAttendance.attendance.site?.name ?? "Unknown site"} ·{" "}
-            {formatDuration(activeAttendance.attendance.clock_in)}
-          </Text>
-        </View>
-      ) : (
-        <View style={[styles.statusCard, styles.statusCardInactive]}>
-          <Text style={styles.statusCardTextInactive}>Not clocked in</Text>
-        </View>
-      )}
 
       <View style={styles.searchBar}>
         <Ionicons name="search-outline" size={18} color={COLORS.gold} />
@@ -202,7 +264,7 @@ export default function StaffHomeScreen() {
           style={styles.searchInput}
           value={searchQuery}
           onChangeText={setSearchQuery}
-          placeholder="Search sites..."
+          placeholder="Search other sites..."
           placeholderTextColor={COLORS.textMuted}
           autoCapitalize="none"
         />
@@ -214,7 +276,7 @@ export default function StaffHomeScreen() {
       </View>
 
       <FlatList keyboardShouldPersistTaps="handled"
-        data={filteredSites}
+        data={filteredOtherSites}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
         refreshControl={
@@ -225,41 +287,34 @@ export default function StaffHomeScreen() {
             colors={[COLORS.gold]}
           />
         }
-        ListEmptyComponent={
-          <Text style={styles.emptyText}>
-            {searchQuery.trim() ? "No sites found" : "No sites assigned to you."}
-          </Text>
-        }
-        renderItem={({ item }) => {
-          const isActiveSite = item.id === activeSiteId;
-          const acting = actingSiteId === item.id;
-          return (
-            <View style={styles.card}>
-              <View style={styles.goldBar} />
-              <Text style={styles.name}>{item.name}</Text>
-              <Text style={styles.detail}>{item.address}</Text>
-              <Text style={styles.distance}>{formatDistance(item.distanceKm)}</Text>
+        ListHeaderComponent={
+          <>
+            {activeSite && activeAttendance?.attendance ? (
+              <View style={styles.activeCard}>
+                <Text style={styles.activeName}>{activeSite.name}</Text>
+                <Text style={styles.activeDetail}>{activeSite.address}</Text>
+                <Text style={styles.activeDistance}>{formatDistance(activeSite.distanceKm)}</Text>
 
-              {isActiveSite ? (
+                <View style={styles.timerContainer}>
+                  <Text style={styles.timerLabel}>CLOCKED IN</Text>
+                  <Text style={styles.timerText}>{formatTimer(elapsedSeconds)}</Text>
+                </View>
+
+                <TouchableOpacity
+                  style={styles.clockOutButtonFull}
+                  onPress={() => openClockOutModal(activeSite)}
+                >
+                  <Text style={styles.clockOutButtonText}>Clock Out</Text>
+                </TouchableOpacity>
+
                 <View style={styles.buttonRow}>
-                  <TouchableOpacity
-                    style={[styles.clockOutButton, acting && LOADING_STYLE]}
-                    onPress={() => handleClockOut(item)}
-                    disabled={acting}
-                  >
-                    {acting ? (
-                      <ActivityIndicator color={COLORS.gold} size="small" />
-                    ) : (
-                      <Text style={styles.clockOutButtonText}>Clock Out</Text>
-                    )}
-                  </TouchableOpacity>
                   <TouchableOpacity
                     style={styles.secondaryButton}
                     onPress={() => {
-                      if (activeAttendance?.attendance) {
+                      if (activeAttendance.attendance) {
                         setPhotoModalSite({
                           attendanceId: activeAttendance.attendance.id,
-                          name: item.name,
+                          name: activeSite.name,
                         });
                       }
                     }}
@@ -268,21 +323,49 @@ export default function StaffHomeScreen() {
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={styles.secondaryButton}
-                    onPress={() => setNotesModalSiteId(item.id)}
+                    onPress={() => setNotesModalSiteId(activeSite.id)}
                   >
                     <Text style={styles.secondaryButtonText}>Notes</Text>
                   </TouchableOpacity>
                 </View>
+              </View>
+            ) : null}
+
+            {isClockedIn ? (
+              <>
+                <View style={styles.divider} />
+                <Text style={styles.otherSitesLabel}>
+                  OTHER SITES ({filteredOtherSites.length})
+                </Text>
+              </>
+            ) : null}
+          </>
+        }
+        ListEmptyComponent={
+          <Text style={styles.emptyText}>
+            {searchQuery.trim() ? "No sites found" : "No sites assigned to you."}
+          </Text>
+        }
+        renderItem={({ item }) => {
+          const acting = actingSiteId === item.id;
+          return (
+            <View
+              style={[styles.card, isClockedIn && styles.cardBlocked]}
+              pointerEvents={isClockedIn ? "none" : "auto"}
+            >
+              <View style={styles.goldBar} />
+              <Text style={styles.name}>{item.name}</Text>
+              <Text style={styles.detail}>{item.address}</Text>
+              <Text style={styles.distance}>{formatDistance(item.distanceKm)}</Text>
+
+              {isClockedIn ? (
+                <Text style={styles.blockedText}>Clocked in elsewhere</Text>
               ) : (
                 <View style={styles.buttonRow}>
                   <TouchableOpacity
-                    style={[
-                      styles.clockInButton,
-                      !!activeAttendance?.active && styles.clockInButtonDisabled,
-                      acting && LOADING_STYLE,
-                    ]}
+                    style={[styles.clockInButton, acting && LOADING_STYLE]}
                     onPress={() => handleClockIn(item)}
-                    disabled={!!activeAttendance?.active || acting}
+                    disabled={acting}
                   >
                     {acting ? (
                       <ActivityIndicator color="#1A1A1A" size="small" />
@@ -310,6 +393,29 @@ export default function StaffHomeScreen() {
         onClose={() => setNotesModalSiteId(null)}
       />
       <ProcessingOverlay visible={actingSiteId !== ""} />
+
+      <ConfirmModal
+        visible={clockOutModalVisible}
+        title="Clock Out"
+        message="Are you sure you want to clock out?"
+        confirmText="Clock Out"
+        confirmStyle="destructive"
+        loading={clockOutModalLoading}
+        onConfirm={performClockOut}
+        onCancel={closeClockOutModal}
+      />
+
+      <ConfirmModal
+        visible={outOfRangeModalVisible}
+        title="Out of Range"
+        message="You are not within 100 metres of the site."
+        confirmText="Try Again"
+        confirmStyle="default"
+        loading={outOfRangeModalLoading}
+        onConfirm={retryClockOut}
+        onCancel={closeOutOfRangeModal}
+        extraButton={{ text: "Force Clock Out", style: "destructive", onPress: performForceClockOut }}
+      />
     </View>
   );
 }
@@ -331,27 +437,6 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     marginBottom: 16,
     color: COLORS.textPrimary,
-  },
-  statusCard: {
-    borderRadius: RADIUS.md,
-    padding: 16,
-    marginBottom: 16,
-  },
-  statusCardActive: {
-    backgroundColor: COLORS.successBg,
-  },
-  statusCardInactive: {
-    backgroundColor: COLORS.surface,
-  },
-  statusCardText: {
-    color: COLORS.success,
-    fontSize: 15,
-    fontWeight: "600",
-  },
-  statusCardTextInactive: {
-    color: COLORS.textMuted,
-    fontSize: 15,
-    fontWeight: "600",
   },
   searchBar: {
     flexDirection: "row",
@@ -379,12 +464,88 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: 32,
   },
+  activeCard: {
+    backgroundColor: COLORS.surface,
+    borderRadius: RADIUS.md,
+    borderWidth: 1.5,
+    borderColor: COLORS.gold,
+    padding: 16,
+    marginBottom: 12,
+    overflow: "hidden",
+  },
+  activeName: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: COLORS.textPrimary,
+  },
+  activeDetail: {
+    fontSize: 13,
+    color: COLORS.textSecondary,
+    marginTop: 2,
+  },
+  activeDistance: {
+    fontSize: 12,
+    color: COLORS.gold,
+    marginTop: 4,
+  },
+  timerContainer: {
+    alignItems: "center",
+    marginTop: 16,
+    marginBottom: 16,
+  },
+  timerLabel: {
+    color: COLORS.textMuted,
+    fontSize: 10,
+    letterSpacing: 2,
+    textTransform: "uppercase",
+    fontWeight: "600",
+  },
+  timerText: {
+    color: COLORS.gold,
+    fontSize: 32,
+    fontWeight: "700",
+    letterSpacing: 4,
+    marginTop: 4,
+  },
+  clockOutButtonFull: {
+    backgroundColor: COLORS.dangerBg,
+    paddingVertical: 12,
+    borderRadius: RADIUS.md,
+    alignItems: "center",
+    width: "100%",
+  },
+  clockOutButtonText: {
+    color: COLORS.danger,
+    fontWeight: "600",
+  },
+  divider: {
+    height: 1,
+    backgroundColor: COLORS.gold,
+    opacity: 0.3,
+    marginTop: 4,
+    marginBottom: 12,
+  },
+  otherSitesLabel: {
+    color: COLORS.textMuted,
+    fontSize: 11,
+    textTransform: "uppercase",
+    letterSpacing: 2,
+    marginBottom: 12,
+  },
   card: {
     backgroundColor: COLORS.surface,
     borderRadius: RADIUS.md,
     padding: 16,
     marginBottom: 12,
     overflow: "hidden",
+  },
+  cardBlocked: {
+    opacity: 0.4,
+  },
+  blockedText: {
+    color: COLORS.textMuted,
+    fontSize: 12,
+    marginTop: 12,
   },
   goldBar: {
     position: "absolute",
@@ -422,22 +583,8 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.md,
     alignItems: "center",
   },
-  clockInButtonDisabled: {
-    opacity: 0.5,
-  },
   clockInButtonText: {
     color: "#1A1A1A",
-    fontWeight: "600",
-  },
-  clockOutButton: {
-    flex: 1,
-    backgroundColor: COLORS.dangerBg,
-    paddingVertical: 12,
-    borderRadius: RADIUS.md,
-    alignItems: "center",
-  },
-  clockOutButtonText: {
-    color: COLORS.danger,
     fontWeight: "600",
   },
   secondaryButton: {

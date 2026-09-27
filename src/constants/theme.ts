@@ -16,6 +16,9 @@ export const COLORS = {
   warning: "#F59E0B",
   warningBg: "#2E2A1A",
   accentBg: "#2E2A1A",
+  goldInk: "#C9A84C",
+  outline: "#757575",
+  dangerText: "#EF5350",
 };
 
 export const LIGHT_COLORS: typeof COLORS = {
@@ -36,6 +39,9 @@ export const LIGHT_COLORS: typeof COLORS = {
   warning: "#B45309",
   warningBg: "#FFF8E1",
   accentBg: "#F5EFDA",
+  goldInk: "#8A6A25",
+  outline: "#8A8578",
+  dangerText: "#C62828",
 };
 
 export const SPACING = { xs: 4, sm: 8, md: 16, lg: 24, xl: 32 };

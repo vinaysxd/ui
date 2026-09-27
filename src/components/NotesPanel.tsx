@@ -11,7 +11,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   StyleSheet,
-  Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import {
@@ -27,6 +26,7 @@ import { showSuccess, showError } from "../utils/toast";
 import { formatDateTime } from "../utils/datetime";
 import { COLORS, RADIUS } from "../constants/theme";
 import { LOADING_STYLE } from "../constants/ui";
+import ConfirmModal from "./ConfirmModal";
 
 interface NotesPanelProps {
   siteId: string | null;
@@ -49,6 +49,10 @@ export default function NotesPanel({ siteId, active = true, role = "staff" }: No
   const [composing, setComposing] = useState<boolean>(false);
   const [noteText, setNoteText] = useState<string>("");
   const [submitting, setSubmitting] = useState<boolean>(false);
+
+  const [noteToDelete, setNoteToDelete] = useState<string | null>(null);
+  const [deleteModalVisible, setDeleteModalVisible] = useState<boolean>(false);
+  const [deleteModalLoading, setDeleteModalLoading] = useState<boolean>(false);
 
   const fetchNotes = useCallback(async () => {
     if (!siteId) {
@@ -86,33 +90,31 @@ export default function NotesPanel({ siteId, active = true, role = "staff" }: No
     fetchNotes();
   };
 
-  const handleDeleteNote = async (noteId: string) => {
-    if (!siteId) {
+  const openDeleteModal = (noteId: string) => {
+    setNoteToDelete(noteId);
+    setDeleteModalVisible(true);
+  };
+
+  const closeDeleteModal = () => {
+    setDeleteModalVisible(false);
+    setNoteToDelete(null);
+  };
+
+  const performDeleteNote = async () => {
+    if (!siteId || !noteToDelete) {
       return;
     }
+    setDeleteModalLoading(true);
     try {
-      await deleteNote(siteId, noteId);
-      setNotes((prev) => prev.filter((n) => n.id !== noteId));
+      await deleteNote(siteId, noteToDelete);
+      setNotes((prev) => prev.filter((n) => n.id !== noteToDelete));
+      setDeleteModalVisible(false);
+      setNoteToDelete(null);
       showSuccess("Note deleted");
     } catch (err: any) {
       showError(err.message);
-    }
-  };
-
-  const confirmDelete = (noteId: string) => {
-    if (Platform.OS === "web") {
-      if (window.confirm("Delete this note?")) {
-        handleDeleteNote(noteId);
-      }
-    } else {
-      Alert.alert("Delete this note?", undefined, [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Delete",
-          style: "destructive",
-          onPress: () => handleDeleteNote(noteId),
-        },
-      ]);
+    } finally {
+      setDeleteModalLoading(false);
     }
   };
 
@@ -159,7 +161,7 @@ export default function NotesPanel({ siteId, active = true, role = "staff" }: No
             <NoteCard
               note={item}
               canDelete={currentUserId != null && item.author_id === currentUserId}
-              onDelete={() => confirmDelete(item.id)}
+              onDelete={() => openDeleteModal(item.id)}
             />
           )}
         />
@@ -203,6 +205,17 @@ export default function NotesPanel({ siteId, active = true, role = "staff" }: No
           </TouchableOpacity>
         )}
       </View>
+
+      <ConfirmModal
+        visible={deleteModalVisible}
+        title="Delete Note"
+        message="Are you sure you want to delete this note?"
+        confirmText="Delete"
+        confirmStyle="destructive"
+        loading={deleteModalLoading}
+        onConfirm={performDeleteNote}
+        onCancel={closeDeleteModal}
+      />
     </KeyboardAvoidingView>
   );
 }

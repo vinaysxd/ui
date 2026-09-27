@@ -23,6 +23,7 @@ import { getErrorMessage } from "../../../src/constants/errors";
 import { showSuccess, showError } from "../../../src/utils/toast";
 import { COLORS, RADIUS } from "../../../src/constants/theme";
 import ScreenContainer from "../../../src/components/ScreenContainer";
+import ConfirmModal from "../../../src/components/ConfirmModal";
 import { LOADING_STYLE } from "../../../src/constants/ui";
 
 interface QBCustomerResult {
@@ -71,6 +72,7 @@ export default function ClientDetailScreen() {
   const [saving, setSaving] = useState<boolean>(false);
   const [deactivating, setDeactivating] = useState<boolean>(false);
   const [reactivating, setReactivating] = useState<boolean>(false);
+  const [deactivateModalVisible, setDeactivateModalVisible] = useState<boolean>(false);
 
   const [assignedSites, setAssignedSites] = useState<Site[]>([]);
   const [sitesLoading, setSitesLoading] = useState<boolean>(false);
@@ -230,6 +232,7 @@ export default function ClientDetailScreen() {
     try {
       await deactivateClient(id);
       await fetchClient();
+      setDeactivateModalVisible(false);
       showSuccess("Client deactivated");
     } catch (err: any) {
       showError(err.message);
@@ -439,15 +442,10 @@ export default function ClientDetailScreen() {
                   </TouchableOpacity>
                   {client.is_active ? (
                     <TouchableOpacity
-                      style={[styles.deactivateButton, deactivating && LOADING_STYLE]}
-                      onPress={handleDeactivate}
-                      disabled={deactivating}
+                      style={styles.deactivateButton}
+                      onPress={() => setDeactivateModalVisible(true)}
                     >
-                      {deactivating ? (
-                        <ActivityIndicator color={COLORS.gold} />
-                      ) : (
-                        <Text style={styles.deactivateButtonText}>Deactivate</Text>
-                      )}
+                      <Text style={styles.deactivateButtonText}>Deactivate</Text>
                     </TouchableOpacity>
                   ) : (
                     <TouchableOpacity
@@ -498,6 +496,17 @@ export default function ClientDetailScreen() {
             </>
           )}
         </ScrollView>
+
+        <ConfirmModal
+          visible={deactivateModalVisible}
+          title="Deactivate Client"
+          message="Are you sure you want to deactivate this client?"
+          confirmText="Deactivate"
+          confirmStyle="destructive"
+          loading={deactivating}
+          onConfirm={handleDeactivate}
+          onCancel={() => setDeactivateModalVisible(false)}
+        />
       </View>
     </ScreenContainer>
   );

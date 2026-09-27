@@ -11,7 +11,6 @@ import {
   StyleSheet,
   Modal,
   FlatList,
-  Alert,
   Platform,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -35,6 +34,7 @@ import { getSiteNotes, deleteNote, SiteNote } from "../../../src/services/notes.
 import { showSuccess, showError } from "../../../src/utils/toast";
 import { COLORS, RADIUS } from "../../../src/constants/theme";
 import ScreenContainer from "../../../src/components/ScreenContainer";
+import ConfirmModal from "../../../src/components/ConfirmModal";
 import { LOADING_STYLE } from "../../../src/constants/ui";
 
 const ATTENDANCE_PAGE_SIZE = 10;
@@ -134,6 +134,11 @@ export default function SiteDetailScreen() {
   const [reactivating, setReactivating] = useState<boolean>(false);
   const [focusedField, setFocusedField] = useState<string | null>(null);
 
+  const [deactivateModalVisible, setDeactivateModalVisible] = useState<boolean>(false);
+  const [noteToDelete, setNoteToDelete] = useState<string | null>(null);
+  const [deleteNoteModalVisible, setDeleteNoteModalVisible] = useState<boolean>(false);
+  const [deleteNoteModalLoading, setDeleteNoteModalLoading] = useState<boolean>(false);
+
   const applyFields = (data: Site) => {
     setName(data.name ?? "");
     setAddress(data.address ?? "");
@@ -201,30 +206,31 @@ export default function SiteDetailScreen() {
     }
   }, [id]);
 
-  const handleDeleteNote = async (noteId: string) => {
+  const openDeleteNoteModal = (noteId: string) => {
+    setNoteToDelete(noteId);
+    setDeleteNoteModalVisible(true);
+  };
+
+  const closeDeleteNoteModal = () => {
+    setDeleteNoteModalVisible(false);
+    setNoteToDelete(null);
+  };
+
+  const performDeleteNote = async () => {
+    if (!noteToDelete) {
+      return;
+    }
+    setDeleteNoteModalLoading(true);
     try {
-      await deleteNote(id, noteId);
-      setNotes((prev) => prev.filter((n) => n.id !== noteId));
+      await deleteNote(id, noteToDelete);
+      setNotes((prev) => prev.filter((n) => n.id !== noteToDelete));
+      setDeleteNoteModalVisible(false);
+      setNoteToDelete(null);
       showSuccess("Note deleted");
     } catch (err: any) {
       showError(err.message);
-    }
-  };
-
-  const confirmDelete = (noteId: string) => {
-    if (Platform.OS === "web") {
-      if (window.confirm("Delete this note?")) {
-        handleDeleteNote(noteId);
-      }
-    } else {
-      Alert.alert("Delete this note?", undefined, [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Delete",
-          style: "destructive",
-          onPress: () => handleDeleteNote(noteId),
-        },
-      ]);
+    } finally {
+      setDeleteNoteModalLoading(false);
     }
   };
 
@@ -310,6 +316,7 @@ export default function SiteDetailScreen() {
     try {
       await deactivateSite(id);
       await fetchSite();
+      setDeactivateModalVisible(false);
       showSuccess("Site deactivated");
     } catch (err: any) {
       showError(err.message);
@@ -522,15 +529,10 @@ export default function SiteDetailScreen() {
                     </TouchableOpacity>
                     {site.is_active ? (
                       <TouchableOpacity
-                        style={[styles.deactivateButton, deactivating && LOADING_STYLE]}
-                        onPress={handleDeactivate}
-                        disabled={deactivating}
+                        style={styles.deactivateButton}
+                        onPress={() => setDeactivateModalVisible(true)}
                       >
-                        {deactivating ? (
-                          <ActivityIndicator color={COLORS.gold} />
-                        ) : (
-                          <Text style={styles.deactivateButtonText}>Deactivate</Text>
-                        )}
+                        <Text style={styles.deactivateButtonText}>Deactivate</Text>
                       </TouchableOpacity>
                     ) : (
                       <TouchableOpacity
@@ -739,7 +741,7 @@ export default function SiteDetailScreen() {
                               e.stopPropagation();
                               console.log("delete button pressed", note.id);
                               console.log("site_id:", id);
-                              confirmDelete(note.id);
+                              openDeleteNoteModal(note.id);
                             }}
                             {...(Platform.OS === "web"
                               ? {
@@ -747,7 +749,7 @@ export default function SiteDetailScreen() {
                                     e.stopPropagation();
                                     console.log("delete button pressed", note.id);
                                     console.log("site_id:", id);
-                                    confirmDelete(note.id);
+                                    openDeleteNoteModal(note.id);
                                   },
                                 }
                               : {})}
@@ -845,6 +847,28 @@ export default function SiteDetailScreen() {
             </View>
           </View>
         </Modal>
+
+        <ConfirmModal
+          visible={deactivateModalVisible}
+          title="Deactivate Site"
+          message="Are you sure you want to deactivate this site?"
+          confirmText="Deactivate"
+          confirmStyle="destructive"
+          loading={deactivating}
+          onConfirm={handleDeactivate}
+          onCancel={() => setDeactivateModalVisible(false)}
+        />
+
+        <ConfirmModal
+          visible={deleteNoteModalVisible}
+          title="Delete Note"
+          message="Are you sure you want to delete this note?"
+          confirmText="Delete"
+          confirmStyle="destructive"
+          loading={deleteNoteModalLoading}
+          onConfirm={performDeleteNote}
+          onCancel={closeDeleteNoteModal}
+        />
       </View>
     </ScreenContainer>
   );

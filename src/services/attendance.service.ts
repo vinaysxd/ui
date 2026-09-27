@@ -91,6 +91,20 @@ export const clockOut = async (
   }
 };
 
+export const forceClockOut = async (
+  site_id: string,
+  latitude: number,
+  longitude: number
+): Promise<Attendance> => {
+  try {
+    const response = await api.post("/attendance/force-clockout", { site_id, latitude, longitude });
+    return response.data.attendance;
+  } catch (error: any) {
+    const code = error?.response?.data?.code;
+    throw new Error(getErrorMessage(code));
+  }
+};
+
 export const getSignedPhotoUrl = async (path: string): Promise<string> => {
   try {
     const response = await api.get("/attendance/photos/signed-url", { params: { path } });
