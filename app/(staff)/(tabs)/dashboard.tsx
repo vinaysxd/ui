@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -63,10 +63,11 @@ export default function StaffHomeScreen() {
   const [actingSiteId, setActingSiteId] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [elapsedSeconds, setElapsedSeconds] = useState<number>(0);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const locationPromiseRef = useRef<Promise<Coordinates> | null>(null);
   const [photoModalSite, setPhotoModalSite] = useState<{
     attendanceId: string;
     siteId: string;
-    name: string;
   } | null>(null);
   const [notesModalSiteId, setNotesModalSiteId] = useState<string | null>(null);
 
@@ -125,14 +126,26 @@ export default function StaffHomeScreen() {
 
   useEffect(() => {
     if (!activeAttendance?.active || !activeAttendance.attendance) {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
       setElapsedSeconds(0);
       return;
     }
+
     const clockInMs = new Date(activeAttendance.attendance.clock_in).getTime();
-    const update = () => setElapsedSeconds(Math.floor((Date.now() - clockInMs) / 1000));
-    update();
-    const interval = setInterval(update, 1000);
-    return () => clearInterval(interval);
+    setElapsedSeconds(Math.max(0, Math.floor((Date.now() - clockInMs) / 1000)));
+
+    timerRef.current = setInterval(() => {
+      setElapsedSeconds((prev) => prev + 1);
+    }, 1000);
+
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+    };
   }, [activeAttendance?.active, activeAttendance?.attendance?.clock_in]);
 
   const onRefresh = () => {
@@ -181,6 +194,9 @@ export default function StaffHomeScreen() {
   };
 
   const openClockOutModal = (site: SiteWithDistance) => {
+    // Kick off a fresh GPS fix now so it's ready (or nearly ready) by the
+    // time the user taps Confirm, instead of waiting for it after confirming.
+    locationPromiseRef.current = getCurrentLocation();
     setClockOutTargetSite(site);
     setClockOutModalVisible(true);
   };
@@ -198,17 +214,33 @@ export default function StaffHomeScreen() {
     if (!site) {
       return;
     }
-    if (!location) {
-      showError("Current location is unavailable");
+
+    let resolvedLocation: Coordinates;
+    try {
+      resolvedLocation = locationPromiseRef.current
+        ? await locationPromiseRef.current
+        : await getCurrentLocation();
+    } catch {
+      showError("Unable to get current location");
       return;
     }
+
+    const previousAttendance = activeAttendance;
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+    setElapsedSeconds(0);
+    setActiveAttendance(null);
+
     setClockOutModalLoading(true);
     try {
-      await clockOut(site.id, location.latitude, location.longitude);
+      await clockOut(site.id, resolvedLocation.latitude, resolvedLocation.longitude);
       setClockOutModalVisible(false);
       showSuccess(`Clocked out of ${site.name}`);
       await loadAll();
     } catch (err: any) {
+      setActiveAttendance(previousAttendance);
       setClockOutModalVisible(false);
       if (err.message === ERRORS.ATTENDANCE_OUT_OF_RANGE.message) {
         setOutOfRangeModalVisible(true);
@@ -229,6 +261,15 @@ export default function StaffHomeScreen() {
       showError("Current location is unavailable");
       return;
     }
+
+    const previousAttendance = activeAttendance;
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+    setElapsedSeconds(0);
+    setActiveAttendance(null);
+
     setOutOfRangeModalLoading(true);
     try {
       await forceClockOut(site.id, location.latitude, location.longitude);
@@ -236,6 +277,7 @@ export default function StaffHomeScreen() {
       showSuccess(`Clocked out of ${site.name}`);
       await loadAll();
     } catch (err: any) {
+      setActiveAttendance(previousAttendance);
       showError(err.message);
     } finally {
       setOutOfRangeModalLoading(false);
@@ -243,6 +285,9 @@ export default function StaffHomeScreen() {
   };
 
   const retryClockOut = () => {
+    // The previous location reading is what caused the out-of-range failure,
+    // so grab a fresh fix rather than reusing the stale resolved promise.
+    locationPromiseRef.current = getCurrentLocation();
     setOutOfRangeModalVisible(false);
     performClockOut();
   };
@@ -327,7 +372,6 @@ export default function StaffHomeScreen() {
                         setPhotoModalSite({
                           attendanceId: activeAttendance.attendance.id,
                           siteId: activeSite.id,
-                          name: activeSite.name,
                         });
                       }
                     }}
@@ -401,7 +445,6 @@ export default function StaffHomeScreen() {
         visible={!!photoModalSite}
         attendanceId={photoModalSite?.attendanceId ?? null}
         siteId={photoModalSite?.siteId ?? null}
-        siteName={photoModalSite?.name}
         onClose={() => setPhotoModalSite(null)}
       />
 

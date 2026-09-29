@@ -1,3 +1,4 @@
+import { Platform } from "react-native";
 import api from "../lib/api";
 import { getErrorMessage } from "../constants/errors";
 
@@ -54,21 +55,31 @@ export const updateProfile = async (data: ProfileUpdatePayload): Promise<Profile
 export const uploadAvatar = async (uri: string): Promise<string> => {
   try {
     console.log("Starting avatar upload", uri);
-    const filename = uri.split("/").pop() ?? `avatar-${Date.now()}.jpg`;
+    const filename = uri.split("/").pop()?.split("?")[0] || `avatar-${Date.now()}.jpg`;
     const ext = filename.split(".").pop()?.toLowerCase();
     const type = ext === "png" ? "image/png" : ext === "webp" ? "image/webp" : "image/jpeg";
 
     const formData = new FormData();
-    // React Native needs a { uri, name, type } object; blobs from fetch(uri) are not sent reliably.
-    formData.append("avatar", { uri, name: filename, type } as any);
+    if (Platform.OS === "web") {
+      // Browser FormData needs a real Blob/File; the uri here is a blob: or
+      // data: URL from the web image picker, not a native file path.
+      const blob = await (await fetch(uri)).blob();
+      formData.append("avatar", blob, filename);
+    } else {
+      // React Native needs this { uri, name, type } object shape; a fetched
+      // Blob is not sent reliably through RN's networking bridge.
+      formData.append("avatar", { uri, name: filename, type } as any);
+    }
     console.log("Avatar FormData parts:", (formData as any).getParts?.() ?? formData);
 
     console.log("Calling POST /profile/avatar");
     const response = await api.post("/profile/avatar", formData, {
-      headers: { "Content-Type": "multipart/form-data" },
-      transformRequest: (data, headers) => {
-        console.log("Avatar request headers:", JSON.stringify(headers));
-        return data;
+      headers: {
+        // Native's bridge needs this set explicitly. On web, a manually-set
+        // "multipart/form-data" has no boundary parameter, which corrupts the
+        // request; passing null drops the header so the browser can generate
+        // the correct one itself.
+        "Content-Type": Platform.OS === "web" ? null : "multipart/form-data",
       },
     });
     console.log("Avatar upload response:", response.status, response.data);

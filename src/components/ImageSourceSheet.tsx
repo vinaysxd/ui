@@ -38,25 +38,32 @@ export default function ImageSourceSheet({
 
     console.log("Image picker opened:", source);
     if (source === "camera") {
+      console.log("Requesting camera permissions...");
       const permission = await ImagePicker.requestCameraPermissionsAsync();
+      console.log("Permission status:", permission.status);
       if (!permission.granted) {
+        console.log("Permission denied");
         showError("Permission to access the camera is required");
         return;
       }
     } else {
+      console.log("Requesting media library permissions...");
       const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      console.log("Permission status:", permission.status);
       if (!permission.granted) {
+        console.log("Permission denied");
         showError("Permission to access photos is required");
         return;
       }
     }
 
+    console.log("Launching image picker...");
     const result =
       source === "camera"
         ? await ImagePicker.launchCameraAsync(pickerOptions)
         : await ImagePicker.launchImageLibraryAsync(pickerOptions);
 
-    console.log("Image selected:", result);
+    console.log("Image picker result:", result);
     if (result.canceled || result.assets.length === 0) {
       return;
     }

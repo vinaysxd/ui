@@ -1,4 +1,5 @@
 import * as Location from "expo-location";
+import { Platform } from "react-native";
 
 export interface Coordinates {
   latitude: number;
@@ -11,7 +12,11 @@ export const requestLocationPermission = async (): Promise<boolean> => {
 };
 
 export const getCurrentLocation = async (): Promise<Coordinates> => {
-  const location = await Location.getCurrentPositionAsync({});
+  // High accuracy is noticeably slower on Android; Balanced is fast and still
+  // well within the 100m clock-in/out radius check.
+  const location = await Location.getCurrentPositionAsync({
+    accuracy: Platform.OS === "android" ? Location.Accuracy.Balanced : Location.Accuracy.High,
+  });
   return {
     latitude: location.coords.latitude,
     longitude: location.coords.longitude,
