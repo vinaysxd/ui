@@ -91,11 +91,35 @@ export const clockOut = async (
   }
 };
 
+export const forceClockOut = async (
+  site_id: string,
+  latitude: number,
+  longitude: number
+): Promise<Attendance> => {
+  try {
+    const response = await api.post("/attendance/force-clockout", { site_id, latitude, longitude });
+    return response.data.attendance;
+  } catch (error: any) {
+    const code = error?.response?.data?.code;
+    throw new Error(getErrorMessage(code));
+  }
+};
+
 export const getSignedPhotoUrl = async (path: string): Promise<string> => {
   try {
     const response = await api.get("/attendance/photos/signed-url", { params: { path } });
     return response.data.signed_url;
   } catch (error: any) {
+    console.log(
+      "[getSignedPhotoUrl] request failed for path:",
+      path,
+      "status:",
+      error?.response?.status,
+      "data:",
+      error?.response?.data,
+      "message:",
+      error?.message
+    );
     const code = error?.response?.data?.code;
     throw new Error(getErrorMessage(code));
   }
@@ -172,35 +196,65 @@ export const uploadAfterPhoto = async (photo_id: string, uri: string): Promise<A
   }
 };
 
-export const getMyHistory = async (): Promise<Attendance[]> => {
-  try {
-    const response = await api.get("/attendance/my-history");
-    return response.data.attendance;
-  } catch (error: any) {
-    const code = error?.response?.data?.code;
-    throw new Error(getErrorMessage(code));
-  }
-};
+export interface PaginatedAttendance {
+  attendance: Attendance[];
+  total: number;
+  page: number;
+  limit: number;
+  total_pages: number;
+}
 
-export const getClientHistory = async (): Promise<Attendance[]> => {
+// Without page/limit these return the full list (used by dashboards); with them, one page.
+export function getMyHistory(): Promise<Attendance[]>;
+export function getMyHistory(page: number, limit: number, site_id?: string): Promise<PaginatedAttendance>;
+export async function getMyHistory(page?: number, limit?: number, site_id?: string) {
   try {
-    const response = await api.get("/attendance/client-history");
-    return response.data.attendance;
+    const paginated = page !== undefined && limit !== undefined;
+    const response = await api.get(
+      paginated
+        ? `/attendance/my-history?page=${page}&limit=${limit}${site_id ? `&site_id=${site_id}` : ""}`
+        : "/attendance/my-history"
+    );
+    return paginated ? (response.data as PaginatedAttendance) : (response.data.attendance as Attendance[]);
   } catch (error: any) {
     const code = error?.response?.data?.code;
     throw new Error(getErrorMessage(code));
   }
-};
+}
 
-export const getAttendanceBySite = async (site_id: string): Promise<Attendance[]> => {
+export function getClientHistory(): Promise<Attendance[]>;
+export function getClientHistory(page: number, limit: number, site_id?: string): Promise<PaginatedAttendance>;
+export async function getClientHistory(page?: number, limit?: number, site_id?: string) {
   try {
-    const response = await api.get(`/attendance/site/${site_id}`);
-    return response.data.attendance;
+    const paginated = page !== undefined && limit !== undefined;
+    const response = await api.get(
+      paginated
+        ? `/attendance/client-history?page=${page}&limit=${limit}${site_id ? `&site_id=${site_id}` : ""}`
+        : "/attendance/client-history"
+    );
+    return paginated ? (response.data as PaginatedAttendance) : (response.data.attendance as Attendance[]);
   } catch (error: any) {
     const code = error?.response?.data?.code;
     throw new Error(getErrorMessage(code));
   }
-};
+}
+
+export function getAttendanceBySite(site_id: string): Promise<Attendance[]>;
+export function getAttendanceBySite(site_id: string, page: number, limit: number): Promise<PaginatedAttendance>;
+export async function getAttendanceBySite(site_id: string, page?: number, limit?: number) {
+  try {
+    const paginated = page !== undefined && limit !== undefined;
+    const response = await api.get(
+      paginated
+        ? `/attendance/site/${site_id}?page=${page}&limit=${limit}`
+        : `/attendance/site/${site_id}`
+    );
+    return paginated ? (response.data as PaginatedAttendance) : (response.data.attendance as Attendance[]);
+  } catch (error: any) {
+    const code = error?.response?.data?.code;
+    throw new Error(getErrorMessage(code));
+  }
+}
 
 export const getRecentAttendance = async (limit: number = 10): Promise<Attendance[]> => {
   try {

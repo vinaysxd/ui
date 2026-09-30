@@ -16,6 +16,7 @@ import {
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
+import * as ImagePicker from "expo-image-picker";
 import ImageSourceSheet from "../../../src/components/ImageSourceSheet";
 import * as WebBrowser from "expo-web-browser";
 import Constants from "expo-constants";
@@ -155,8 +156,22 @@ export default function SettingsScreen() {
     }
   };
 
-  const handleChangePhoto = () => {
-    console.log("Image picker opened for avatar");
+  const handleChangePhoto = async () => {
+    console.log("Change photo button pressed");
+    if (Platform.OS === "web") {
+      // expo-image-picker's camera/gallery source sheet isn't a native modal on
+      // web, so go straight to the gallery picker instead of showing it.
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ["images"],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+      if (!result.canceled && result.assets[0]) {
+        handlePhotoPicked(result.assets[0].uri);
+      }
+      return;
+    }
     setPhotoSheetVisible(true);
   };
 

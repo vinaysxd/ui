@@ -1,14 +1,17 @@
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Modal,
   View,
   Text,
+  Image,
   TextInput,
   FlatList,
+  ScrollView,
   ActivityIndicator,
   RefreshControl,
   TouchableOpacity,
+  Pressable,
   StyleSheet,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -17,36 +20,52 @@ import {
   getAttendancePhotos,
   uploadBeforePhoto,
   uploadAfterPhoto,
+  getSignedPhotoUrl,
   AttendancePhoto,
 } from "../services/attendance.service";
+import { getSiteTasks, SiteTask } from "../services/tasks.service";
 import { showSuccess, showError } from "../utils/toast";
 import PhotoThumb from "./PhotoThumb";
 import { COLORS, RADIUS } from "../constants/theme";
 import { LOADING_STYLE } from "../constants/ui";
 
+const FREEFORM_TAB = "Photos";
+
 interface PhotoUploadModalProps {
   visible: boolean;
   attendanceId: string | null;
-  siteName?: string;
+  siteId?: string | null;
   onClose: () => void;
 }
 
 export default function PhotoUploadModal({
   visible,
   attendanceId,
-  siteName,
+  siteId,
   onClose,
 }: PhotoUploadModalProps) {
   const [photos, setPhotos] = useState<AttendancePhoto[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
 
-  const [addingPair, setAddingPair] = useState<boolean>(false);
-  const [newLabel, setNewLabel] = useState<string>("");
+  const [tasks, setTasks] = useState<SiteTask[]>([]);
+  const [tasksLoading, setTasksLoading] = useState<boolean>(false);
+  const [activeLabel, setActiveLabel] = useState<string>(FREEFORM_TAB);
+
+  const [freeLabel, setFreeLabel] = useState<string>("");
   const [uploadingBefore, setUploadingBefore] = useState<boolean>(false);
   const [sheetVisible, setSheetVisible] = useState<boolean>(false);
-  const pickTarget = useRef<{ type: "before" } | { type: "after"; photoId: string } | null>(null);
+  const pickTarget = useRef<
+    { type: "before"; label: string } | { type: "after"; photoId: string } | null
+  >(null);
   const [uploadingAfterId, setUploadingAfterId] = useState<string>("");
+  const [previewPath, setPreviewPath] = useState<string | null>(null);
+
+  const isFreeform = tasks.length === 0;
+  const tabLabels = useMemo(
+    () => (isFreeform ? [FREEFORM_TAB] : tasks.map((t) => t.label)),
+    [isFreeform, tasks]
+  );
 
   const fetchPhotos = useCallback(async () => {
     if (!attendanceId) {
@@ -66,54 +85,72 @@ export default function PhotoUploadModal({
     }
   }, [attendanceId]);
 
+  const fetchTasks = useCallback(async () => {
+    if (!siteId) {
+      setTasks([]);
+      setTasksLoading(false);
+      return;
+    }
+    setTasksLoading(true);
+    try {
+      const data = await getSiteTasks(siteId);
+      setTasks(data);
+    } catch (err: any) {
+      showError(err.message);
+    } finally {
+      setTasksLoading(false);
+    }
+  }, [siteId]);
+
   useEffect(() => {
     if (visible) {
       setLoading(true);
-      setAddingPair(false);
-      setNewLabel("");
+      setFreeLabel("");
       fetchPhotos();
+      fetchTasks();
     }
-  }, [visible, fetchPhotos]);
+  }, [visible, fetchPhotos, fetchTasks]);
+
+  useEffect(() => {
+    if (!tabLabels.includes(activeLabel)) {
+      setActiveLabel(tabLabels[0] ?? FREEFORM_TAB);
+    }
+  }, [tabLabels, activeLabel]);
 
   const onRefresh = () => {
     setRefreshing(true);
     fetchPhotos();
   };
 
-  const handleCancelAddPair = () => {
-    setAddingPair(false);
-    setNewLabel("");
-  };
+  const visiblePhotos = isFreeform ? photos : photos.filter((p) => p.label === activeLabel);
 
-  const handlePickBeforePhoto = async () => {
+  const handleAddPhotoPair = () => {
     if (!attendanceId) {
       showError("No active attendance to attach photos to");
       return;
     }
-    if (!newLabel.trim()) {
+    const label = isFreeform ? freeLabel.trim() : activeLabel;
+    if (!label) {
       showError("Enter a label for this photo pair");
       return;
     }
-
-    pickTarget.current = { type: "before" };
+    pickTarget.current = { type: "before", label };
     setSheetVisible(true);
   };
 
-  const uploadBefore = async (uri: string) => {
-    console.log("uploadBefore called:", { attendanceId, label: newLabel.trim(), uri });
+  const uploadBefore = async (label: string, uri: string) => {
     if (!attendanceId) {
-      console.log("Upload aborted: attendanceId is missing");
       return;
     }
     setUploadingBefore(true);
     try {
-      await uploadBeforePhoto(attendanceId, newLabel.trim(), uri);
+      await uploadBeforePhoto(attendanceId, label, uri);
       showSuccess("Before photo uploaded");
-      setAddingPair(false);
-      setNewLabel("");
+      if (isFreeform) {
+        setFreeLabel("");
+      }
       await fetchPhotos();
     } catch (err: any) {
-      console.log("Upload error (modal):", err);
       showError(err.message);
     } finally {
       setUploadingBefore(false);
@@ -141,88 +178,99 @@ export default function PhotoUploadModal({
   const handlePicked = (uri: string) => {
     const target = pickTarget.current;
     pickTarget.current = null;
-    console.log("handlePicked:", { uri, target });
     if (!target) {
-      console.log("Upload aborted: no pick target");
       return;
     }
-    if (target.type === "before") uploadBefore(uri);
-    else uploadAfter(target.photoId, uri);
+    if (target.type === "before") {
+      uploadBefore(target.label, uri);
+    } else {
+      uploadAfter(target.photoId, uri);
+    }
   };
 
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
-          <Text style={styles.title} numberOfLines={1}>
-            {siteName ? `${siteName} Photos` : "Photos"}
-          </Text>
+          <Text style={styles.title}>PHOTOS</Text>
           <TouchableOpacity onPress={onClose}>
             <Text style={styles.doneText}>Done</Text>
           </TouchableOpacity>
         </View>
 
-        {loading ? (
+        <View style={styles.tabBar}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.tabBarContent}
+          >
+            {tabLabels.map((label) => {
+              const active = label === activeLabel;
+              return (
+                <TouchableOpacity
+                  key={label}
+                  style={[styles.tab, active && styles.tabActive]}
+                  onPress={() => setActiveLabel(label)}
+                >
+                  <Text style={[styles.tabText, active && styles.tabTextActive]}>{label}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        </View>
+
+        {loading || tasksLoading ? (
           <View style={styles.centered}>
             <ActivityIndicator size="large" color={COLORS.gold} />
           </View>
         ) : (
           <FlatList keyboardShouldPersistTaps="handled"
-            data={photos}
+            data={visiblePhotos}
             keyExtractor={(item) => item.id}
             contentContainerStyle={styles.listContent}
-            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                tintColor={COLORS.gold}
+                colors={[COLORS.gold]}
+              />
+            }
             ListEmptyComponent={<Text style={styles.emptyText}>No photo pairs yet.</Text>}
             renderItem={({ item }) => (
               <PhotoPairCard
                 photo={item}
                 uploadingAfter={uploadingAfterId === item.id}
                 onUploadAfter={() => handleUploadAfter(item.id)}
+                onViewBefore={() => setPreviewPath(item.before_photo_url)}
               />
             )}
             ListFooterComponent={
               <View style={styles.footer}>
-                {addingPair ? (
-                  <View style={styles.addPairForm}>
-                    <TextInput
-                      style={styles.input}
-                      value={newLabel}
-                      onChangeText={setNewLabel}
-                      placeholder='e.g. "Kitchen" or "Bathroom"'
-                      placeholderTextColor={COLORS.textMuted}
-                      autoFocus
-                      editable={!uploadingBefore}
-                    />
-                    <View style={styles.addPairButtons}>
-                      <TouchableOpacity
-                        style={[styles.cancelButton, uploadingBefore && LOADING_STYLE]}
-                        onPress={handleCancelAddPair}
-                        disabled={uploadingBefore}
-                      >
-                        <Text style={styles.cancelButtonText}>Cancel</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={[styles.choosePhotoButton, uploadingBefore && LOADING_STYLE]}
-                        onPress={handlePickBeforePhoto}
-                        disabled={uploadingBefore}
-                      >
-                        {uploadingBefore ? (
-                          <ActivityIndicator color="#1A1A1A" size="small" />
-                        ) : (
-                          <Text style={styles.choosePhotoButtonText}>Choose Before Photo</Text>
-                        )}
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                ) : (
-                  <TouchableOpacity
-                    style={styles.addPairButton}
-                    onPress={() => setAddingPair(true)}
-                  >
-                    <Ionicons name="add" size={18} color="#1A1A1A" />
-                    <Text style={styles.addPairButtonText}>Add new pair</Text>
-                  </TouchableOpacity>
-                )}
+                {isFreeform ? (
+                  <TextInput
+                    style={styles.input}
+                    value={freeLabel}
+                    onChangeText={setFreeLabel}
+                    placeholder="Enter label e.g. Kitchen, Bathroom"
+                    placeholderTextColor={COLORS.textMuted}
+                    editable={!uploadingBefore}
+                  />
+                ) : null}
+                <TouchableOpacity
+                  style={[styles.addPairButton, uploadingBefore && LOADING_STYLE]}
+                  onPress={handleAddPhotoPair}
+                  disabled={uploadingBefore}
+                >
+                  {uploadingBefore ? (
+                    <ActivityIndicator color={COLORS.gold} size="small" />
+                  ) : (
+                    <>
+                      <Ionicons name="add" size={18} color={COLORS.gold} />
+                      <Text style={styles.addPairButtonText}>Add Photo Pair</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
               </View>
             }
           />
@@ -231,6 +279,12 @@ export default function PhotoUploadModal({
           visible={sheetVisible}
           onClose={() => setSheetVisible(false)}
           onPicked={handlePicked}
+          cameraOnly
+        />
+        <FullImagePreview
+          path={previewPath}
+          visible={!!previewPath}
+          onClose={() => setPreviewPath(null)}
         />
       </SafeAreaView>
     </Modal>
@@ -241,10 +295,12 @@ function PhotoPairCard({
   photo,
   uploadingAfter,
   onUploadAfter,
+  onViewBefore,
 }: {
   photo: AttendancePhoto;
   uploadingAfter: boolean;
   onUploadAfter: () => void;
+  onViewBefore: () => void;
 }) {
   const paired = !!photo.before_photo_url && !!photo.after_photo_url;
 
@@ -257,13 +313,17 @@ function PhotoPairCard({
       <View style={styles.thumbRow}>
         <View style={styles.thumbColumn}>
           <Text style={styles.thumbCaption}>Before</Text>
-          <PhotoThumb path={photo.before_photo_url} />
+          <TouchableOpacity onPress={onViewBefore} disabled={!photo.before_photo_url}>
+            <PhotoThumb path={photo.before_photo_url} />
+          </TouchableOpacity>
         </View>
 
         <View style={styles.thumbColumn}>
-          <Text style={styles.thumbCaption}>After</Text>
           {photo.after_photo_url ? (
-            <PhotoThumb path={photo.after_photo_url} />
+            <>
+              <Text style={styles.thumbCaption}>After</Text>
+              <PhotoThumb path={photo.after_photo_url} />
+            </>
           ) : (
             <TouchableOpacity
               style={[styles.uploadAfterThumb, uploadingAfter && LOADING_STYLE]}
@@ -275,7 +335,7 @@ function PhotoPairCard({
               ) : (
                 <>
                   <Ionicons name="camera-outline" size={20} color={COLORS.textSecondary} />
-                  <Text style={styles.uploadAfterThumbText}>Upload after</Text>
+                  <Text style={styles.uploadAfterThumbText}>Upload After +</Text>
                 </>
               )}
             </TouchableOpacity>
@@ -283,6 +343,59 @@ function PhotoPairCard({
         </View>
       </View>
     </View>
+  );
+}
+
+function FullImagePreview({
+  path,
+  visible,
+  onClose,
+}: {
+  path: string | null;
+  visible: boolean;
+  onClose: () => void;
+}) {
+  const [signedUrl, setSignedUrl] = useState<string | null>(null);
+  const [loading, setLoading] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (!visible || !path) {
+      setSignedUrl(null);
+      return;
+    }
+    let cancelled = false;
+    setLoading(true);
+    getSignedPhotoUrl(path)
+      .then((url) => {
+        if (!cancelled) {
+          setSignedUrl(url);
+        }
+      })
+      .catch((err: any) => {
+        if (!cancelled) {
+          showError(err.message);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [visible, path]);
+
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      <Pressable style={styles.previewOverlay} onPress={onClose}>
+        {loading ? (
+          <ActivityIndicator size="large" color={COLORS.gold} />
+        ) : signedUrl ? (
+          <Image source={{ uri: signedUrl }} style={styles.previewImage} resizeMode="contain" />
+        ) : null}
+      </Pressable>
+    </Modal>
   );
 }
 
@@ -304,14 +417,39 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 18,
-    fontWeight: "bold",
-    color: COLORS.textPrimary,
+    fontWeight: "700",
+    color: "#FFFFFF",
     flex: 1,
     marginRight: 12,
   },
   doneText: {
     fontSize: 16,
     fontWeight: "600",
+    color: COLORS.gold,
+  },
+  tabBar: {
+    backgroundColor: "#1A1A1A",
+    borderBottomWidth: 1,
+    borderBottomColor: "#333333",
+  },
+  tabBarContent: {
+    paddingHorizontal: 16,
+  },
+  tab: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderBottomWidth: 2,
+    borderBottomColor: "transparent",
+  },
+  tabActive: {
+    borderBottomColor: COLORS.gold,
+  },
+  tabText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#666666",
+  },
+  tabTextActive: {
     color: COLORS.gold,
   },
   centered: {
@@ -335,15 +473,6 @@ const styles = StyleSheet.create({
     paddingLeft: 20,
     marginBottom: 12,
     overflow: "hidden",
-  },
-  goldBar: {
-    position: "absolute",
-    left: 0,
-    top: 0,
-    bottom: 0,
-    width: 3,
-    borderRadius: RADIUS.full,
-    backgroundColor: COLORS.gold,
   },
   cardHeader: {
     flexDirection: "row",
@@ -387,24 +516,6 @@ const styles = StyleSheet.create({
   footer: {
     marginTop: 4,
   },
-  addPairButton: {
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    gap: 6,
-    backgroundColor: COLORS.gold,
-    padding: 14,
-    borderRadius: RADIUS.md,
-  },
-  addPairButtonText: {
-    color: "#1A1A1A",
-    fontWeight: "bold",
-  },
-  addPairForm: {
-    backgroundColor: COLORS.surface,
-    borderRadius: RADIUS.md,
-    padding: 16,
-  },
   input: {
     borderWidth: 1,
     borderColor: COLORS.border,
@@ -414,29 +525,29 @@ const styles = StyleSheet.create({
     color: COLORS.textPrimary,
     marginBottom: 12,
   },
-  addPairButtons: {
+  addPairButton: {
     flexDirection: "row",
-    gap: 8,
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 6,
+    borderWidth: 1,
+    borderStyle: "dashed",
+    borderColor: COLORS.gold,
+    padding: 14,
+    borderRadius: RADIUS.md,
   },
-  cancelButton: {
+  addPairButtonText: {
+    color: COLORS.gold,
+    fontWeight: "700",
+  },
+  previewOverlay: {
     flex: 1,
-    padding: 14,
-    borderRadius: RADIUS.md,
+    backgroundColor: "rgba(0,0,0,0.9)",
+    justifyContent: "center",
     alignItems: "center",
   },
-  cancelButtonText: {
-    color: COLORS.textSecondary,
-    fontWeight: "600",
-  },
-  choosePhotoButton: {
-    flex: 2,
-    backgroundColor: COLORS.gold,
-    padding: 14,
-    borderRadius: RADIUS.md,
-    alignItems: "center",
-  },
-  choosePhotoButtonText: {
-    color: "#1A1A1A",
-    fontWeight: "bold",
+  previewImage: {
+    width: "100%",
+    height: "80%",
   },
 });

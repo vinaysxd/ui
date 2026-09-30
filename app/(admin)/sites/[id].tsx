@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { ComponentProps } from "react";
 import {
   View,
@@ -11,8 +11,8 @@ import {
   StyleSheet,
   Modal,
   FlatList,
-  Alert,
   Platform,
+  RefreshControl,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -29,14 +29,24 @@ import {
 } from "../../../src/services/sites.service";
 import { getAllClients, Client } from "../../../src/services/client.service";
 import { getAllStaff, Staff } from "../../../src/services/staff.service";
-import { getAttendanceBySite, Attendance } from "../../../src/services/attendance.service";
+import PaginationControls from "../../../src/components/PaginationControls";
+import {
+  getAttendanceBySite,
+  Attendance,
+  AttendancePhoto,
+} from "../../../src/services/attendance.service";
 import { getSiteNotes, deleteNote, SiteNote } from "../../../src/services/notes.service";
+import { getSiteTasks, addSiteTask, deleteSiteTask, SiteTask } from "../../../src/services/tasks.service";
 import { showSuccess, showError } from "../../../src/utils/toast";
 import { COLORS, RADIUS } from "../../../src/constants/theme";
 import ScreenContainer from "../../../src/components/ScreenContainer";
+import ConfirmModal from "../../../src/components/ConfirmModal";
+import PhotoThumb from "../../../src/components/PhotoThumb";
 import { LOADING_STYLE } from "../../../src/constants/ui";
 
-type Tab = "details" | "staff" | "attendance" | "notes";
+const ATTENDANCE_PAGE_SIZE = 10;
+
+type Tab = "details" | "staff" | "attendance" | "notes" | "tasks";
 type IconName = ComponentProps<typeof Ionicons>["name"];
 
 const getInitials = (fullName: string): string => {
@@ -55,6 +65,7 @@ const TABS: { key: Tab; label: string }[] = [
   { key: "staff", label: "Staff" },
   { key: "attendance", label: "Attendance" },
   { key: "notes", label: "Notes" },
+  { key: "tasks", label: "Tasks" },
 ];
 
 const clientDisplayLabel = (client: { full_name: string; company_name?: string | null }): string =>
@@ -116,16 +127,36 @@ export default function SiteDetailScreen() {
   const [attendance, setAttendance] = useState<Attendance[]>([]);
   const [attendanceLoading, setAttendanceLoading] = useState<boolean>(false);
   const [attendanceLoaded, setAttendanceLoaded] = useState<boolean>(false);
+  const [attendancePage, setAttendancePage] = useState<number>(1);
+  const [attendanceTotalPages, setAttendanceTotalPages] = useState<number>(1);
+  const [attendanceTotal, setAttendanceTotal] = useState<number>(0);
+  const [expandedAttendanceId, setExpandedAttendanceId] = useState<string | null>(null);
+  const scrollRef = useRef<ScrollView>(null);
 
   const [notes, setNotes] = useState<SiteNote[]>([]);
   const [notesLoading, setNotesLoading] = useState<boolean>(false);
   const [notesLoaded, setNotesLoaded] = useState<boolean>(false);
+
+  const [tasks, setTasks] = useState<SiteTask[]>([]);
+  const [tasksLoading, setTasksLoading] = useState<boolean>(false);
+  const [tasksLoaded, setTasksLoaded] = useState<boolean>(false);
+  const [tasksRefreshing, setTasksRefreshing] = useState<boolean>(false);
+  const [newTaskLabel, setNewTaskLabel] = useState<string>("");
+  const [addingTask, setAddingTask] = useState<boolean>(false);
 
   const [loading, setLoading] = useState<boolean>(true);
   const [saving, setSaving] = useState<boolean>(false);
   const [deactivating, setDeactivating] = useState<boolean>(false);
   const [reactivating, setReactivating] = useState<boolean>(false);
   const [focusedField, setFocusedField] = useState<string | null>(null);
+
+  const [deactivateModalVisible, setDeactivateModalVisible] = useState<boolean>(false);
+  const [noteToDelete, setNoteToDelete] = useState<string | null>(null);
+  const [deleteNoteModalVisible, setDeleteNoteModalVisible] = useState<boolean>(false);
+  const [deleteNoteModalLoading, setDeleteNoteModalLoading] = useState<boolean>(false);
+  const [taskToDelete, setTaskToDelete] = useState<string | null>(null);
+  const [deleteTaskModalVisible, setDeleteTaskModalVisible] = useState<boolean>(false);
+  const [deleteTaskModalLoading, setDeleteTaskModalLoading] = useState<boolean>(false);
 
   const applyFields = (data: Site) => {
     setName(data.name ?? "");
@@ -164,12 +195,16 @@ export default function SiteDetailScreen() {
     fetchAssignedStaff();
   }, [fetchSite, fetchAssignedStaff]);
 
-  const fetchAttendance = useCallback(async () => {
+  const fetchAttendance = useCallback(async (page: number = 1) => {
     setAttendanceLoading(true);
     try {
-      const data = await getAttendanceBySite(id);
-      setAttendance(data);
+      const result = await getAttendanceBySite(id, page, ATTENDANCE_PAGE_SIZE);
+      setAttendance(result.attendance);
+      setAttendancePage(page);
+      setAttendanceTotal(result.total);
+      setAttendanceTotalPages(result.total_pages);
       setAttendanceLoaded(true);
+      scrollRef.current?.scrollTo({ y: 0, animated: true });
     } catch (err: any) {
       showError(err.message);
     } finally {
@@ -190,41 +225,110 @@ export default function SiteDetailScreen() {
     }
   }, [id]);
 
-  const handleDeleteNote = async (noteId: string) => {
+  const fetchTasks = useCallback(async () => {
+    setTasksLoading(true);
     try {
-      await deleteNote(id, noteId);
-      setNotes((prev) => prev.filter((n) => n.id !== noteId));
+      const data = await getSiteTasks(id);
+      setTasks(data);
+      setTasksLoaded(true);
+    } catch (err: any) {
+      showError(err.message);
+    } finally {
+      setTasksLoading(false);
+      setTasksRefreshing(false);
+    }
+  }, [id]);
+
+  const openDeleteNoteModal = (noteId: string) => {
+    setNoteToDelete(noteId);
+    setDeleteNoteModalVisible(true);
+  };
+
+  const closeDeleteNoteModal = () => {
+    setDeleteNoteModalVisible(false);
+    setNoteToDelete(null);
+  };
+
+  const performDeleteNote = async () => {
+    if (!noteToDelete) {
+      return;
+    }
+    setDeleteNoteModalLoading(true);
+    try {
+      await deleteNote(id, noteToDelete);
+      setNotes((prev) => prev.filter((n) => n.id !== noteToDelete));
+      setDeleteNoteModalVisible(false);
+      setNoteToDelete(null);
       showSuccess("Note deleted");
     } catch (err: any) {
       showError(err.message);
+    } finally {
+      setDeleteNoteModalLoading(false);
     }
   };
 
-  const confirmDelete = (noteId: string) => {
-    if (Platform.OS === "web") {
-      if (window.confirm("Delete this note?")) {
-        handleDeleteNote(noteId);
-      }
-    } else {
-      Alert.alert("Delete this note?", undefined, [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Delete",
-          style: "destructive",
-          onPress: () => handleDeleteNote(noteId),
-        },
-      ]);
+  const openDeleteTaskModal = (taskId: string) => {
+    setTaskToDelete(taskId);
+    setDeleteTaskModalVisible(true);
+  };
+
+  const closeDeleteTaskModal = () => {
+    setDeleteTaskModalVisible(false);
+    setTaskToDelete(null);
+  };
+
+  const performDeleteTask = async () => {
+    if (!taskToDelete) {
+      return;
     }
+    setDeleteTaskModalLoading(true);
+    try {
+      await deleteSiteTask(id, taskToDelete);
+      setTasks((prev) => prev.filter((t) => t.id !== taskToDelete));
+      setDeleteTaskModalVisible(false);
+      setTaskToDelete(null);
+      showSuccess("Task deleted");
+    } catch (err: any) {
+      showError(err.message);
+    } finally {
+      setDeleteTaskModalLoading(false);
+    }
+  };
+
+  const handleAddTask = async () => {
+    if (!newTaskLabel.trim()) {
+      showError("Enter a task label");
+      return;
+    }
+    setAddingTask(true);
+    try {
+      const task = await addSiteTask(id, newTaskLabel.trim());
+      setTasks((prev) => [...prev, task]);
+      setNewTaskLabel("");
+      showSuccess("Task added");
+    } catch (err: any) {
+      showError(err.message);
+    } finally {
+      setAddingTask(false);
+    }
+  };
+
+  const onRefreshTasks = () => {
+    setTasksRefreshing(true);
+    fetchTasks();
   };
 
   useEffect(() => {
     if (activeTab === "attendance" && !attendanceLoaded) {
-      fetchAttendance();
+      fetchAttendance(1);
     }
     if (activeTab === "notes" && !notesLoaded) {
       fetchNotes();
     }
-  }, [activeTab, attendanceLoaded, notesLoaded, fetchAttendance, fetchNotes]);
+    if (activeTab === "tasks" && !tasksLoaded) {
+      fetchTasks();
+    }
+  }, [activeTab, attendanceLoaded, notesLoaded, tasksLoaded, fetchAttendance, fetchNotes, fetchTasks]);
 
   const ensureClientsLoaded = async () => {
     if (clients.length > 0) {
@@ -299,6 +403,7 @@ export default function SiteDetailScreen() {
     try {
       await deactivateSite(id);
       await fetchSite();
+      setDeactivateModalVisible(false);
       showSuccess("Site deactivated");
     } catch (err: any) {
       showError(err.message);
@@ -421,7 +526,23 @@ export default function SiteDetailScreen() {
           </ScrollView>
         </View>
 
-        <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} style={styles.container} contentContainerStyle={styles.content}>
+        <ScrollView
+          ref={scrollRef}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+          style={styles.container}
+          contentContainerStyle={styles.content}
+          refreshControl={
+            activeTab === "tasks" ? (
+              <RefreshControl
+                refreshing={tasksRefreshing}
+                onRefresh={onRefreshTasks}
+                tintColor={COLORS.gold}
+                colors={[COLORS.gold]}
+              />
+            ) : undefined
+          }
+        >
           {activeTab === "details" && (
             <>
               <Text style={styles.sectionTitle}>Site Details</Text>
@@ -511,15 +632,10 @@ export default function SiteDetailScreen() {
                     </TouchableOpacity>
                     {site.is_active ? (
                       <TouchableOpacity
-                        style={[styles.deactivateButton, deactivating && LOADING_STYLE]}
-                        onPress={handleDeactivate}
-                        disabled={deactivating}
+                        style={styles.deactivateButton}
+                        onPress={() => setDeactivateModalVisible(true)}
                       >
-                        {deactivating ? (
-                          <ActivityIndicator color={COLORS.gold} />
-                        ) : (
-                          <Text style={styles.deactivateButtonText}>Deactivate</Text>
-                        )}
+                        <Text style={styles.deactivateButtonText}>Deactivate</Text>
                       </TouchableOpacity>
                     ) : (
                       <TouchableOpacity
@@ -636,55 +752,103 @@ export default function SiteDetailScreen() {
               ) : attendance.length === 0 ? (
                 <Text style={styles.emptyText}>No attendance records.</Text>
               ) : (
-                attendance.map((record) => (
-                  <View key={record.id} style={styles.attendanceCardShadow}>
-                    <View style={styles.attendanceCard}>
-                      <View style={styles.goldBar} />
-                      <View style={styles.attendanceLeft}>
-                        <View style={styles.attendanceAvatar}>
-                          <Text style={styles.attendanceAvatarText}>
-                            {getInitials(record.staff?.full_name ?? "?")}
-                          </Text>
+                attendance.map((record) => {
+                  const isExpanded = expandedAttendanceId === record.id;
+                  return (
+                    <View key={record.id} style={styles.attendanceCardShadow}>
+                      <TouchableOpacity
+                        style={styles.attendanceCard}
+                        activeOpacity={0.7}
+                        onPress={() =>
+                          setExpandedAttendanceId(isExpanded ? null : record.id)
+                        }
+                      >
+                        <View style={styles.goldBar} />
+                        <View style={styles.attendanceCardTop}>
+                          <View style={styles.attendanceLeft}>
+                            <View style={styles.attendanceAvatar}>
+                              <Text style={styles.attendanceAvatarText}>
+                                {getInitials(record.staff?.full_name ?? "?")}
+                              </Text>
+                            </View>
+                            <View>
+                              <Text style={styles.attendanceStaffName}>
+                                {record.staff?.full_name ?? "Unknown staff"}
+                              </Text>
+                              <Text style={styles.attendanceSiteName}>
+                                {record.site?.name ?? "Today"}
+                              </Text>
+                              <View style={styles.attendancePhotoCount}>
+                                <Ionicons name="camera-outline" size={12} color={COLORS.textMuted} />
+                                <Text style={styles.attendancePhotoCountText}>
+                                  {record.photos.length}{" "}
+                                  {record.photos.length === 1 ? "photo pair" : "photo pairs"}
+                                </Text>
+                              </View>
+                            </View>
+                          </View>
+                          <View style={styles.attendanceRight}>
+                            <Ionicons
+                              name={isExpanded ? "chevron-up" : "chevron-down"}
+                              size={16}
+                              color={COLORS.textMuted}
+                              style={styles.attendanceChevron}
+                            />
+                            <View style={styles.attendanceStatusRow}>
+                              <View
+                                style={[
+                                  styles.attendanceStatusDot,
+                                  record.clock_out
+                                    ? styles.attendanceStatusDotMuted
+                                    : styles.attendanceStatusDotActive,
+                                ]}
+                              />
+                              <Text
+                                style={[
+                                  styles.attendanceStatusText,
+                                  record.clock_out
+                                    ? styles.attendanceStatusTextMuted
+                                    : styles.attendanceStatusTextActive,
+                                ]}
+                              >
+                                {record.clock_out ? formatDateTime(record.clock_out) : "Active"}
+                              </Text>
+                            </View>
+                            <Text style={styles.attendanceClockIn}>
+                              {formatDateTime(record.clock_in)}
+                            </Text>
+                            {record.clock_out ? (
+                              <Text style={styles.attendanceDuration}>
+                                {formatDuration(record.clock_in, record.clock_out)}
+                              </Text>
+                            ) : null}
+                          </View>
                         </View>
-                        <View>
-                          <Text style={styles.attendanceStaffName}>
-                            {record.staff?.full_name ?? "Unknown staff"}
-                          </Text>
-                          <Text style={styles.attendanceSiteName}>{record.site?.name ?? "Today"}</Text>
-                        </View>
-                      </View>
-                      <View style={styles.attendanceRight}>
-                        <View style={styles.attendanceStatusRow}>
-                          <View
-                            style={[
-                              styles.attendanceStatusDot,
-                              record.clock_out
-                                ? styles.attendanceStatusDotMuted
-                                : styles.attendanceStatusDotActive,
-                            ]}
-                          />
-                          <Text
-                            style={[
-                              styles.attendanceStatusText,
-                              record.clock_out
-                                ? styles.attendanceStatusTextMuted
-                                : styles.attendanceStatusTextActive,
-                            ]}
-                          >
-                            {record.clock_out ? formatDateTime(record.clock_out) : "Active"}
-                          </Text>
-                        </View>
-                        <Text style={styles.attendanceClockIn}>{formatDateTime(record.clock_in)}</Text>
-                        {record.clock_out ? (
-                          <Text style={styles.attendanceDuration}>
-                            {formatDuration(record.clock_in, record.clock_out)}
-                          </Text>
+
+                        {isExpanded ? (
+                          record.photos.length > 0 ? (
+                            <View style={styles.photoPairsContainer}>
+                              {record.photos.map((photo) => (
+                                <AttendancePhotoPair key={photo.id} photo={photo} />
+                              ))}
+                            </View>
+                          ) : (
+                            <Text style={styles.noPhotosText}>No photos for this record.</Text>
+                          )
                         ) : null}
-                      </View>
+                      </TouchableOpacity>
                     </View>
-                  </View>
-                ))
+                  );
+                })
               )}
+              <PaginationControls
+                page={attendancePage}
+                totalPages={attendanceTotalPages}
+                total={attendanceTotal}
+                limit={ATTENDANCE_PAGE_SIZE}
+                disabled={attendanceLoading}
+                onPageChange={fetchAttendance}
+              />
             </>
           )}
 
@@ -720,7 +884,7 @@ export default function SiteDetailScreen() {
                               e.stopPropagation();
                               console.log("delete button pressed", note.id);
                               console.log("site_id:", id);
-                              confirmDelete(note.id);
+                              openDeleteNoteModal(note.id);
                             }}
                             {...(Platform.OS === "web"
                               ? {
@@ -728,7 +892,7 @@ export default function SiteDetailScreen() {
                                     e.stopPropagation();
                                     console.log("delete button pressed", note.id);
                                     console.log("site_id:", id);
-                                    confirmDelete(note.id);
+                                    openDeleteNoteModal(note.id);
                                   },
                                 }
                               : {})}
@@ -752,6 +916,53 @@ export default function SiteDetailScreen() {
                   );
                 })
               )}
+            </>
+          )}
+
+          {activeTab === "tasks" && (
+            <>
+              <Text style={styles.sectionTitle}>Tasks</Text>
+              <View style={styles.goldDivider} />
+              {tasksLoading && !tasksRefreshing ? (
+                <ActivityIndicator style={styles.staffLoading} color={COLORS.gold} />
+              ) : tasks.length === 0 ? (
+                <Text style={styles.emptyText}>No tasks added yet</Text>
+              ) : (
+                tasks.map((task) => (
+                  <View key={task.id} style={styles.taskCard}>
+                    <Text style={styles.taskLabel}>{task.label}</Text>
+                    <TouchableOpacity
+                      style={styles.taskDeleteButton}
+                      onPress={() => openDeleteTaskModal(task.id)}
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    >
+                      <Ionicons name="trash-outline" size={18} color={COLORS.danger} />
+                    </TouchableOpacity>
+                  </View>
+                ))
+              )}
+
+              <View style={styles.addTaskRow}>
+                <TextInput
+                  style={styles.addTaskInput}
+                  value={newTaskLabel}
+                  onChangeText={setNewTaskLabel}
+                  placeholder="Enter task label e.g. Kitchen, Bathroom"
+                  placeholderTextColor={COLORS.textMuted}
+                  editable={!addingTask}
+                />
+                <TouchableOpacity
+                  style={[styles.addTaskButton, addingTask && LOADING_STYLE]}
+                  onPress={handleAddTask}
+                  disabled={addingTask}
+                >
+                  {addingTask ? (
+                    <ActivityIndicator color="#000000" size="small" />
+                  ) : (
+                    <Text style={styles.addTaskButtonText}>Add</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
             </>
           )}
         </ScrollView>
@@ -826,8 +1037,59 @@ export default function SiteDetailScreen() {
             </View>
           </View>
         </Modal>
+
+        <ConfirmModal
+          visible={deactivateModalVisible}
+          title="Deactivate Site"
+          message="Are you sure you want to deactivate this site?"
+          confirmText="Deactivate"
+          confirmStyle="destructive"
+          loading={deactivating}
+          onConfirm={handleDeactivate}
+          onCancel={() => setDeactivateModalVisible(false)}
+        />
+
+        <ConfirmModal
+          visible={deleteNoteModalVisible}
+          title="Delete Note"
+          message="Are you sure you want to delete this note?"
+          confirmText="Delete"
+          confirmStyle="destructive"
+          loading={deleteNoteModalLoading}
+          onConfirm={performDeleteNote}
+          onCancel={closeDeleteNoteModal}
+        />
+
+        <ConfirmModal
+          visible={deleteTaskModalVisible}
+          title="Delete Task"
+          message="Are you sure you want to delete this task?"
+          confirmText="Delete"
+          confirmStyle="destructive"
+          loading={deleteTaskModalLoading}
+          onConfirm={performDeleteTask}
+          onCancel={closeDeleteTaskModal}
+        />
       </View>
     </ScreenContainer>
+  );
+}
+
+function AttendancePhotoPair({ photo }: { photo: AttendancePhoto }) {
+  return (
+    <View style={styles.photoPair}>
+      <Text style={styles.photoPairLabel}>{photo.label}</Text>
+      <View style={styles.thumbRow}>
+        <View style={styles.thumbColumn}>
+          <Text style={styles.thumbCaption}>Before</Text>
+          <PhotoThumb path={photo.before_photo_url} />
+        </View>
+        <View style={styles.thumbColumn}>
+          <Text style={styles.thumbCaption}>After</Text>
+          <PhotoThumb path={photo.after_photo_url} />
+        </View>
+      </View>
+    </View>
   );
 }
 
@@ -1085,14 +1347,20 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   attendanceCard: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
     backgroundColor: COLORS.surface,
     borderRadius: RADIUS.md,
     paddingVertical: 12,
     paddingHorizontal: 16,
     overflow: "hidden",
+  },
+  attendanceCardTop: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+  },
+  attendanceChevron: {
+    alignSelf: "flex-end",
+    marginBottom: 4,
   },
   attendanceLeft: {
     flexDirection: "row",
@@ -1121,6 +1389,16 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: COLORS.textMuted,
     marginTop: 2,
+  },
+  attendancePhotoCount: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    marginTop: 4,
+  },
+  attendancePhotoCountText: {
+    fontSize: 11,
+    color: COLORS.textMuted,
   },
   attendanceRight: {
     alignItems: "flex-end",
@@ -1161,6 +1439,41 @@ const styles = StyleSheet.create({
     color: COLORS.gold,
     marginTop: 2,
   },
+  photoPairsContainer: {
+    marginTop: 12,
+    gap: 12,
+  },
+  photoPair: {
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+    paddingTop: 12,
+  },
+  photoPairLabel: {
+    fontSize: 13,
+    fontWeight: "600",
+    marginBottom: 8,
+    color: COLORS.textPrimary,
+  },
+  thumbRow: {
+    flexDirection: "row",
+    gap: 16,
+  },
+  thumbColumn: {
+    alignItems: "flex-start",
+  },
+  thumbCaption: {
+    fontSize: 12,
+    color: COLORS.textMuted,
+    marginBottom: 6,
+  },
+  noPhotosText: {
+    fontSize: 12,
+    color: COLORS.textMuted,
+    marginTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+    paddingTop: 12,
+  },
   noteText: {
     fontSize: 14,
     color: COLORS.textSecondary,
@@ -1196,6 +1509,52 @@ const styles = StyleSheet.create({
   },
   noteBadgeTextStaff: {
     color: COLORS.textMuted,
+  },
+  taskCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: COLORS.surface,
+    borderRadius: RADIUS.md,
+    padding: 16,
+    marginBottom: 12,
+  },
+  taskLabel: {
+    color: "#FFFFFF",
+    fontSize: 15,
+    fontWeight: "600",
+    flexShrink: 1,
+  },
+  taskDeleteButton: {
+    padding: 4,
+    marginLeft: 12,
+  },
+  addTaskRow: {
+    flexDirection: "row",
+    gap: 8,
+    marginTop: 8,
+  },
+  addTaskInput: {
+    flex: 1,
+    backgroundColor: "#2E2E2E",
+    color: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: COLORS.gold,
+    borderRadius: RADIUS.md,
+    padding: 12,
+    fontSize: 14,
+  },
+  addTaskButton: {
+    backgroundColor: COLORS.gold,
+    borderRadius: RADIUS.md,
+    paddingHorizontal: 20,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  addTaskButtonText: {
+    color: "#000000",
+    fontWeight: "700",
+    fontSize: 14,
   },
   row: {
     flexDirection: "row",

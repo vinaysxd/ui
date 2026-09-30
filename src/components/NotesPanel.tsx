@@ -11,7 +11,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   StyleSheet,
-  Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import {
@@ -26,7 +25,7 @@ import { getUser } from "../store/auth";
 import { showSuccess, showError } from "../utils/toast";
 import { formatDateTime } from "../utils/datetime";
 import { COLORS, RADIUS } from "../constants/theme";
-import { LOADING_STYLE } from "../constants/ui";
+import ConfirmModal from "./ConfirmModal";
 
 interface NotesPanelProps {
   siteId: string | null;
@@ -46,9 +45,12 @@ export default function NotesPanel({ siteId, active = true, role = "staff" }: No
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
-  const [composing, setComposing] = useState<boolean>(false);
   const [noteText, setNoteText] = useState<string>("");
   const [submitting, setSubmitting] = useState<boolean>(false);
+
+  const [noteToDelete, setNoteToDelete] = useState<string | null>(null);
+  const [deleteModalVisible, setDeleteModalVisible] = useState<boolean>(false);
+  const [deleteModalLoading, setDeleteModalLoading] = useState<boolean>(false);
 
   const fetchNotes = useCallback(async () => {
     if (!siteId) {
@@ -71,7 +73,6 @@ export default function NotesPanel({ siteId, active = true, role = "staff" }: No
   useEffect(() => {
     if (active) {
       setLoading(true);
-      setComposing(false);
       setNoteText("");
       fetchNotes();
     }
@@ -86,33 +87,31 @@ export default function NotesPanel({ siteId, active = true, role = "staff" }: No
     fetchNotes();
   };
 
-  const handleDeleteNote = async (noteId: string) => {
-    if (!siteId) {
+  const openDeleteModal = (noteId: string) => {
+    setNoteToDelete(noteId);
+    setDeleteModalVisible(true);
+  };
+
+  const closeDeleteModal = () => {
+    setDeleteModalVisible(false);
+    setNoteToDelete(null);
+  };
+
+  const performDeleteNote = async () => {
+    if (!siteId || !noteToDelete) {
       return;
     }
+    setDeleteModalLoading(true);
     try {
-      await deleteNote(siteId, noteId);
-      setNotes((prev) => prev.filter((n) => n.id !== noteId));
+      await deleteNote(siteId, noteToDelete);
+      setNotes((prev) => prev.filter((n) => n.id !== noteToDelete));
+      setDeleteModalVisible(false);
+      setNoteToDelete(null);
       showSuccess("Note deleted");
     } catch (err: any) {
       showError(err.message);
-    }
-  };
-
-  const confirmDelete = (noteId: string) => {
-    if (Platform.OS === "web") {
-      if (window.confirm("Delete this note?")) {
-        handleDeleteNote(noteId);
-      }
-    } else {
-      Alert.alert("Delete this note?", undefined, [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Delete",
-          style: "destructive",
-          onPress: () => handleDeleteNote(noteId),
-        },
-      ]);
+    } finally {
+      setDeleteModalLoading(false);
     }
   };
 
@@ -130,7 +129,6 @@ export default function NotesPanel({ siteId, active = true, role = "staff" }: No
       const note = await addNote(siteId, noteText.trim());
       setNotes((prev) => [note, ...prev]);
       setNoteText("");
-      setComposing(false);
       showSuccess("Note added");
     } catch (err: any) {
       showError(err.message);
@@ -159,50 +157,50 @@ export default function NotesPanel({ siteId, active = true, role = "staff" }: No
             <NoteCard
               note={item}
               canDelete={currentUserId != null && item.author_id === currentUserId}
-              onDelete={() => confirmDelete(item.id)}
+              onDelete={() => openDeleteModal(item.id)}
             />
           )}
         />
       )}
 
       <View style={styles.footer}>
-        {composing ? (
-          <View style={styles.composeRow}>
-            <TextInput
-              style={styles.composeInput}
-              value={noteText}
-              onChangeText={setNoteText}
-              placeholder="Write a note..."
-              placeholderTextColor={COLORS.textMuted}
-              multiline
-              autoFocus
-              editable={!submitting}
-            />
-            <TouchableOpacity
-              style={styles.cancelButton}
-              onPress={() => {
-                setComposing(false);
-                setNoteText("");
-              }}
-              disabled={submitting}
-            >
-              <Text style={styles.cancelButtonText}>Cancel</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.sendButton, submitting && LOADING_STYLE]} onPress={handleSubmitNote} disabled={submitting}>
-              {submitting ? (
-                <ActivityIndicator color="#1A1A1A" size="small" />
-              ) : (
-                <Ionicons name="send" size={18} color="#1A1A1A" />
-              )}
-            </TouchableOpacity>
-          </View>
-        ) : (
-          <TouchableOpacity style={styles.addNoteButton} onPress={() => setComposing(true)}>
-            <Ionicons name="add" size={18} color="#1A1A1A" />
-            <Text style={styles.addNoteButtonText}>Add note</Text>
+        <View style={styles.composeRow}>
+          <TextInput
+            style={styles.composeInput}
+            value={noteText}
+            onChangeText={setNoteText}
+            placeholder="Write a note..."
+            placeholderTextColor={COLORS.textMuted}
+            multiline
+            editable={!submitting}
+          />
+          <TouchableOpacity
+            style={[
+              styles.sendButton,
+              (submitting || !noteText.trim()) && styles.sendButtonDisabled,
+            ]}
+            onPress={handleSubmitNote}
+            disabled={submitting || !noteText.trim()}
+          >
+            {submitting ? (
+              <ActivityIndicator color="#1A1A1A" size="small" />
+            ) : (
+              <Ionicons name="send" size={18} color="#1A1A1A" />
+            )}
           </TouchableOpacity>
-        )}
+        </View>
       </View>
+
+      <ConfirmModal
+        visible={deleteModalVisible}
+        title="Delete Note"
+        message="Are you sure you want to delete this note?"
+        confirmText="Delete"
+        confirmStyle="destructive"
+        loading={deleteModalLoading}
+        onConfirm={performDeleteNote}
+        onCancel={closeDeleteModal}
+      />
     </KeyboardAvoidingView>
   );
 }
@@ -316,26 +314,20 @@ const styles = StyleSheet.create({
   },
   composeRow: {
     flexDirection: "row",
-    alignItems: "flex-end",
+    alignItems: "center",
     gap: 8,
   },
   composeInput: {
     flex: 1,
+    height: 44,
     borderWidth: 1,
     borderColor: COLORS.border,
     borderRadius: RADIUS.md,
-    padding: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 0,
+    textAlignVertical: "center",
     backgroundColor: COLORS.surfaceElevated,
     color: COLORS.textPrimary,
-    maxHeight: 100,
-  },
-  cancelButton: {
-    paddingVertical: 12,
-    paddingHorizontal: 8,
-  },
-  cancelButtonText: {
-    color: COLORS.textSecondary,
-    fontWeight: "600",
   },
   sendButton: {
     backgroundColor: COLORS.gold,
@@ -345,17 +337,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  addNoteButton: {
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    gap: 6,
-    backgroundColor: COLORS.gold,
-    padding: 14,
-    borderRadius: RADIUS.md,
-  },
-  addNoteButtonText: {
-    color: "#1A1A1A",
-    fontWeight: "bold",
+  sendButtonDisabled: {
+    opacity: 0.5,
   },
 });

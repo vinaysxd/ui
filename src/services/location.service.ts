@@ -1,4 +1,5 @@
 import * as Location from "expo-location";
+import { Platform } from "react-native";
 
 export interface Coordinates {
   latitude: number;
@@ -10,13 +11,32 @@ export const requestLocationPermission = async (): Promise<boolean> => {
   return status === "granted";
 };
 
-export const getCurrentLocation = async (): Promise<Coordinates> => {
-  const location = await Location.getCurrentPositionAsync({});
+export const getCurrentLocation = async () => {
+  // Try last known first (instant)
+  const lastKnown = await Location.getLastKnownPositionAsync({
+    maxAge: 300000, // 5 minutes
+    requiredAccuracy: 200
+  })
+  
+  if (lastKnown) {
+    return {
+      latitude: lastKnown.coords.latitude,
+      longitude: lastKnown.coords.longitude
+    }
+  }
+  
+  // Fall back to current position with Balanced accuracy
+  const location = await Location.getCurrentPositionAsync({
+    accuracy: Location.Accuracy.Balanced,
+    timeInterval: 3000,
+    mayShowUserSettingsDialog: true
+  })
+  
   return {
     latitude: location.coords.latitude,
-    longitude: location.coords.longitude,
-  };
-};
+    longitude: location.coords.longitude
+  }
+}
 
 const EARTH_RADIUS_KM = 6371;
 

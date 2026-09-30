@@ -1,9 +1,14 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Stack, usePathname, useSegments, useRouter } from 'expo-router';
+import { Stack, ThemeProvider, usePathname, useSegments, useRouter } from 'expo-router';
 import Toast from 'react-native-toast-message';
 import * as SplashScreen from 'expo-splash-screen';
 import { Asset } from 'expo-asset';
+import { PaperProvider } from 'react-native-paper';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { getToken, getUser } from '../src/store/auth';
+// App is always dark-themed today (see docs/paper-migration/DESIGN_RULES.md
+// "Theme mode") — darkTheme/navigationDarkTheme are the only ones wired up.
+import { darkTheme, navigationDarkTheme } from '../src/theme/paperTheme';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -101,9 +106,20 @@ export default function RootLayout() {
   }
 
   return (
-      <>
-         <Stack screenOptions={{ headerShown: false }} />
-         <Toast />
-      </>
+    <PaperProvider
+      theme={darkTheme}
+      settings={{
+        icon: ({ name, color, size }) => (
+          <MaterialCommunityIcons name={name} color={color} size={size} />
+        ),
+      }}
+    >
+      <ThemeProvider value={navigationDarkTheme}>
+        <>
+          <Stack screenOptions={{ headerShown: false }} />
+          <Toast />
+        </>
+      </ThemeProvider>
+    </PaperProvider>
   );
 }

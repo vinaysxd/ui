@@ -8,9 +8,11 @@ import {
   ActivityIndicator,
   TouchableOpacity,
   StyleSheet,
+  Platform,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import * as ImagePicker from "expo-image-picker";
 import ImageSourceSheet from "../../../src/components/ImageSourceSheet";
 import { getProfile, updateProfile, uploadAvatar } from "../../../src/services/profile.service";
 import { showSuccess, showError } from "../../../src/utils/toast";
@@ -68,8 +70,22 @@ export default function ClientEditProfileScreen() {
     fetchProfile();
   }, [fetchProfile]);
 
-  const handleChangePhoto = () => {
-    console.log("Image picker opened for avatar");
+  const handleChangePhoto = async () => {
+    console.log("Change photo button pressed");
+    if (Platform.OS === "web") {
+      // expo-image-picker's camera/gallery source sheet isn't a native modal on
+      // web, so go straight to the gallery picker instead of showing it.
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ["images"],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+      if (!result.canceled && result.assets[0]) {
+        handlePhotoPicked(result.assets[0].uri);
+      }
+      return;
+    }
     setPhotoSheetVisible(true);
   };
 

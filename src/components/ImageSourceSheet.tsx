@@ -10,6 +10,9 @@ interface ImageSourceSheetProps {
   onClose: () => void;
   onPicked: (uri: string) => void;
   aspect?: [number, number];
+  // When true, only the camera option is offered (e.g. attendance before/after
+  // photos must be taken live, not picked from the gallery).
+  cameraOnly?: boolean;
 }
 
 // Bottom sheet offering camera or gallery; calls onPicked with the chosen image uri.
@@ -18,12 +21,13 @@ export default function ImageSourceSheet({
   onClose,
   onPicked,
   aspect = [4, 3],
+  cameraOnly = false,
 }: ImageSourceSheetProps) {
   const pickerOptions: ImagePicker.ImagePickerOptions = {
     mediaTypes: ["images"],
     quality: 0.8,
-    allowsEditing: true,
-    aspect,
+    allowsEditing: false,
+    
     base64: false,
   };
 
@@ -34,25 +38,32 @@ export default function ImageSourceSheet({
 
     console.log("Image picker opened:", source);
     if (source === "camera") {
+      console.log("Requesting camera permissions...");
       const permission = await ImagePicker.requestCameraPermissionsAsync();
+      console.log("Permission status:", permission.status);
       if (!permission.granted) {
+        console.log("Permission denied");
         showError("Permission to access the camera is required");
         return;
       }
     } else {
+      console.log("Requesting media library permissions...");
       const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      console.log("Permission status:", permission.status);
       if (!permission.granted) {
+        console.log("Permission denied");
         showError("Permission to access photos is required");
         return;
       }
     }
 
+    console.log("Launching image picker...");
     const result =
       source === "camera"
         ? await ImagePicker.launchCameraAsync(pickerOptions)
         : await ImagePicker.launchImageLibraryAsync(pickerOptions);
 
-    console.log("Image selected:", result);
+    console.log("Image picker result:", result);
     if (result.canceled || result.assets.length === 0) {
       return;
     }
@@ -69,10 +80,12 @@ export default function ImageSourceSheet({
               <Ionicons name="camera-outline" size={22} color={COLORS.gold} />
               <Text style={styles.optionText}>Take Photo</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.option} onPress={() => launch("gallery")}>
-              <Ionicons name="images-outline" size={22} color={COLORS.gold} />
-              <Text style={styles.optionText}>Choose from Gallery</Text>
-            </TouchableOpacity>
+            {!cameraOnly ? (
+              <TouchableOpacity style={styles.option} onPress={() => launch("gallery")}>
+                <Ionicons name="images-outline" size={22} color={COLORS.gold} />
+                <Text style={styles.optionText}>Choose from Gallery</Text>
+              </TouchableOpacity>
+            ) : null}
             <TouchableOpacity style={styles.cancel} onPress={onClose}>
               <Text style={styles.cancelText}>Cancel</Text>
             </TouchableOpacity>
