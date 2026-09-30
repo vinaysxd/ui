@@ -38,7 +38,10 @@ interface SiteWithDistance extends Site {
   distanceKm: number | null;
 }
 
-const formatDistance = (distanceKm: number | null): string => {
+const formatDistance = (distanceKm: number | null, isLocating: boolean): string => {
+  if (isLocating) {
+    return "Getting location...";
+  }
   if (distanceKm === null) {
     return "Distance unavailable";
   }
@@ -54,9 +57,10 @@ const formatTimer = (totalSeconds: number): string => {
 };
 
 export default function StaffHomeScreen() {
-  const [sites, setSites] = useState<SiteWithDistance[]>([]);
+  const [sites, setSites] = useState<Site[]>([]);
   const [activeAttendance, setActiveAttendance] = useState<ActiveAttendanceResponse | null>(null);
   const [location, setLocation] = useState<Coordinates | null>(null);
+  const [locationLoading, setLocationLoading] = useState<boolean>(true);
 
   const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
@@ -78,47 +82,62 @@ export default function StaffHomeScreen() {
   const [outOfRangeModalLoading, setOutOfRangeModalLoading] = useState<boolean>(false);
 
   const loadAll = useCallback(async () => {
-    try {
-      const granted = await requestLocationPermission();
-      if (!granted) {
-        showError("Location permission is required to clock in");
-      }
+    setLocationLoading(true);
 
-      let coords: Coordinates | null = null;
-      if (granted) {
-        try {
-          coords = await getCurrentLocation();
-          setLocation(coords);
-        } catch {
-          showError("Unable to get current location");
+    // Location and site data are independent - fetch both concurrently and let
+    // whichever resolves first update the screen, instead of making the site
+    // list wait on a slow GPS fix.
+    const locationTask = (async () => {
+      try {
+        const granted = await requestLocationPermission();
+        if (!granted) {
+          showError("Location permission is required to clock in");
+          return;
         }
+        const coords = await getCurrentLocation();
+        setLocation(coords);
+      } catch {
+        showError("Unable to get current location");
+      } finally {
+        setLocationLoading(false);
       }
+    })();
 
-      const [mySites, active] = await Promise.all([getMySites(), getActiveAttendance()]);
+    const sitesTask = (async () => {
+      try {
+        const [mySites, active] = await Promise.all([getMySites(), getActiveAttendance()]);
+        setSites(mySites);
+        setActiveAttendance(active);
+      } catch (err: any) {
+        showError(err.message);
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
+      }
+    })();
 
-      const sitesWithDistance: SiteWithDistance[] = mySites.map((site) => ({
-        ...site,
-        distanceKm: coords
-          ? calculateDistance(coords.latitude, coords.longitude, site.latitude, site.longitude)
-          : null,
-      }));
-
-      sitesWithDistance.sort((a, b) => {
-        if (a.distanceKm === null && b.distanceKm === null) return 0;
-        if (a.distanceKm === null) return 1;
-        if (b.distanceKm === null) return -1;
-        return a.distanceKm - b.distanceKm;
-      });
-
-      setSites(sitesWithDistance);
-      setActiveAttendance(active);
-    } catch (err: any) {
-      showError(err.message);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
+    await Promise.all([locationTask, sitesTask]);
   }, []);
+
+  // Recomputed only when the raw site list or the cached location changes -
+  // never triggers a location fetch itself.
+  const sitesWithDistance: SiteWithDistance[] = useMemo(() => {
+    const withDistance = sites.map((site) => ({
+      ...site,
+      distanceKm: location
+        ? calculateDistance(location.latitude, location.longitude, site.latitude, site.longitude)
+        : null,
+    }));
+
+    withDistance.sort((a, b) => {
+      if (a.distanceKm === null && b.distanceKm === null) return 0;
+      if (a.distanceKm === null) return 1;
+      if (b.distanceKm === null) return -1;
+      return a.distanceKm - b.distanceKm;
+    });
+
+    return withDistance;
+  }, [sites, location]);
 
   useEffect(() => {
     loadAll();
@@ -159,13 +178,13 @@ export default function StaffHomeScreen() {
       : null;
 
   const activeSite = useMemo(
-    () => sites.find((site) => site.id === activeSiteId) ?? null,
-    [sites, activeSiteId]
+    () => sitesWithDistance.find((site) => site.id === activeSiteId) ?? null,
+    [sitesWithDistance, activeSiteId]
   );
 
   const otherSites = useMemo(
-    () => sites.filter((site) => site.id !== activeSiteId),
-    [sites, activeSiteId]
+    () => sitesWithDistance.filter((site) => site.id !== activeSiteId),
+    [sitesWithDistance, activeSiteId]
   );
 
   const filteredOtherSites = useMemo(() => {
@@ -341,7 +360,9 @@ export default function StaffHomeScreen() {
               <View style={styles.activeCard}>
                 <Text style={styles.activeName}>{activeSite.name}</Text>
                 <Text style={styles.activeDetail}>{activeSite.address}</Text>
-                <Text style={styles.activeDistance}>{formatDistance(activeSite.distanceKm)}</Text>
+                <Text style={styles.activeDistance}>
+                  {formatDistance(activeSite.distanceKm, locationLoading)}
+                </Text>
 
                 <View style={styles.timerContainer}>
                   <Text style={styles.timerLabel}>CLOCKED IN</Text>
@@ -417,7 +438,7 @@ export default function StaffHomeScreen() {
               <View style={styles.goldBar} />
               <Text style={styles.name}>{item.name}</Text>
               <Text style={styles.detail}>{item.address}</Text>
-              <Text style={styles.distance}>{formatDistance(item.distanceKm)}</Text>
+              <Text style={styles.distance}>{formatDistance(item.distanceKm, locationLoading)}</Text>
 
               {isClockedIn ? (
                 <Text style={styles.blockedText}>Clocked in elsewhere</Text>
