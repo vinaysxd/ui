@@ -1,4 +1,4 @@
 export default {
-    baseUrl : "https://api.brothersgroup.au"
-    // baseUrl: "http://172.20.10.6:3000"
+    // baseUrl : "https://api.brothersgroup.au"
+     baseUrl: "http://localhost:3000"
 }

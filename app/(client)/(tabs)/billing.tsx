@@ -15,83 +15,83 @@ import { Ionicons } from "@expo/vector-icons";
 import * as Sharing from "expo-sharing";
 import { File, Paths } from "expo-file-system";
 import api from "../../../src/lib/api";
+import {
+  getClientInvoices,
+  getClientEstimates,
+  getClientStatement,
+  getLineItems,
+  Invoice,
+  Estimate,
+  Statement,
+  QuickBooksNotLinkedError,
+} from "../../../src/services/billing.service";
 import { getErrorMessage } from "../../../src/constants/errors";
 import { showError } from "../../../src/utils/toast";
 import { COLORS, RADIUS } from "../../../src/constants/theme";
 
-interface InvoiceLineItem {
-  description: string;
-  qty: number;
-  unit_price: number;
-  amount: number;
-}
+type Tab = "invoices" | "quotes" | "statement";
+type DocStatus = "PAID" | "UNPAID" | "PENDING";
+type DetailDoc = { kind: "Invoice"; data: Invoice } | { kind: "Quote"; data: Estimate };
 
-interface Invoice {
-  Id: string;
-  DocNumber: string;
-  TxnDate: string;
-  DueDate: string;
-  TotalAmt: number;
-  Balance: number;
-  Line?: any[];
-  line_items?: InvoiceLineItem[];
-}
-
-type InvoiceStatus = "PAID" | "PENDING" | "OVERDUE";
+const TABS: { key: Tab; label: string }[] = [
+  { key: "invoices", label: "Invoices" },
+  { key: "quotes", label: "Quotes" },
+  { key: "statement", label: "Statement" },
+];
 
 const MONTHS = [
   "Jan", "Feb", "Mar", "Apr", "May", "Jun",
   "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
 ];
 
-const formatDate = (iso: string): string => {
+const formatDate = (iso?: string): string => {
   if (!iso) {
     return "—";
   }
   const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) {
+    return "—";
+  }
   const day = String(date.getDate()).padStart(2, "0");
   const month = MONTHS[date.getMonth()];
   const year = date.getFullYear();
   return `${day} ${month} ${year}`;
 };
 
-const formatCurrency = (amount: number): string => `$${(amount ?? 0).toFixed(2)}`;
+const formatCurrency = (amount: number): string => {
+  const value = amount ?? 0;
+  return `${value < 0 ? "-" : ""}$${Math.abs(value).toFixed(2)}`;
+};
 
-const getInvoiceStatus = (invoice: Invoice): InvoiceStatus => {
+// Paid: nothing owing. Unpaid: balance owing past the due date. Pending: balance owing, not yet due.
+const getInvoiceStatus = (invoice: Invoice): DocStatus => {
   if ((invoice.Balance ?? 0) <= 0) {
     return "PAID";
   }
   const due = new Date(invoice.DueDate);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  if (due < today) {
-    return "OVERDUE";
-  }
-  return "PENDING";
+  return due < today ? "UNPAID" : "PENDING";
 };
 
-const getLineItems = (invoice: Invoice): InvoiceLineItem[] => {
-  if (invoice.line_items) {
-    return invoice.line_items;
+// Quotes aren't paid, so show the QuickBooks status text and borrow the colours.
+const getQuoteStatus = (estimate: Estimate): { label: string; status: DocStatus } => {
+  const raw = (estimate.TxnStatus ?? "Pending").toLowerCase();
+  const label = raw.toUpperCase();
+  if (raw === "accepted" || raw === "closed") {
+    return { label, status: "PAID" };
   }
-  if (!invoice.Line) {
-    return [];
+  if (raw === "rejected" || raw === "declined") {
+    return { label, status: "UNPAID" };
   }
-  return invoice.Line.filter((line: any) => line.DetailType === "SalesItemLineDetail").map(
-    (line: any) => ({
-      description: line.Description || line.SalesItemLineDetail?.ItemRef?.name || "Item",
-      qty: line.SalesItemLineDetail?.Qty ?? 1,
-      unit_price: line.SalesItemLineDetail?.UnitPrice ?? line.Amount ?? 0,
-      amount: line.Amount ?? 0,
-    })
-  );
+  return { label, status: "PENDING" };
 };
 
-function getStatusStyle(status: InvoiceStatus) {
+function getStatusStyle(status: DocStatus) {
   if (status === "PAID") {
     return { bar: styles.statusBarPaid, badge: styles.badgePaid, badgeText: styles.badgePaidText };
   }
-  if (status === "OVERDUE") {
+  if (status === "UNPAID") {
     return {
       bar: styles.statusBarOverdue,
       badge: styles.badgeOverdue,
@@ -117,32 +117,39 @@ const blobToBase64 = (blob: Blob): Promise<string> =>
   });
 
 export default function ClientBillingScreen() {
+  const [activeTab, setActiveTab] = useState<Tab>("invoices");
   const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [estimates, setEstimates] = useState<Estimate[]>([]);
+  const [statement, setStatement] = useState<Statement | null>(null);
+  const [loadedTabs, setLoadedTabs] = useState<Record<Tab, boolean>>({
+    invoices: false,
+    quotes: false,
+    statement: false,
+  });
   const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [notLinked, setNotLinked] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
+  const [selectedDoc, setSelectedDoc] = useState<DetailDoc | null>(null);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
-  const fetchInvoices = useCallback(async () => {
+  const fetchTab = useCallback(async (tab: Tab) => {
     setNotLinked(false);
     setErrorMessage(null);
     try {
-      const response = await api.get("/integrations/quickbooks/invoices");
-      const data: Invoice[] = Array.isArray(response.data)
-        ? response.data
-        : response.data.invoices ?? [];
-      const sorted = [...data].sort(
-        (a, b) => new Date(b.TxnDate).getTime() - new Date(a.TxnDate).getTime()
-      );
-      setInvoices(sorted.slice(0, 10));
+      if (tab === "invoices") {
+        setInvoices(await getClientInvoices());
+      } else if (tab === "quotes") {
+        setEstimates(await getClientEstimates());
+      } else {
+        setStatement(await getClientStatement());
+      }
+      setLoadedTabs((prev) => ({ ...prev, [tab]: true }));
     } catch (err: any) {
-      const code = err?.response?.data?.code;
-      if (code === "QBO_003") {
+      if (err instanceof QuickBooksNotLinkedError) {
         setNotLinked(true);
       } else {
-        setErrorMessage(getErrorMessage(code));
+        setErrorMessage(err.message);
       }
     } finally {
       setLoading(false);
@@ -151,12 +158,18 @@ export default function ClientBillingScreen() {
   }, []);
 
   useEffect(() => {
-    fetchInvoices();
-  }, [fetchInvoices]);
+    if (loadedTabs[activeTab]) {
+      setNotLinked(false);
+      setErrorMessage(null);
+      return;
+    }
+    setLoading(true);
+    fetchTab(activeTab);
+  }, [activeTab, loadedTabs, fetchTab]);
 
   const onRefresh = () => {
     setRefreshing(true);
-    fetchInvoices();
+    fetchTab(activeTab);
   };
 
   const handleDownloadPdf = async (invoice: Invoice) => {
@@ -191,19 +204,122 @@ export default function ClientBillingScreen() {
     }
   };
 
-  if (loading) {
-    return (
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" color={COLORS.gold} />
-      </View>
-    );
-  }
+  const refreshControl = (
+    <RefreshControl
+      refreshing={refreshing}
+      onRefresh={onRefresh}
+      tintColor={COLORS.gold}
+      colors={[COLORS.gold]}
+    />
+  );
 
-  return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Billing</Text>
+  const renderInvoices = () => (
+    <FlatList keyboardShouldPersistTaps="handled"
+      data={invoices}
+      keyExtractor={(item) => item.Id}
+      contentContainerStyle={styles.listContent}
+      refreshControl={refreshControl}
+      ListEmptyComponent={<Text style={styles.emptyText}>No invoices yet.</Text>}
+      renderItem={({ item }) => {
+        const status = getInvoiceStatus(item);
+        const statusStyle = getStatusStyle(status);
+        return (
+          <TouchableOpacity
+            style={styles.card}
+            onPress={() => setSelectedDoc({ kind: "Invoice", data: item })}
+          >
+            <View style={[styles.statusBar, statusStyle.bar]} />
+            <View style={styles.cardHeader}>
+              <Text style={styles.invoiceNumber}>Invoice #{item.DocNumber}</Text>
+              <View style={[styles.badge, statusStyle.badge]}>
+                <Text style={[styles.badgeText, statusStyle.badgeText]}>{status}</Text>
+              </View>
+            </View>
+            <Row label="Date" value={formatDate(item.TxnDate)} />
+            <Row label="Amount" value={formatCurrency(item.TotalAmt)} last />
+          </TouchableOpacity>
+        );
+      }}
+    />
+  );
 
-      {notLinked ? (
+  const renderQuotes = () => (
+    <FlatList keyboardShouldPersistTaps="handled"
+      data={estimates}
+      keyExtractor={(item) => item.Id}
+      contentContainerStyle={styles.listContent}
+      refreshControl={refreshControl}
+      ListEmptyComponent={<Text style={styles.emptyText}>No quotes yet.</Text>}
+      renderItem={({ item }) => {
+        const { label, status } = getQuoteStatus(item);
+        const statusStyle = getStatusStyle(status);
+        return (
+          <TouchableOpacity
+            style={styles.card}
+            onPress={() => setSelectedDoc({ kind: "Quote", data: item })}
+          >
+            <View style={[styles.statusBar, statusStyle.bar]} />
+            <View style={styles.cardHeader}>
+              <Text style={styles.invoiceNumber}>Quote #{item.DocNumber}</Text>
+              <View style={[styles.badge, statusStyle.badge]}>
+                <Text style={[styles.badgeText, statusStyle.badgeText]}>{label}</Text>
+              </View>
+            </View>
+            <Row label="Date" value={formatDate(item.TxnDate)} />
+            <Row label="Amount" value={formatCurrency(item.TotalAmt)} last />
+          </TouchableOpacity>
+        );
+      }}
+    />
+  );
+
+  const renderStatement = () => (
+    <FlatList keyboardShouldPersistTaps="handled"
+      data={statement?.transactions ?? []}
+      keyExtractor={(item) => item.id}
+      contentContainerStyle={styles.listContent}
+      refreshControl={refreshControl}
+      ListHeaderComponent={
+        statement ? (
+          <View style={styles.summaryRow}>
+            <View style={styles.summaryCard}>
+              <Text style={styles.summaryLabel}>Outstanding</Text>
+              <Text style={styles.summaryValue}>{formatCurrency(statement.total_outstanding)}</Text>
+            </View>
+            <View style={styles.summaryCard}>
+              <Text style={styles.summaryLabel}>Overdue</Text>
+              <Text style={[styles.summaryValue, statement.overdue > 0 && styles.summaryValueDanger]}>
+                {formatCurrency(statement.overdue)}
+              </Text>
+            </View>
+          </View>
+        ) : null
+      }
+      ListEmptyComponent={<Text style={styles.emptyText}>No transactions yet.</Text>}
+      renderItem={({ item }) => (
+        <View style={styles.card}>
+          <View style={[styles.statusBar, item.amount < 0 ? styles.statusBarPaid : styles.statusBarPending]} />
+          <View style={styles.cardHeader}>
+            <Text style={styles.invoiceNumber}>
+              {item.type}
+              {item.number ? ` #${item.number}` : ""}
+            </Text>
+            <Text style={styles.transactionAmount}>{formatCurrency(item.amount)}</Text>
+          </View>
+          {item.detail ? <Text style={styles.transactionDetail}>{item.detail}</Text> : null}
+          <Row label="Date" value={formatDate(item.date)} />
+          <Row label="Balance" value={formatCurrency(item.balance)} last />
+        </View>
+      )}
+    />
+  );
+
+  const renderBody = () => {
+    if (loading) {
+      return <ActivityIndicator style={styles.inlineLoader} size="large" color={COLORS.gold} />;
+    }
+    if (notLinked) {
+      return (
         <View style={styles.stateWrap}>
           <Ionicons name="link-outline" size={40} color={COLORS.textMuted} />
           <Text style={styles.stateTitle}>QuickBooks not linked</Text>
@@ -211,77 +327,84 @@ export default function ClientBillingScreen() {
             Your account isn't linked to QuickBooks yet. Contact your admin to set up billing.
           </Text>
         </View>
-      ) : errorMessage ? (
+      );
+    }
+    if (errorMessage) {
+      return (
         <View style={styles.stateWrap}>
           <Ionicons name="alert-circle-outline" size={40} color={COLORS.danger} />
-          <Text style={styles.stateTitle}>Couldn't load invoices</Text>
+          <Text style={styles.stateTitle}>Couldn't load {activeTab}</Text>
           <Text style={styles.stateText}>{errorMessage}</Text>
         </View>
-      ) : (
-        <FlatList keyboardShouldPersistTaps="handled"
-          data={invoices}
-          keyExtractor={(item) => item.Id}
-          contentContainerStyle={styles.listContent}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              tintColor={COLORS.gold}
-              colors={[COLORS.gold]}
-            />
-          }
-          ListEmptyComponent={<Text style={styles.emptyText}>No invoices yet.</Text>}
-          renderItem={({ item }) => {
-            const status = getInvoiceStatus(item);
-            const statusStyle = getStatusStyle(status);
-            return (
-              <TouchableOpacity style={styles.card} onPress={() => setSelectedInvoice(item)}>
-                <View style={[styles.statusBar, statusStyle.bar]} />
-                <View style={styles.cardHeader}>
-                  <Text style={styles.invoiceNumber}>Invoice #{item.DocNumber}</Text>
-                  <View style={[styles.badge, statusStyle.badge]}>
-                    <Text style={[styles.badgeText, statusStyle.badgeText]}>{status}</Text>
-                  </View>
-                </View>
-                <Row label="Date" value={formatDate(item.TxnDate)} />
-                <Row label="Due" value={formatDate(item.DueDate)} />
-                <Row label="Total" value={formatCurrency(item.TotalAmt)} />
-                <Row label="Balance" value={formatCurrency(item.Balance)} last />
-              </TouchableOpacity>
-            );
-          }}
-        />
-      )}
+      );
+    }
+    if (activeTab === "invoices") {
+      return renderInvoices();
+    }
+    return activeTab === "quotes" ? renderQuotes() : renderStatement();
+  };
+
+  return (
+    <View style={styles.container}>
+      <Text style={styles.title}>Billing</Text>
+
+      <View style={styles.tabBar}>
+        {TABS.map((tab) => {
+          const active = activeTab === tab.key;
+          return (
+            <TouchableOpacity
+              key={tab.key}
+              style={[styles.tab, active && styles.tabActive]}
+              onPress={() => setActiveTab(tab.key)}
+            >
+              <Text style={[styles.tabText, active && styles.tabTextActive]}>{tab.label}</Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+
+      <View style={styles.body}>{renderBody()}</View>
 
       <Modal
-        visible={selectedInvoice !== null}
+        visible={selectedDoc !== null}
         animationType="slide"
-        onRequestClose={() => setSelectedInvoice(null)}
+        onRequestClose={() => setSelectedDoc(null)}
       >
-        {selectedInvoice ? (
+        {selectedDoc ? (
           <View style={styles.modalContainer}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Invoice #{selectedInvoice.DocNumber}</Text>
-              <TouchableOpacity onPress={() => setSelectedInvoice(null)}>
+              <Text style={styles.modalTitle}>
+                {selectedDoc.kind} #{selectedDoc.data.DocNumber}
+              </Text>
+              <TouchableOpacity onPress={() => setSelectedDoc(null)}>
                 <Text style={styles.doneText}>Done</Text>
               </TouchableOpacity>
             </View>
 
             <ScrollView keyboardShouldPersistTaps="handled" style={styles.modalContent} contentContainerStyle={styles.modalContentInner}>
               <View style={styles.section}>
-                <Row label="Invoice #" value={selectedInvoice.DocNumber} />
-                <Row label="Date" value={formatDate(selectedInvoice.TxnDate)} />
-                <Row label="Due Date" value={formatDate(selectedInvoice.DueDate)} />
-                <Row label="Total" value={formatCurrency(selectedInvoice.TotalAmt)} />
-                <Row label="Balance" value={formatCurrency(selectedInvoice.Balance)} last />
+                <Row label={`${selectedDoc.kind} #`} value={selectedDoc.data.DocNumber} />
+                <Row label="Date" value={formatDate(selectedDoc.data.TxnDate)} />
+                {selectedDoc.kind === "Invoice" ? (
+                  <>
+                    <Row label="Due Date" value={formatDate(selectedDoc.data.DueDate)} />
+                    <Row label="Total" value={formatCurrency(selectedDoc.data.TotalAmt)} />
+                    <Row label="Balance" value={formatCurrency(selectedDoc.data.Balance)} last />
+                  </>
+                ) : (
+                  <>
+                    <Row label="Expires" value={formatDate(selectedDoc.data.ExpirationDate)} />
+                    <Row label="Total" value={formatCurrency(selectedDoc.data.TotalAmt)} last />
+                  </>
+                )}
               </View>
 
               <Text style={styles.sectionTitle}>Line Items</Text>
               <View style={styles.section}>
-                {getLineItems(selectedInvoice).length === 0 ? (
+                {getLineItems(selectedDoc.data).length === 0 ? (
                   <Text style={styles.emptyLineText}>No line items</Text>
                 ) : (
-                  getLineItems(selectedInvoice).map((line, index, arr) => (
+                  getLineItems(selectedDoc.data).map((line, index, arr) => (
                     <View
                       key={index}
                       style={[styles.lineItemRow, index !== arr.length - 1 && styles.rowBorder]}
@@ -300,20 +423,22 @@ export default function ClientBillingScreen() {
                 )}
               </View>
 
-              <TouchableOpacity
-                style={styles.downloadButton}
-                onPress={() => handleDownloadPdf(selectedInvoice)}
-                disabled={downloadingId === selectedInvoice.Id}
-              >
-                {downloadingId === selectedInvoice.Id ? (
-                  <ActivityIndicator color="#1A1A1A" />
-                ) : (
-                  <>
-                    <Ionicons name="download-outline" size={18} color="#1A1A1A" />
-                    <Text style={styles.downloadButtonText}>Download PDF</Text>
-                  </>
-                )}
-              </TouchableOpacity>
+              {selectedDoc.kind === "Invoice" ? (
+                <TouchableOpacity
+                  style={styles.downloadButton}
+                  onPress={() => handleDownloadPdf(selectedDoc.data)}
+                  disabled={downloadingId === selectedDoc.data.Id}
+                >
+                  {downloadingId === selectedDoc.data.Id ? (
+                    <ActivityIndicator color="#1A1A1A" />
+                  ) : (
+                    <>
+                      <Ionicons name="download-outline" size={18} color="#1A1A1A" />
+                      <Text style={styles.downloadButtonText}>Download PDF</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              ) : null}
             </ScrollView>
           </View>
         ) : null}
@@ -350,6 +475,74 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: COLORS.textPrimary,
     marginBottom: 16,
+  },
+  tabBar: {
+    flexDirection: "row",
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+    marginBottom: 16,
+  },
+  tab: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderBottomWidth: 2,
+    borderBottomColor: "transparent",
+  },
+  tabActive: {
+    borderBottomColor: COLORS.gold,
+  },
+  tabText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: COLORS.textMuted,
+  },
+  tabTextActive: {
+    color: COLORS.gold,
+  },
+  body: {
+    flex: 1,
+  },
+  inlineLoader: {
+    marginTop: 48,
+  },
+  summaryRow: {
+    flexDirection: "row",
+    gap: 12,
+    marginBottom: 16,
+  },
+  summaryCard: {
+    flex: 1,
+    backgroundColor: COLORS.surface,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: RADIUS.md,
+    padding: 16,
+  },
+  summaryLabel: {
+    fontSize: 11,
+    fontWeight: "600",
+    color: COLORS.gold,
+    textTransform: "uppercase",
+    letterSpacing: 2,
+    marginBottom: 6,
+  },
+  summaryValue: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: COLORS.textPrimary,
+  },
+  summaryValueDanger: {
+    color: COLORS.danger,
+  },
+  transactionDetail: {
+    fontSize: 12,
+    color: COLORS.textMuted,
+    marginBottom: 4,
+  },
+  transactionAmount: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: COLORS.textPrimary,
   },
   listContent: {
     paddingBottom: 32,
