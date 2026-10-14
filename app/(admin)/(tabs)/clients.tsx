@@ -4,7 +4,6 @@ import {
   Text,
   TextInput,
   FlatList,
-  ActivityIndicator,
   RefreshControl,
   TouchableOpacity,
   StyleSheet,
@@ -18,6 +17,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { getAllClients, Client } from "../../../src/services/client.service";
 import { showError } from "../../../src/utils/toast";
 import { COLORS, RADIUS } from "../../../src/constants/theme";
+import Loader from "../../../src/components/Loader";
 
 const COLUMN_FLEX = { name: 2, email: 2, phone: 1.3, company: 1.7, status: 1 };
 
@@ -113,7 +113,7 @@ export default function ClientsScreen() {
   if (loading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" color={COLORS.gold} />
+        <Loader size="large" />
       </View>
     );
   }

@@ -3,7 +3,6 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  ActivityIndicator,
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
@@ -16,6 +15,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { forgotPassword } from "../../src/services/auth.service";
 import { showError } from "../../src/utils/toast";
 import { LOADING_STYLE } from "../../src/constants/ui";
+import Loader from "../../src/components/Loader";
 
 export default function ForgotPasswordScreen() {
   const [email, setEmail] = useState<string>("");
@@ -75,7 +75,7 @@ export default function ForgotPasswordScreen() {
               disabled={loading}
             >
               {loading ? (
-                <ActivityIndicator color="#000000" />
+                <Loader tone="dark" />
               ) : (
                 <Text style={styles.buttonText}>SEND RESET LINK</Text>
               )}

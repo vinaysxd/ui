@@ -4,7 +4,6 @@ import {
   Text,
   Image,
   ScrollView,
-  ActivityIndicator,
   RefreshControl,
   TouchableOpacity,
   StyleSheet,
@@ -15,6 +14,7 @@ import { logout } from "../../../src/services/auth.service";
 import { showError } from "../../../src/utils/toast";
 import { COLORS, RADIUS } from "../../../src/constants/theme";
 import { LOADING_STYLE } from "../../../src/constants/ui";
+import Loader from "../../../src/components/Loader";
 
 const MONTHS = [
   "Jan", "Feb", "Mar", "Apr", "May", "Jun",
@@ -84,7 +84,7 @@ export default function StaffProfileScreen() {
   if (loading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" color={COLORS.gold} />
+        <Loader size="large" />
       </View>
     );
   }
@@ -147,7 +147,7 @@ export default function StaffProfileScreen() {
 
       <TouchableOpacity style={[styles.logoutButton, loggingOut && LOADING_STYLE]} onPress={handleLogout} disabled={loggingOut}>
         {loggingOut ? (
-          <ActivityIndicator color={COLORS.danger} />
+          <Loader tone="danger" />
         ) : (
           <Text style={styles.logoutButtonText}>Logout</Text>
         )}

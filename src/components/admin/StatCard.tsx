@@ -23,7 +23,13 @@ export default function StatCard({ icon, label, value, style }: StatCardProps) {
 
 const styles = StyleSheet.create({
   card: {
-    padding: 16,
+    flex: 1,
+    minWidth: 0,
+    padding: 12,
+    backgroundColor: COLORS.surface,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: RADIUS.lg,
   },
   iconCircle: {
     width: 34,
@@ -36,8 +42,8 @@ const styles = StyleSheet.create({
   },
   label: {
     color: COLORS.textMuted,
-    fontSize: 12,
-    letterSpacing: 1,
+    fontSize: 10,
+    letterSpacing: 0.5,
     textTransform: "uppercase",
     marginBottom: 4,
   },

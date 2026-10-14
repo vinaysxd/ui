@@ -8,7 +8,6 @@ import {
   TextInput,
   FlatList,
   ScrollView,
-  ActivityIndicator,
   RefreshControl,
   TouchableOpacity,
   Pressable,
@@ -28,6 +27,7 @@ import { showSuccess, showError } from "../utils/toast";
 import PhotoThumb from "./PhotoThumb";
 import { COLORS, RADIUS } from "../constants/theme";
 import { LOADING_STYLE } from "../constants/ui";
+import Loader from "./Loader";
 
 const FREEFORM_TAB = "Photos";
 
@@ -221,7 +221,7 @@ export default function PhotoUploadModal({
 
         {loading || tasksLoading ? (
           <View style={styles.centered}>
-            <ActivityIndicator size="large" color={COLORS.gold} />
+            <Loader size="large" />
           </View>
         ) : (
           <FlatList keyboardShouldPersistTaps="handled"
@@ -263,7 +263,7 @@ export default function PhotoUploadModal({
                   disabled={uploadingBefore}
                 >
                   {uploadingBefore ? (
-                    <ActivityIndicator color={COLORS.gold} size="small" />
+                    <Loader />
                   ) : (
                     <>
                       <Ionicons name="add" size={18} color={COLORS.gold} />
@@ -331,7 +331,7 @@ function PhotoPairCard({
               disabled={uploadingAfter}
             >
               {uploadingAfter ? (
-                <ActivityIndicator size="small" color={COLORS.textSecondary} />
+                <Loader tone="muted" />
               ) : (
                 <>
                   <Ionicons name="camera-outline" size={20} color={COLORS.textSecondary} />
@@ -390,7 +390,7 @@ function FullImagePreview({
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <Pressable style={styles.previewOverlay} onPress={onClose}>
         {loading ? (
-          <ActivityIndicator size="large" color={COLORS.gold} />
+          <Loader size="large" />
         ) : signedUrl ? (
           <Image source={{ uri: signedUrl }} style={styles.previewImage} resizeMode="contain" />
         ) : null}

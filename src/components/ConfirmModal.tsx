@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
-import { View, Text, Modal, TouchableOpacity, ActivityIndicator, StyleSheet } from "react-native";
+import { View, Text, Modal, TouchableOpacity, StyleSheet } from "react-native";
 import { COLORS, RADIUS } from "../constants/theme";
+import Loader from "./Loader";
 
 type ConfirmButtonStyle = "default" | "destructive" | "warning";
 
@@ -84,7 +85,7 @@ export default function ConfirmModal({
             disabled={loading}
           >
             {loading && pressedButton === "confirm" ? (
-              <ActivityIndicator color={(confirmVisuals.text as any).color} size="small" />
+              <Loader color={(confirmVisuals.text as any).color} />
             ) : (
               <Text style={[styles.buttonText, confirmVisuals.text]}>{confirmText}</Text>
             )}
@@ -97,7 +98,7 @@ export default function ConfirmModal({
               disabled={loading}
             >
               {loading && pressedButton === "extra" ? (
-                <ActivityIndicator color={(extraVisuals.text as any).color} size="small" />
+                <Loader color={(extraVisuals.text as any).color} />
               ) : (
                 <Text style={[styles.buttonText, extraVisuals.text]}>{extraButton.text}</Text>
               )}

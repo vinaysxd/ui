@@ -4,7 +4,6 @@ import {
   Text,
   ScrollView,
   FlatList,
-  ActivityIndicator,
   RefreshControl,
   TouchableOpacity,
   StyleSheet,
@@ -26,6 +25,7 @@ import PhotoThumb from "../../../src/components/PhotoThumb";
 import { COLORS, RADIUS } from "../../../src/constants/theme";
 import ScreenContainer from "../../../src/components/ScreenContainer";
 import PaginationControls from "../../../src/components/PaginationControls";
+import Loader from "../../../src/components/Loader";
 
 type Tab = "details" | "attendance" | "notes";
 
@@ -95,7 +95,7 @@ export default function StaffSiteDetailScreen() {
   if (loading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" color={COLORS.gold} />
+        <Loader size="large" />
       </View>
     );
   }
@@ -204,7 +204,7 @@ function AttendanceHistory({ siteId }: { siteId: string }) {
   if (loading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" color={COLORS.gold} />
+        <Loader size="large" />
       </View>
     );
   }

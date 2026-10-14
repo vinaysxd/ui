@@ -1,9 +1,10 @@
-import { View, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
+import Loader from "../src/components/Loader";
 
 export default function Index() {
   return (
     <View style={styles.container}>
-      <ActivityIndicator size="large" />
+      <Loader size="large" />
     </View>
   );
 }

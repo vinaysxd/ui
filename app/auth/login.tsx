@@ -3,7 +3,6 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  ActivityIndicator,
   Image,
   StyleSheet,
   KeyboardAvoidingView,
@@ -15,6 +14,7 @@ import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { login } from '../../src/services/auth.service';
 import { showError } from '../../src/utils/toast';
+import Loader from "../../src/components/Loader";
 
 export default function LoginScreen() {
   const [email, setEmail] = useState<string>("");
@@ -85,7 +85,7 @@ export default function LoginScreen() {
 
         <TouchableOpacity style={styles.loginButton} onPress={loginHandler} disabled={loading}>
           {loading ? (
-            <ActivityIndicator color="#000000" />
+            <Loader tone="dark" />
           ) : (
             <Text style={styles.loginButtonText}>LOGIN</Text>
           )}

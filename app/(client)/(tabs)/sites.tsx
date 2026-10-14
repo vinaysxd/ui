@@ -4,7 +4,6 @@ import {
   Text,
   TextInput,
   FlatList,
-  ActivityIndicator,
   RefreshControl,
   TouchableOpacity,
   StyleSheet,
@@ -14,6 +13,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { getClientSites, Site } from "../../../src/services/sites.service";
 import { showError } from "../../../src/utils/toast";
 import { COLORS, RADIUS } from "../../../src/constants/theme";
+import Loader from "../../../src/components/Loader";
 
 export default function ClientSitesScreen() {
   const router = useRouter();
@@ -58,7 +58,7 @@ export default function ClientSitesScreen() {
   if (loading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" color={COLORS.gold} />
+        <Loader size="large" />
       </View>
     );
   }

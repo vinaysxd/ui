@@ -4,7 +4,6 @@ import {
   Text,
   TextInput,
   FlatList,
-  ActivityIndicator,
   RefreshControl,
   TouchableOpacity,
   StyleSheet,
@@ -18,6 +17,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { getAllSites, Site } from "../../../src/services/sites.service";
 import { showError } from "../../../src/utils/toast";
 import { COLORS, RADIUS } from "../../../src/constants/theme";
+import Loader from "../../../src/components/Loader";
 
 const COLUMN_FLEX = { name: 2, address: 2.5, client: 1.8, status: 1 };
 
@@ -111,7 +111,7 @@ export default function SitesScreen() {
   if (loading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" color={COLORS.gold} />
+        <Loader size="large" />
       </View>
     );
   }

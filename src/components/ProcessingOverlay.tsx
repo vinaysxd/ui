@@ -1,12 +1,13 @@
-import { View, Text, ActivityIndicator, StyleSheet } from "react-native";
+import { View, Text, StyleSheet } from "react-native";
 import { COLORS } from "../constants/theme";
+import Loader from "./Loader";
 
 // Full-screen blocker shown while a clock in / clock out request is in flight.
 export default function ProcessingOverlay({ visible }: { visible: boolean }) {
   if (!visible) return null;
   return (
     <View style={styles.overlay}>
-      <ActivityIndicator size="large" color={COLORS.gold} />
+      <Loader size="large" />
       <Text style={styles.text}>Processing...</Text>
     </View>
   );

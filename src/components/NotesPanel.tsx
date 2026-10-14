@@ -4,7 +4,6 @@ import {
   Text,
   TextInput,
   FlatList,
-  ActivityIndicator,
   RefreshControl,
   TouchableOpacity,
   Pressable,
@@ -26,6 +25,7 @@ import { showSuccess, showError } from "../utils/toast";
 import { formatDateTime } from "../utils/datetime";
 import { COLORS, RADIUS } from "../constants/theme";
 import ConfirmModal from "./ConfirmModal";
+import Loader from "./Loader";
 
 interface NotesPanelProps {
   siteId: string | null;
@@ -144,7 +144,7 @@ export default function NotesPanel({ siteId, active = true, role = "staff" }: No
     >
       {loading ? (
         <View style={styles.centered}>
-          <ActivityIndicator size="large" color={COLORS.gold} />
+          <Loader size="large" />
         </View>
       ) : (
         <FlatList keyboardShouldPersistTaps="handled"
@@ -183,7 +183,7 @@ export default function NotesPanel({ siteId, active = true, role = "staff" }: No
             disabled={submitting || !noteText.trim()}
           >
             {submitting ? (
-              <ActivityIndicator color="#1A1A1A" size="small" />
+              <Loader tone="dark" />
             ) : (
               <Ionicons name="send" size={18} color="#1A1A1A" />
             )}

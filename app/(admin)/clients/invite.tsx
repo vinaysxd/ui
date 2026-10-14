@@ -4,7 +4,6 @@ import {
   Text,
   TextInput,
   ScrollView,
-  ActivityIndicator,
   TouchableOpacity,
   StyleSheet,
 } from "react-native";
@@ -15,6 +14,7 @@ import { showSuccess, showError } from "../../../src/utils/toast";
 import { COLORS, RADIUS } from "../../../src/constants/theme";
 import ScreenContainer from "../../../src/components/ScreenContainer";
 import { LOADING_STYLE } from "../../../src/constants/ui";
+import Loader from "../../../src/components/Loader";
 
 export default function InviteClientScreen() {
   const router = useRouter();
@@ -132,7 +132,7 @@ export default function InviteClientScreen() {
             /> 
             <TouchableOpacity style={[styles.submitButton, submitting && LOADING_STYLE]} onPress={handleSubmit} disabled={submitting}>
               {submitting ? (
-                <ActivityIndicator color="#1A1A1A" />
+                <Loader tone="dark" />
               ) : (
                 <Text style={styles.submitButtonText}>SEND INVITATION</Text>
               )}
