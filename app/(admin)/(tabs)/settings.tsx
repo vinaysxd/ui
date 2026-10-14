@@ -5,7 +5,6 @@ import {
   Image,
   TextInput,
   ScrollView,
-  ActivityIndicator,
   TouchableOpacity,
   StyleSheet,
   AppState,
@@ -27,6 +26,7 @@ import { COLORS, RADIUS } from "../../../src/constants/theme";
 import { getErrorMessage } from "../../../src/constants/errors";
 import api from "../../../src/lib/api";
 import { LOADING_STYLE } from "../../../src/constants/ui";
+import Loader from "../../../src/components/Loader";
 
 const QB_GREEN = "#2CA01C";
 
@@ -226,7 +226,7 @@ export default function SettingsScreen() {
   if (loading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" color={COLORS.gold} />
+        <Loader size="large" />
       </View>
     );
   }
@@ -266,7 +266,7 @@ export default function SettingsScreen() {
               disabled={uploading}
             >
               {uploading ? (
-                <ActivityIndicator size="small" color={COLORS.gold} />
+                <Loader />
               ) : (
                 <Text style={styles.changePhotoButtonText}>Change Photo</Text>
               )}
@@ -314,7 +314,7 @@ export default function SettingsScreen() {
               </TouchableOpacity>
               <TouchableOpacity style={[styles.saveButton, saving && LOADING_STYLE]} onPress={handleSave} disabled={saving}>
                 {saving ? (
-                  <ActivityIndicator size="small" color="#1A1A1A" />
+                  <Loader tone="dark" />
                 ) : (
                   <Text style={styles.saveButtonText}>Save</Text>
                 )}
@@ -338,7 +338,7 @@ export default function SettingsScreen() {
       <View style={styles.section}>
         {qbLoading ? (
           <View style={styles.qbLoadingRow}>
-            <ActivityIndicator color={COLORS.gold} size="small" />
+            <Loader />
           </View>
         ) : qbConnected ? (
           <View style={styles.qbRow}>
@@ -352,7 +352,7 @@ export default function SettingsScreen() {
               disabled={qbActionLoading}
             >
               {qbActionLoading ? (
-                <ActivityIndicator size="small" color={COLORS.danger} />
+                <Loader tone="danger" />
               ) : (
                 <Text style={styles.qbDisconnectButtonText}>Disconnect</Text>
               )}
@@ -369,7 +369,7 @@ export default function SettingsScreen() {
               disabled={qbActionLoading}
             >
               {qbActionLoading ? (
-                <ActivityIndicator size="small" color="#FFFFFF" />
+                <Loader tone="light" />
               ) : (
                 <>
                   <Ionicons name="cash-outline" size={18} color="#FFFFFF" />
@@ -384,7 +384,7 @@ export default function SettingsScreen() {
       <Text style={styles.sectionLabel}>Danger Zone</Text>
       <TouchableOpacity style={[styles.logoutButton, loggingOut && LOADING_STYLE]} onPress={handleLogout} disabled={loggingOut}>
         {loggingOut ? (
-          <ActivityIndicator color={COLORS.danger} />
+          <Loader tone="danger" />
         ) : (
           <Text style={styles.logoutButtonText}>Logout</Text>
         )}

@@ -5,7 +5,6 @@ import {
   Text,
   TextInput,
   ScrollView,
-  ActivityIndicator,
   TouchableOpacity,
   Pressable,
   StyleSheet,
@@ -43,6 +42,7 @@ import ScreenContainer from "../../../src/components/ScreenContainer";
 import ConfirmModal from "../../../src/components/ConfirmModal";
 import PhotoThumb from "../../../src/components/PhotoThumb";
 import { LOADING_STYLE } from "../../../src/constants/ui";
+import Loader from "../../../src/components/Loader";
 
 const ATTENDANCE_PAGE_SIZE = 10;
 
@@ -474,7 +474,7 @@ export default function SiteDetailScreen() {
   if (loading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" color={COLORS.gold} />
+        <Loader size="large" />
       </View>
     );
   }
@@ -616,7 +616,7 @@ export default function SiteDetailScreen() {
                   <>
                     <TouchableOpacity style={[styles.saveButton, saving && LOADING_STYLE]} onPress={handleSave} disabled={saving}>
                       {saving ? (
-                        <ActivityIndicator color="#1A1A1A" />
+                        <Loader tone="dark" />
                       ) : (
                         <Text style={styles.saveButtonText}>Save</Text>
                       )}
@@ -644,7 +644,7 @@ export default function SiteDetailScreen() {
                         disabled={reactivating}
                       >
                         {reactivating ? (
-                          <ActivityIndicator color={COLORS.gold} />
+                          <Loader />
                         ) : (
                           <Text style={styles.reactivateButtonText}>Reactivate</Text>
                         )}
@@ -696,7 +696,7 @@ export default function SiteDetailScreen() {
               </View>
 
               {assignedStaffLoading ? (
-                <ActivityIndicator style={styles.staffLoading} color={COLORS.gold} />
+                <Loader style={styles.staffLoading} />
               ) : assignedStaff.length === 0 ? (
                 <Text style={styles.emptyText}>No staff assigned to this site.</Text>
               ) : (
@@ -733,7 +733,7 @@ export default function SiteDetailScreen() {
                         disabled={unassigningId !== ""}
                       >
                         {unassigningId === member.id ? (
-                          <ActivityIndicator color={COLORS.gold} size="small" />
+                          <Loader />
                         ) : (
                           <Text style={styles.unassignButtonText}>Unassign</Text>
                         )}
@@ -748,7 +748,7 @@ export default function SiteDetailScreen() {
           {activeTab === "attendance" && (
             <>
               {attendanceLoading ? (
-                <ActivityIndicator style={styles.staffLoading} color={COLORS.gold} />
+                <Loader style={styles.staffLoading} />
               ) : attendance.length === 0 ? (
                 <Text style={styles.emptyText}>No attendance records.</Text>
               ) : (
@@ -855,7 +855,7 @@ export default function SiteDetailScreen() {
           {activeTab === "notes" && (
             <>
               {notesLoading ? (
-                <ActivityIndicator style={styles.staffLoading} color={COLORS.gold} />
+                <Loader style={styles.staffLoading} />
               ) : notes.length === 0 ? (
                 <Text style={styles.emptyText}>No notes for this site.</Text>
               ) : (
@@ -924,7 +924,7 @@ export default function SiteDetailScreen() {
               <Text style={styles.sectionTitle}>Tasks</Text>
               <View style={styles.goldDivider} />
               {tasksLoading && !tasksRefreshing ? (
-                <ActivityIndicator style={styles.staffLoading} color={COLORS.gold} />
+                <Loader style={styles.staffLoading} />
               ) : tasks.length === 0 ? (
                 <Text style={styles.emptyText}>No tasks added yet</Text>
               ) : (
@@ -957,7 +957,7 @@ export default function SiteDetailScreen() {
                   disabled={addingTask}
                 >
                   {addingTask ? (
-                    <ActivityIndicator color="#000000" size="small" />
+                    <Loader tone="dark" />
                   ) : (
                     <Text style={styles.addTaskButtonText}>Add</Text>
                   )}
@@ -1008,7 +1008,7 @@ export default function SiteDetailScreen() {
                 </TouchableOpacity>
               </View>
               {allStaffLoading ? (
-                <ActivityIndicator style={styles.staffLoading} color={COLORS.gold} />
+                <Loader style={styles.staffLoading} />
               ) : (
                 <FlatList keyboardShouldPersistTaps="handled"
                   data={unassignedActiveStaff}
@@ -1025,7 +1025,7 @@ export default function SiteDetailScreen() {
                         disabled={assigningId !== ""}
                       >
                         {assigningId === item.profile_id ? (
-                          <ActivityIndicator color="#1A1A1A" size="small" />
+                          <Loader tone="dark" />
                         ) : (
                           <Text style={styles.assignRowButtonText}>Assign</Text>
                         )}

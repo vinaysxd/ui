@@ -42,7 +42,7 @@ function Sidebar() {
               style={[styles.navItem, active && styles.navItemActive]}
               onPress={() => router.replace(item.href)}
             >
-              <Ionicons name={item.icon} size={18} color={color} />
+              <Ionicons name={item.icon} size={20} color={color} />
               <Text style={[styles.navLabel, { color }]}>{item.label}</Text>
             </TouchableOpacity>
           );
@@ -143,19 +143,14 @@ const styles = StyleSheet.create({
     gap: 12,
     paddingVertical: 14,
     paddingHorizontal: 20,
-    borderTopRightRadius: RADIUS.md,
-    borderBottomRightRadius: RADIUS.md,
-    borderLeftWidth: 2,
-    borderLeftColor: "transparent",
+    borderRadius: RADIUS.md,
   },
   navItemActive: {
     backgroundColor: COLORS.accentBg,
-    borderLeftColor: COLORS.gold,
   },
   navLabel: {
-    fontSize: 13,
-    letterSpacing: 1.5,
-    textTransform: "uppercase",
+    fontSize: 16,
+    letterSpacing: 0.3,
   },
   sidebarBottom: {
     paddingHorizontal: 20,

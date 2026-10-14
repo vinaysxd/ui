@@ -4,7 +4,6 @@ import {
   Text,
   FlatList,
   ScrollView,
-  ActivityIndicator,
   RefreshControl,
   TouchableOpacity,
   Modal,
@@ -28,6 +27,7 @@ import {
 import { getErrorMessage } from "../../../src/constants/errors";
 import { showError } from "../../../src/utils/toast";
 import { COLORS, RADIUS } from "../../../src/constants/theme";
+import Loader from "../../../src/components/Loader";
 
 type Tab = "invoices" | "quotes" | "statement";
 type DocStatus = "PAID" | "UNPAID" | "PENDING";
@@ -316,7 +316,7 @@ export default function ClientBillingScreen() {
 
   const renderBody = () => {
     if (loading) {
-      return <ActivityIndicator style={styles.inlineLoader} size="large" color={COLORS.gold} />;
+      return <Loader size="large" style={styles.inlineLoader} />;
     }
     if (notLinked) {
       return (
@@ -430,7 +430,7 @@ export default function ClientBillingScreen() {
                   disabled={downloadingId === selectedDoc.data.Id}
                 >
                   {downloadingId === selectedDoc.data.Id ? (
-                    <ActivityIndicator color="#1A1A1A" />
+                    <Loader tone="dark" />
                   ) : (
                     <>
                       <Ionicons name="download-outline" size={18} color="#1A1A1A" />

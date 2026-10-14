@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { View, Image, ActivityIndicator, StyleSheet } from "react-native";
+import { View, Image, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { getSignedPhotoUrl } from "../services/attendance.service";
 import { COLORS, RADIUS } from "../constants/theme";
+import Loader from "./Loader";
 
 interface PhotoThumbProps {
   path: string | null;
@@ -55,7 +56,7 @@ export default function PhotoThumb({ path }: PhotoThumbProps) {
   if (loading) {
     return (
       <View style={styles.thumbPlaceholder}>
-        <ActivityIndicator size="small" color={COLORS.textMuted} />
+        <Loader tone="muted" />
       </View>
     );
   }

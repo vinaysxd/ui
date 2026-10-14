@@ -4,7 +4,6 @@ import {
   Text,
   TextInput,
   ScrollView,
-  ActivityIndicator,
   TouchableOpacity,
   StyleSheet,
   Modal,
@@ -19,6 +18,7 @@ import { showSuccess, showError } from "../../../src/utils/toast";
 import { COLORS, RADIUS } from "../../../src/constants/theme";
 import ScreenContainer from "../../../src/components/ScreenContainer";
 import { LOADING_STYLE } from "../../../src/constants/ui";
+import Loader from "../../../src/components/Loader";
 
 export default function CreateSiteScreen() {
   const router = useRouter();
@@ -206,7 +206,7 @@ export default function CreateSiteScreen() {
               disabled={locating || submitting}
             >
               {locating ? (
-                <ActivityIndicator color={COLORS.gold} size="small" />
+                <Loader />
               ) : (
                 <>
                   <Ionicons name="location-outline" size={18} color={COLORS.gold} />
@@ -218,7 +218,7 @@ export default function CreateSiteScreen() {
             <View style={styles.fieldSpacing}>
               <Text style={styles.label}>Client</Text>
               {clientsLoading ? (
-                <ActivityIndicator style={styles.clientLoading} color={COLORS.gold} />
+                <Loader style={styles.clientLoading} />
               ) : (
                 <TouchableOpacity
                   style={[styles.dropdown, submitting && LOADING_STYLE]}
@@ -235,7 +235,7 @@ export default function CreateSiteScreen() {
 
             <TouchableOpacity style={[styles.submitButton, submitting && LOADING_STYLE]} onPress={handleSubmit} disabled={submitting}>
               {submitting ? (
-                <ActivityIndicator color="#1A1A1A" />
+                <Loader tone="dark" />
               ) : (
                 <Text style={styles.submitButtonText}>CREATE SITE</Text>
               )}

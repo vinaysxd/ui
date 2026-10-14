@@ -4,7 +4,6 @@ import {
   Text,
   TextInput,
   ScrollView,
-  ActivityIndicator,
   TouchableOpacity,
   StyleSheet,
 } from "react-native";
@@ -25,6 +24,7 @@ import { COLORS, RADIUS } from "../../../src/constants/theme";
 import ScreenContainer from "../../../src/components/ScreenContainer";
 import ConfirmModal from "../../../src/components/ConfirmModal";
 import { LOADING_STYLE } from "../../../src/constants/ui";
+import Loader from "../../../src/components/Loader";
 
 interface QBCustomerResult {
   qb_customer_id: string;
@@ -257,7 +257,7 @@ export default function ClientDetailScreen() {
   if (loading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" color={COLORS.gold} />
+        <Loader size="large" />
       </View>
     );
   }
@@ -381,7 +381,7 @@ export default function ClientDetailScreen() {
                       disabled={qbUnlinking}
                     >
                       {qbUnlinking ? (
-                        <ActivityIndicator color={COLORS.danger} size="small" />
+                        <Loader tone="danger" />
                       ) : (
                         <Text style={styles.qbUnlinkButtonText}>Unlink</Text>
                       )}
@@ -398,7 +398,7 @@ export default function ClientDetailScreen() {
                     />
 
                     {qbSearching ? (
-                      <ActivityIndicator style={styles.qbSearchLoading} color={COLORS.gold} size="small" />
+                      <Loader style={styles.qbSearchLoading} />
                     ) : qbSearchResults.length > 0 ? (
                       <View style={styles.qbDropdown}>
                         {qbSearchResults.map((customer) => (
@@ -426,7 +426,7 @@ export default function ClientDetailScreen() {
                 <>
                   <TouchableOpacity style={[styles.saveButton, saving && LOADING_STYLE]} onPress={handleSave} disabled={saving}>
                     {saving ? (
-                      <ActivityIndicator color="#1A1A1A" />
+                      <Loader tone="dark" />
                     ) : (
                       <Text style={styles.saveButtonText}>Save</Text>
                     )}
@@ -454,7 +454,7 @@ export default function ClientDetailScreen() {
                       disabled={reactivating}
                     >
                       {reactivating ? (
-                        <ActivityIndicator color={COLORS.gold} />
+                        <Loader />
                       ) : (
                         <Text style={styles.reactivateButtonText}>Reactivate</Text>
                       )}
@@ -468,7 +468,7 @@ export default function ClientDetailScreen() {
           {activeTab === "sites" && (
             <>
               {sitesLoading ? (
-                <ActivityIndicator style={styles.sitesLoading} color={COLORS.gold} />
+                <Loader style={styles.sitesLoading} />
               ) : assignedSites.length === 0 ? (
                 <Text style={styles.emptyText}>No sites assigned</Text>
               ) : (

@@ -3,16 +3,16 @@ import {
   View,
   Text,
   ScrollView,
-  ActivityIndicator,
   RefreshControl,
   StyleSheet,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import StatCard from "../../../src/components/admin/StatCard";
 import { getClientSites, Site } from "../../../src/services/sites.service";
 import { getClientHistory, Attendance } from "../../../src/services/attendance.service";
 import { showError } from "../../../src/utils/toast";
 import { formatDateTime } from "../../../src/utils/datetime";
 import { COLORS, RADIUS } from "../../../src/constants/theme";
+import Loader from "../../../src/components/Loader";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -75,7 +75,7 @@ export default function ClientHomeScreen() {
   if (loading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" color={COLORS.gold} />
+        <Loader size="large" />
       </View>
     );
   }
@@ -124,26 +124,6 @@ export default function ClientHomeScreen() {
   );
 }
 
-function StatCard({
-  icon,
-  label,
-  value,
-}: {
-  icon: keyof typeof Ionicons.glyphMap;
-  label: string;
-  value: number;
-}) {
-  return (
-    <View style={styles.statCard}>
-      <View style={styles.statIconCircle}>
-        <Ionicons name={icon} size={18} color={COLORS.gold} />
-      </View>
-      <Text style={styles.statValue}>{value}</Text>
-      <Text style={styles.statLabel}>{label}</Text>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -167,38 +147,8 @@ const styles = StyleSheet.create({
   },
   statsGrid: {
     flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 12,
+    gap: 8,
     marginBottom: 24,
-  },
-  statCard: {
-    width: "47%",
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: RADIUS.md,
-    padding: 16,
-  },
-  statIconCircle: {
-    width: 34,
-    height: 34,
-    borderRadius: RADIUS.full,
-    backgroundColor: "#3A3520",
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 10,
-  },
-  statValue: {
-    fontSize: 28,
-    fontWeight: "bold",
-    color: COLORS.textPrimary,
-  },
-  statLabel: {
-    fontSize: 12,
-    color: COLORS.textSecondary,
-    marginTop: 4,
-    textTransform: "uppercase",
-    letterSpacing: 1,
   },
   sectionTitle: {
     fontSize: 11,

@@ -4,7 +4,6 @@ import {
   Text,
   TextInput,
   ScrollView,
-  ActivityIndicator,
   TouchableOpacity,
   StyleSheet,
 } from "react-native";
@@ -24,6 +23,7 @@ import { COLORS, RADIUS } from "../../../src/constants/theme";
 import ScreenContainer from "../../../src/components/ScreenContainer";
 import ConfirmModal from "../../../src/components/ConfirmModal";
 import { LOADING_STYLE } from "../../../src/constants/ui";
+import Loader from "../../../src/components/Loader";
 
 type Tab = "details" | "sites" | "attendance";
 
@@ -189,7 +189,7 @@ export default function StaffDetailScreen() {
   if (loading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" color={COLORS.gold} />
+        <Loader size="large" />
       </View>
     );
   }
@@ -284,7 +284,7 @@ export default function StaffDetailScreen() {
                 <>
                   <TouchableOpacity style={[styles.saveButton, saving && LOADING_STYLE]} onPress={handleSave} disabled={saving}>
                     {saving ? (
-                      <ActivityIndicator color="#1A1A1A" />
+                      <Loader tone="dark" />
                     ) : (
                       <Text style={styles.saveButtonText}>Save</Text>
                     )}
@@ -312,7 +312,7 @@ export default function StaffDetailScreen() {
                       disabled={reactivating}
                     >
                       {reactivating ? (
-                        <ActivityIndicator color={COLORS.gold} />
+                        <Loader />
                       ) : (
                         <Text style={styles.reactivateButtonText}>Reactivate</Text>
                       )}

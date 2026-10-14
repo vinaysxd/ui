@@ -4,7 +4,6 @@ import {
   Text,
   ScrollView,
   FlatList,
-  ActivityIndicator,
   RefreshControl,
   TouchableOpacity,
   StyleSheet,
@@ -21,6 +20,7 @@ import NotesPanel from "../../../src/components/NotesPanel";
 import { COLORS, RADIUS } from "../../../src/constants/theme";
 import PaginationControls from "../../../src/components/PaginationControls";
 import ScreenContainer from "../../../src/components/ScreenContainer";
+import Loader from "../../../src/components/Loader";
 
 type Tab = "details" | "attendance" | "notes" | "tasks";
 
@@ -78,7 +78,7 @@ export default function ClientSiteDetailScreen() {
   if (loading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" />
+        <Loader size="large" />
       </View>
     );
   }
@@ -209,7 +209,7 @@ function AttendanceHistory({ siteId }: { siteId: string }) {
   if (loading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" />
+        <Loader size="large" />
       </View>
     );
   }
@@ -272,7 +272,7 @@ function TasksList({ siteId }: { siteId: string }) {
   if (loading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" color={COLORS.gold} />
+        <Loader size="large" />
       </View>
     );
   }

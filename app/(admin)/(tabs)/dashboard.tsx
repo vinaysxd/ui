@@ -3,22 +3,18 @@ import {
   View,
   Text,
   ScrollView,
-  ActivityIndicator,
   RefreshControl,
-  TouchableOpacity,
   StyleSheet,
   useWindowDimensions,
 } from "react-native";
-import { useRouter } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { getAdminDashboard, AdminDashboard } from "../../../src/services/dashboard.service";
 import { getRecentAttendance, Attendance } from "../../../src/services/attendance.service";
-import { logout } from "../../../src/services/auth.service";
 import { COLORS, RADIUS } from "../../../src/constants/theme";
 import StatCard from "../../../src/components/admin/StatCard";
 import AttendanceCard from "../../../src/components/admin/AttendanceCard";
 import AttendanceRow, { COLUMN_FLEX } from "../../../src/components/admin/AttendanceRow";
+import Loader from "../../../src/components/Loader";
 
 const MONTHS = [
   "Jan", "Feb", "Mar", "Apr", "May", "Jun",
@@ -39,7 +35,6 @@ const STAT_ITEMS = [
 ] as const;
 
 export default function AdminDashboardScreen() {
-  const router = useRouter();
   const { width } = useWindowDimensions();
   const isDesktop = width >= 768;
 
@@ -74,20 +69,10 @@ export default function AdminDashboardScreen() {
     fetchDashboard();
   };
 
-  const handleLogout = async () => {
-    try {
-      await logout();
-    } catch {
-      // ignore logout errors, clear local session regardless
-    } finally {
-      router.replace("/auth/login");
-    }
-  };
-
   if (loading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" color={COLORS.gold} />
+        <Loader size="large" />
       </View>
     );
   }
@@ -98,9 +83,6 @@ export default function AdminDashboardScreen() {
         <Text style={styles.greeting}>Hello, Admin 👋</Text>
         <Text style={styles.dateSubtitle}>{formatToday()}</Text>
       </View>
-      <TouchableOpacity onPress={handleLogout}>
-        <Ionicons name="log-out-outline" size={24} color={COLORS.gold} />
-      </TouchableOpacity>
     </View>
   );
 
@@ -256,13 +238,10 @@ const styles = StyleSheet.create({
   statsRowWeb: {
     flexDirection: "row",
     gap: 16,
-    backgroundColor: COLORS.surfaceElevated,
-    borderRadius: RADIUS.lg,
-    padding: 20,
     marginBottom: 28,
   },
   statCardWeb: {
-    flex: 1,
+    padding: 20,
   },
   table: {
     borderTopWidth: 1,
@@ -293,16 +272,8 @@ const styles = StyleSheet.create({
   },
   statsGridMobile: {
     flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-between",
+    gap: 8,
     marginBottom: 24,
   },
-  statCardMobile: {
-    width: "48%",
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: RADIUS.lg,
-    marginBottom: 12,
-  },
+  statCardMobile: {},
 });

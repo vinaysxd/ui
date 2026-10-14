@@ -4,7 +4,6 @@ import {
   Text,
   TextInput,
   FlatList,
-  ActivityIndicator,
   RefreshControl,
   TouchableOpacity,
   StyleSheet,
@@ -33,6 +32,7 @@ import ConfirmModal from "../../../src/components/ConfirmModal";
 import { COLORS, RADIUS } from "../../../src/constants/theme";
 import ProcessingOverlay from "../../../src/components/ProcessingOverlay";
 import { LOADING_STYLE } from "../../../src/constants/ui";
+import Loader from "../../../src/components/Loader";
 
 interface SiteWithDistance extends Site {
   distanceKm: number | null;
@@ -314,7 +314,7 @@ export default function StaffHomeScreen() {
   if (loading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" color={COLORS.gold} />
+        <Loader size="large" />
       </View>
     );
   }
@@ -450,7 +450,7 @@ export default function StaffHomeScreen() {
                     disabled={acting}
                   >
                     {acting ? (
-                      <ActivityIndicator color="#1A1A1A" size="small" />
+                      <Loader tone="dark" />
                     ) : (
                       <Text style={styles.clockInButtonText}>Clock In</Text>
                     )}

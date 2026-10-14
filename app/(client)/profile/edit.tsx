@@ -5,7 +5,6 @@ import {
   Image,
   View,
   ScrollView,
-  ActivityIndicator,
   TouchableOpacity,
   StyleSheet,
   Platform,
@@ -19,6 +18,7 @@ import { showSuccess, showError } from "../../../src/utils/toast";
 import { COLORS, RADIUS } from "../../../src/constants/theme";
 import ScreenContainer from "../../../src/components/ScreenContainer";
 import { LOADING_STYLE } from "../../../src/constants/ui";
+import Loader from "../../../src/components/Loader";
 
 const getInitials = (fullName: string): string => {
   const parts = fullName.trim().split(/\s+/).filter(Boolean);
@@ -134,7 +134,7 @@ export default function ClientEditProfileScreen() {
         <Text style={styles.title}>Edit Profile</Text>
 
         {loading ? (
-          <ActivityIndicator style={styles.loading} size="large" color={COLORS.gold} />
+          <Loader size="large" style={styles.loading} />
         ) : (
           <View style={styles.card}>
             <View style={styles.avatarSection}>
@@ -155,7 +155,7 @@ export default function ClientEditProfileScreen() {
                 disabled={uploading}
               >
                 {uploading ? (
-                  <ActivityIndicator color={COLORS.gold} size="small" />
+                  <Loader />
                 ) : (
                   <Text style={styles.changePhotoButtonText}>Change Photo</Text>
                 )}
@@ -219,7 +219,7 @@ export default function ClientEditProfileScreen() {
               </TouchableOpacity>
               <TouchableOpacity style={[styles.saveButton, saving && LOADING_STYLE]} onPress={handleSave} disabled={saving}>
                 {saving ? (
-                  <ActivityIndicator color="#1A1A1A" />
+                  <Loader tone="dark" />
                 ) : (
                   <Text style={styles.saveButtonText}>Save</Text>
                 )}
