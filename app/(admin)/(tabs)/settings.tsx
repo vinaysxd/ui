@@ -2,7 +2,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
-  Image,
   TextInput,
   ScrollView,
   TouchableOpacity,
@@ -27,6 +26,7 @@ import { getErrorMessage } from "../../../src/constants/errors";
 import api from "../../../src/lib/api";
 import { LOADING_STYLE } from "../../../src/constants/ui";
 import Loader from "../../../src/components/Loader";
+import { PressableImage } from "../../../src/components/ImageViewerModal";
 import ThemeToggle from "../../../src/components/ThemeToggle";
 
 const QB_GREEN = "#2CA01C";
@@ -247,8 +247,8 @@ export default function SettingsScreen() {
       {profile ? (
         <View style={styles.profileCard}>
           {topAvatarUri && !avatarLoadFailed ? (
-            <Image
-              source={{ uri: topAvatarUri }}
+            <PressableImage
+              uri={topAvatarUri}
               style={styles.avatarImage}
               onError={() => setAvatarLoadFailed(true)}
             />

@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
-import { View, Image, StyleSheet } from "react-native";
+import { View, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { getSignedPhotoUrl } from "../services/attendance.service";
 import { COLORS, RADIUS } from "../constants/theme";
 import Loader from "./Loader";
+import { PressableImage } from "./ImageViewerModal";
 
 interface PhotoThumbProps {
   path: string | null;
@@ -70,11 +71,11 @@ export default function PhotoThumb({ path }: PhotoThumbProps) {
   }
 
   return (
-    <Image
-      source={{ uri: signedUrl }}
+    <PressableImage
+      uri={signedUrl}
       style={styles.thumb}
-      onError={(e) => {
-        console.log("[PhotoThumb] Image failed to load:", signedUrl, e.nativeEvent?.error);
+      onError={() => {
+        console.log("[PhotoThumb] Image failed to load:", signedUrl);
         setFailed(true);
       }}
     />

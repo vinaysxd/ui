@@ -2,7 +2,6 @@ import { useCallback, useEffect, useState } from "react";
 import {
   Text,
   TextInput,
-  Image,
   View,
   ScrollView,
   TouchableOpacity,
@@ -19,6 +18,7 @@ import { COLORS, RADIUS } from "../../../src/constants/theme";
 import ScreenContainer from "../../../src/components/ScreenContainer";
 import { LOADING_STYLE } from "../../../src/constants/ui";
 import Loader from "../../../src/components/Loader";
+import { PressableImage } from "../../../src/components/ImageViewerModal";
 
 const getInitials = (fullName: string): string => {
   const parts = fullName.trim().split(/\s+/).filter(Boolean);
@@ -135,8 +135,8 @@ export default function StaffEditProfileScreen() {
           <>
             <View style={styles.avatarSection}>
               {avatarPreviewUri && !avatarLoadFailed ? (
-                <Image
-                  source={{ uri: avatarPreviewUri }}
+                <PressableImage
+                  uri={avatarPreviewUri}
                   style={styles.avatarImage}
                   onError={() => setAvatarLoadFailed(true)}
                 />

@@ -2,7 +2,6 @@ import { useCallback, useEffect, useState } from "react";
 import {
   View,
   Text,
-  Image,
   ScrollView,
   RefreshControl,
   TouchableOpacity,
@@ -15,6 +14,7 @@ import { showError } from "../../../src/utils/toast";
 import { COLORS, RADIUS } from "../../../src/constants/theme";
 import { LOADING_STYLE } from "../../../src/constants/ui";
 import Loader from "../../../src/components/Loader";
+import { PressableImage } from "../../../src/components/ImageViewerModal";
 import ThemeToggle from "../../../src/components/ThemeToggle";
 
 const MONTHS = [
@@ -109,8 +109,8 @@ export default function StaffProfileScreen() {
     >
       <View style={styles.headerCard}>
         {profile.signed_avatar_url && !avatarLoadFailed ? (
-          <Image
-            source={{ uri: profile.signed_avatar_url }}
+          <PressableImage
+            uri={profile.signed_avatar_url}
             style={styles.avatarImage}
             onError={() => setAvatarLoadFailed(true)}
           />
