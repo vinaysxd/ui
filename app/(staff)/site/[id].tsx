@@ -258,7 +258,6 @@ function AttendanceCard({
 
   return (
     <TouchableOpacity style={styles.historyCard} onPress={onToggle} activeOpacity={0.7}>
-      <View style={styles.goldBar} />
       <View style={styles.historyCardHeader}>
         <Text style={styles.historyTime}>{formatDateTime(record.clock_in)}</Text>
         <View style={styles.historyHeaderRight}>
@@ -455,18 +454,15 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.surface,
     borderRadius: RADIUS.md,
     padding: 16,
-    paddingLeft: 20,
     marginBottom: 12,
     overflow: "hidden",
-  },
-  goldBar: {
-    position: "absolute",
-    left: 0,
-    top: 0,
-    bottom: 0,
-    width: 3,
-    borderRadius: RADIUS.full,
-    backgroundColor: COLORS.gold,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    shadowColor: "#000000",
+    shadowOpacity: COLORS.shadowOpacity,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 3,
   },
   historyCardHeader: {
     flexDirection: "row",

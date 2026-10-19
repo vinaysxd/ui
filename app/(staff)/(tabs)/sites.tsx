@@ -149,7 +149,6 @@ export default function StaffSitesScreen() {
             style={styles.card}
             onPress={() => router.push(`/(staff)/site/${item.id}`)}
           >
-            <View style={styles.goldBar} />
             <Text style={styles.name}>{item.name}</Text>
             <Text style={styles.detail}>{item.address}</Text>
             <Text style={styles.distance}>{formatDistance(item.distanceKm)}</Text>
@@ -210,15 +209,13 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 12,
     overflow: "hidden",
-  },
-  goldBar: {
-    position: "absolute",
-    left: 0,
-    top: 0,
-    bottom: 0,
-    width: 3,
-    borderRadius: RADIUS.full,
-    backgroundColor: COLORS.gold,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    shadowColor: "#000000",
+    shadowOpacity: COLORS.shadowOpacity,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 3,
   },
   name: {
     fontSize: 16,

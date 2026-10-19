@@ -17,6 +17,8 @@ export interface ProfileMe {
   company_name?: string | null;
   billing_address?: string | null;
   contact_person?: string | null;
+  qb_customer_id?: string | null;
+  qb_customer_name?: string | null;
   signed_avatar_url: string |null;
   created_at?: string;
 }

@@ -55,7 +55,7 @@ export default function PaginationControls({
 
 const styles = StyleSheet.create({
   totalText: {
-    color: "#666666",
+    color: COLORS.textMuted,
     fontSize: 12,
     marginBottom: 8,
     textAlign: "center",
@@ -67,7 +67,7 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   button: {
-    backgroundColor: "#242424",
+    backgroundColor: COLORS.surface,
     borderRadius: RADIUS.md,
     padding: 10,
   },
@@ -80,7 +80,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   pageText: {
-    color: "#FFFFFF",
+    color: COLORS.textPrimary,
     fontSize: 13,
   },
 });

@@ -305,7 +305,7 @@ export default function ClientDetailScreen() {
           {activeTab === "details" && (
             <>
               <View style={styles.section}>
-                <Row label="Email" value={client.email} />
+                <FieldInput label="Email" value={client.email} editable={false} />
                 <FieldInput
                   label="Full Name"
                   value={fullName}
@@ -325,16 +325,7 @@ export default function ClientDetailScreen() {
                   onFocus={() => setFocusedField("phone")}
                   onBlur={() => setFocusedField(null)}
                 />
-                <Row label="Role" value={client.role} />
-                <FieldInput
-                  label="Avatar URL"
-                  value={avatarUrl}
-                  onChangeText={setAvatarUrl}
-                  editable={isEditing}
-                  focused={focusedField === "avatarUrl"}
-                  onFocus={() => setFocusedField("avatarUrl")}
-                  onBlur={() => setFocusedField(null)}
-                />
+                <FieldInput label="Role" value={client.role} editable={false} />
                 <FieldInput
                   label="Company Name"
                   value={companyName}
@@ -362,7 +353,7 @@ export default function ClientDetailScreen() {
                   onFocus={() => setFocusedField("contactPerson")}
                   onBlur={() => setFocusedField(null)}
                 />
-                <Row label="Joined" value={client.created_at ? formatDate(client.created_at) : "—"} />
+                <FieldInput label="Joined" value={client.created_at ? formatDate(client.created_at) : "—"} editable={false} />
               </View>
 
               <Text style={styles.sectionTitle}>QuickBooks</Text>
@@ -478,7 +469,6 @@ export default function ClientDetailScreen() {
                     style={styles.card}
                     onPress={() => router.push(`/(admin)/sites/${site.id}`)}
                   >
-                    <View style={styles.goldBar} />
                     <View style={styles.cardHeader}>
                       <Text style={styles.cardTitle}>{site.name}</Text>
                       <View
@@ -845,7 +835,6 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
     borderRadius: RADIUS.md,
     padding: 16,
-    paddingLeft: 19,
     marginBottom: 12,
     overflow: "hidden",
     shadowColor: "#000",
@@ -853,15 +842,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.15,
     shadowRadius: 6,
     elevation: 2,
-  },
-  goldBar: {
-    position: "absolute",
-    left: 0,
-    top: 0,
-    bottom: 0,
-    width: 3,
-    borderRadius: RADIUS.full,
-    backgroundColor: COLORS.gold,
   },
   cardHeader: {
     flexDirection: "row",

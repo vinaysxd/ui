@@ -7,7 +7,10 @@ import { MD3DarkTheme, MD3LightTheme, adaptNavigationTheme, useTheme } from "rea
 import type { MD3Theme } from "react-native-paper";
 import { DarkTheme as NavigationDarkTheme, DefaultTheme as NavigationDefaultTheme } from "expo-router";
 import type { Theme as NavigationTheme } from "expo-router";
-import { COLORS, LIGHT_COLORS } from "../constants/theme";
+import { COLORS, LIGHT_COLORS, THEME_MODE } from "../constants/theme";
+
+// MD3 base follows the active app palette (see THEME_MODE in constants/theme).
+const APP_BASE = THEME_MODE === "dark" ? MD3DarkTheme : MD3LightTheme;
 
 /** Colour roles this app adds on top of the standard MD3 palette. */
 export interface AppExtraColors {
@@ -35,12 +38,12 @@ const withAlpha = (hex: string, alpha: number): string => {
 // "Theme mode" in DESIGN_RULES.md — but both are built for completeness and
 // because MD3DarkTheme/MD3LightTheme both exist upstream.
 export const darkTheme: AppTheme = {
-  ...MD3DarkTheme,
-  roundness: 10 / 3,
+  ...APP_BASE,
+  roundness: 8 / 3,
   colors: {
-    ...MD3DarkTheme.colors,
+    ...APP_BASE.colors,
     primary: COLORS.gold,
-    onPrimary: COLORS.background,
+    onPrimary: "#1A1A1A",
     primaryContainer: COLORS.accentBg,
     onPrimaryContainer: COLORS.goldLight,
     // No distinct secondary/tertiary hue exists in this app's palette (it's a
@@ -105,7 +108,7 @@ export const darkTheme: AppTheme = {
 // without redoing the token work later.
 export const lightTheme: AppTheme = {
   ...MD3LightTheme,
-  roundness: 10 / 3,
+  roundness: 8 / 3,
   colors: {
     ...MD3LightTheme.colors,
     primary: LIGHT_COLORS.goldInk,

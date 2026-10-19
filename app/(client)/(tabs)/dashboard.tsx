@@ -91,10 +91,10 @@ export default function ClientHomeScreen() {
       <Text style={styles.title}>Home</Text>
 
       <View style={styles.statsGrid}>
-        <StatCard icon="business-outline" label="Total Sites" value={stats.totalSites} />
-        <StatCard icon="calendar-outline" label="Staff Visits Today" value={stats.visitsToday} />
-        <StatCard icon="checkmark-done-outline" label="Active Staff Now" value={stats.activeNow} />
-        <StatCard icon="trending-up-outline" label="Visits This Week" value={stats.visitsThisWeek} />
+        <StatCard icon="business-outline" label="Total Sites" value={stats.totalSites} style={styles.statCard} />
+        <StatCard icon="calendar-outline" label="Staff Visits Today" value={stats.visitsToday} style={styles.statCard} />
+        <StatCard icon="checkmark-done-outline" label="Active Staff Now" value={stats.activeNow} style={styles.statCard} />
+        <StatCard icon="trending-up-outline" label="Visits This Week" value={stats.visitsThisWeek} style={styles.statCard} />
       </View>
 
       <Text style={styles.sectionTitle}>Recent Activity</Text>
@@ -103,7 +103,6 @@ export default function ClientHomeScreen() {
       ) : (
         recentActivity.map((record) => (
           <View key={record.id} style={styles.activityCard}>
-            <View style={styles.goldBar} />
             <View style={styles.activityHeader}>
               <Text style={styles.activityStaff}>{record.staff?.full_name ?? "Unknown staff"}</Text>
               {record.clock_out ? null : (
@@ -147,8 +146,13 @@ const styles = StyleSheet.create({
   },
   statsGrid: {
     flexDirection: "row",
+    flexWrap: "wrap",
     gap: 8,
     marginBottom: 24,
+  },
+  statCard: {
+    flexBasis: "48%",
+    flexGrow: 1,
   },
   sectionTitle: {
     fontSize: 11,
@@ -169,18 +173,13 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
     borderRadius: RADIUS.md,
     padding: 16,
-    paddingLeft: 20,
     marginBottom: 12,
     overflow: "hidden",
-  },
-  goldBar: {
-    position: "absolute",
-    left: 0,
-    top: 0,
-    bottom: 0,
-    width: 3,
-    borderRadius: RADIUS.full,
-    backgroundColor: COLORS.gold,
+    shadowColor: "#000000",
+    shadowOpacity: COLORS.shadowOpacity,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 3,
   },
   activityHeader: {
     flexDirection: "row",

@@ -89,17 +89,15 @@ const getQuoteStatus = (estimate: Estimate): { label: string; status: DocStatus 
 
 function getStatusStyle(status: DocStatus) {
   if (status === "PAID") {
-    return { bar: styles.statusBarPaid, badge: styles.badgePaid, badgeText: styles.badgePaidText };
+    return { badge: styles.badgePaid, badgeText: styles.badgePaidText };
   }
   if (status === "UNPAID") {
     return {
-      bar: styles.statusBarOverdue,
       badge: styles.badgeOverdue,
       badgeText: styles.badgeOverdueText,
     };
   }
   return {
-    bar: styles.statusBarPending,
     badge: styles.badgePending,
     badgeText: styles.badgePendingText,
   };
@@ -172,10 +170,12 @@ export default function ClientBillingScreen() {
     fetchTab(activeTab);
   };
 
-  const handleDownloadPdf = async (invoice: Invoice) => {
+  const handleDownloadPdf = async (doc: DetailDoc) => {
+    const invoice = doc.data;
+    const isQuote = doc.kind === "Quote";
     setDownloadingId(invoice.Id);
     try {
-      const response = await api.get(`/integrations/quickbooks/invoices/${invoice.Id}/pdf`, {
+      const response = await api.get(`/integrations/quickbooks/${isQuote ? "estimates" : "invoices"}/${invoice.Id}/pdf`, {
         responseType: "blob",
       });
       const blob: Blob = response.data;
@@ -187,18 +187,36 @@ export default function ClientBillingScreen() {
       }
 
       const base64 = await blobToBase64(blob);
-      const file = new File(Paths.cache, `invoice-${invoice.DocNumber || invoice.Id}.pdf`);
+      const file = new File(Paths.cache, `${isQuote ? "quote" : "invoice"}-${invoice.DocNumber || invoice.Id}.pdf`);
       file.write(base64, { encoding: "base64" });
 
       const canShare = await Sharing.isAvailableAsync();
       if (canShare) {
-        await Sharing.shareAsync(file.uri, { mimeType: "application/pdf", dialogTitle: "Invoice PDF" });
+        await Sharing.shareAsync(file.uri, { mimeType: "application/pdf", dialogTitle: isQuote ? "Quote PDF" : "Invoice PDF" });
       } else {
         showError("Sharing is not available on this device");
       }
     } catch (err: any) {
-      const code = err?.response?.data?.code;
-      showError(code === "QBO_003" ? "QuickBooks account is not linked" : getErrorMessage(code));
+      // The request uses responseType "blob", so an error body arrives as a Blob; parse it.
+      let body: any = err?.response?.data;
+      if (typeof Blob !== "undefined" && body instanceof Blob) {
+        try {
+          body = JSON.parse(await body.text());
+        } catch {
+          body = null;
+        }
+      }
+      const code = body?.code;
+      const status = err?.response?.status;
+      if (code === "QBO_003") {
+        showError("QuickBooks account is not linked");
+      } else if (code) {
+        showError(getErrorMessage(code));
+      } else if (status === 404) {
+        showError(`${isQuote ? "Quote" : "Invoice"} PDF isn't available (404)`);
+      } else {
+        showError(body?.message ?? err?.message ?? "Failed to download PDF");
+      }
     } finally {
       setDownloadingId(null);
     }
@@ -228,7 +246,6 @@ export default function ClientBillingScreen() {
             style={styles.card}
             onPress={() => setSelectedDoc({ kind: "Invoice", data: item })}
           >
-            <View style={[styles.statusBar, statusStyle.bar]} />
             <View style={styles.cardHeader}>
               <Text style={styles.invoiceNumber}>Invoice #{item.DocNumber}</Text>
               <View style={[styles.badge, statusStyle.badge]}>
@@ -258,7 +275,6 @@ export default function ClientBillingScreen() {
             style={styles.card}
             onPress={() => setSelectedDoc({ kind: "Quote", data: item })}
           >
-            <View style={[styles.statusBar, statusStyle.bar]} />
             <View style={styles.cardHeader}>
               <Text style={styles.invoiceNumber}>Quote #{item.DocNumber}</Text>
               <View style={[styles.badge, statusStyle.badge]}>
@@ -298,7 +314,6 @@ export default function ClientBillingScreen() {
       ListEmptyComponent={<Text style={styles.emptyText}>No transactions yet.</Text>}
       renderItem={({ item }) => (
         <View style={styles.card}>
-          <View style={[styles.statusBar, item.amount < 0 ? styles.statusBarPaid : styles.statusBarPending]} />
           <View style={styles.cardHeader}>
             <Text style={styles.invoiceNumber}>
               {item.type}
@@ -423,22 +438,20 @@ export default function ClientBillingScreen() {
                 )}
               </View>
 
-              {selectedDoc.kind === "Invoice" ? (
-                <TouchableOpacity
-                  style={styles.downloadButton}
-                  onPress={() => handleDownloadPdf(selectedDoc.data)}
-                  disabled={downloadingId === selectedDoc.data.Id}
-                >
-                  {downloadingId === selectedDoc.data.Id ? (
-                    <Loader tone="dark" />
-                  ) : (
-                    <>
-                      <Ionicons name="download-outline" size={18} color="#1A1A1A" />
-                      <Text style={styles.downloadButtonText}>Download PDF</Text>
-                    </>
-                  )}
-                </TouchableOpacity>
-              ) : null}
+              <TouchableOpacity
+                style={styles.downloadButton}
+                onPress={() => handleDownloadPdf(selectedDoc)}
+                disabled={downloadingId === selectedDoc.data.Id}
+              >
+                {downloadingId === selectedDoc.data.Id ? (
+                  <Loader tone="dark" />
+                ) : (
+                  <>
+                    <Ionicons name="download-outline" size={18} color="#1A1A1A" />
+                    <Text style={styles.downloadButtonText}>Download PDF</Text>
+                  </>
+                )}
+              </TouchableOpacity>
             </ScrollView>
           </View>
         ) : null}
@@ -517,6 +530,11 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
     borderRadius: RADIUS.md,
     padding: 16,
+    shadowColor: "#000000",
+    shadowOpacity: COLORS.shadowOpacity,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 3,
   },
   summaryLabel: {
     fontSize: 11,
@@ -577,17 +595,13 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
     borderRadius: RADIUS.md,
     padding: 16,
-    paddingLeft: 20,
     marginBottom: 12,
     overflow: "hidden",
-  },
-  statusBar: {
-    position: "absolute",
-    left: 0,
-    top: 0,
-    bottom: 0,
-    width: 3,
-    borderRadius: RADIUS.full,
+    shadowColor: "#000000",
+    shadowOpacity: COLORS.shadowOpacity,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 3,
   },
   cardHeader: {
     flexDirection: "row",
@@ -612,9 +626,6 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     letterSpacing: 1,
   },
-  statusBarPaid: { backgroundColor: COLORS.success },
-  statusBarPending: { backgroundColor: COLORS.warning },
-  statusBarOverdue: { backgroundColor: COLORS.danger },
   badgePaid: { backgroundColor: COLORS.successBg },
   badgePaidText: { color: COLORS.success },
   badgePending: { backgroundColor: COLORS.warningBg },

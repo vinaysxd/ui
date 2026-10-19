@@ -15,6 +15,7 @@ import { showError } from "../../../src/utils/toast";
 import { COLORS, RADIUS } from "../../../src/constants/theme";
 import { LOADING_STYLE } from "../../../src/constants/ui";
 import Loader from "../../../src/components/Loader";
+import ThemeToggle from "../../../src/components/ThemeToggle";
 
 const MONTHS = [
   "Jan", "Feb", "Mar", "Apr", "May", "Jun",
@@ -138,6 +139,11 @@ export default function StaffProfileScreen() {
         />
       </View>
 
+      <Text style={styles.sectionTitle}>App</Text>
+      <View style={styles.section}>
+        <ThemeToggle last />
+      </View>
+
       <TouchableOpacity
         style={styles.editButton}
         onPress={() => router.push("/(staff)/profile/edit")}
@@ -190,12 +196,17 @@ const styles = StyleSheet.create({
     padding: 24,
     alignItems: "center",
     marginBottom: 24,
+    shadowColor: "#000000",
+    shadowOpacity: COLORS.shadowOpacity,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 3,
   },
   avatar: {
     width: 72,
     height: 72,
     borderRadius: RADIUS.full,
-    backgroundColor: "#3A3520",
+    backgroundColor: COLORS.goldTint,
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 12,
@@ -211,6 +222,8 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.full,
     backgroundColor: COLORS.surfaceElevated,
     marginBottom: 12,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   name: {
     fontSize: 22,

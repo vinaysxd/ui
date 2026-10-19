@@ -10,7 +10,6 @@ interface AttendanceCardProps {
 export default function AttendanceCard({ record }: AttendanceCardProps) {
   return (
     <View style={styles.card}>
-      <View style={styles.goldBar} />
       <View style={styles.info}>
         <Text style={styles.staffName}>{record.staff?.full_name ?? "Unknown staff"}</Text>
         <Text style={styles.siteName}>{record.site?.name ?? "Unknown site"}</Text>
@@ -40,15 +39,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     marginBottom: 8,
     overflow: "hidden",
-  },
-  goldBar: {
-    position: "absolute",
-    left: 0,
-    top: 0,
-    bottom: 0,
-    width: 3,
-    borderRadius: RADIUS.full,
-    backgroundColor: COLORS.gold,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    shadowColor: "#000000",
+    shadowOpacity: COLORS.shadowOpacity,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 3,
   },
   info: {
     flex: 1,

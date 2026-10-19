@@ -435,7 +435,6 @@ export default function StaffHomeScreen() {
               style={[styles.card, isClockedIn && styles.cardBlocked]}
               pointerEvents={isClockedIn ? "none" : "auto"}
             >
-              <View style={styles.goldBar} />
               <Text style={styles.name}>{item.name}</Text>
               <Text style={styles.detail}>{item.address}</Text>
               <Text style={styles.distance}>{formatDistance(item.distanceKm, locationLoading)}</Text>
@@ -548,7 +547,7 @@ const styles = StyleSheet.create({
   },
   activeCard: {
     backgroundColor: COLORS.surface,
-    borderRadius: RADIUS.lg,
+    borderRadius: RADIUS.md,
     borderWidth: 1,
     borderColor: "rgba(201,168,76,0.35)",
     padding: 20,
@@ -633,6 +632,13 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 12,
     overflow: "hidden",
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    shadowColor: "#000000",
+    shadowOpacity: COLORS.shadowOpacity,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 3,
   },
   cardBlocked: {
     opacity: 0.4,
@@ -641,15 +647,6 @@ const styles = StyleSheet.create({
     color: COLORS.textMuted,
     fontSize: 12,
     marginTop: 12,
-  },
-  goldBar: {
-    position: "absolute",
-    left: 0,
-    top: 0,
-    bottom: 0,
-    width: 3,
-    borderRadius: RADIUS.full,
-    backgroundColor: COLORS.gold,
   },
   name: {
     fontSize: 16,

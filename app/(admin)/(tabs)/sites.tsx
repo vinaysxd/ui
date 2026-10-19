@@ -194,7 +194,7 @@ export default function SitesScreen() {
 
   if (isDesktop) {
     return (
-      <LinearGradient colors={["#1A1A1A", "#0D0D0D"]} style={styles.desktopScreen}>
+      <LinearGradient colors={[COLORS.surface, COLORS.surface]} style={styles.desktopScreen}>
         <View style={styles.desktopCard}>
           <FlatList keyboardShouldPersistTaps="handled"
             data={filteredActiveSites}
@@ -250,7 +250,6 @@ export default function SitesScreen() {
 function SiteCard({ item, onPress, inactive }: { item: Site; onPress: () => void; inactive?: boolean }) {
   return (
     <TouchableOpacity style={[styles.card, inactive && styles.cardInactive]} onPress={onPress}>
-      <View style={styles.goldBar} />
       <View style={styles.cardInfo}>
         <View style={styles.cardTopRow}>
           <Text style={styles.name}>{item.name}</Text>
@@ -351,25 +350,28 @@ const styles = StyleSheet.create({
   card: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: COLORS.surfaceElevated,
+    backgroundColor: COLORS.surface,
     borderWidth: 1,
     borderColor: COLORS.border,
     borderRadius: RADIUS.md,
     padding: 16,
     marginBottom: 12,
     overflow: "hidden",
+    shadowColor: "#000000",
+    shadowOpacity: COLORS.shadowOpacity,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 3,
   },
   cardInactive: {
     backgroundColor: COLORS.surface,
-  },
-  goldBar: {
-    position: "absolute",
-    left: 0,
-    top: 0,
-    bottom: 0,
-    width: 3,
-    borderRadius: RADIUS.full,
-    backgroundColor: COLORS.gold,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    shadowColor: "#000000",
+    shadowOpacity: COLORS.shadowOpacity,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 3,
   },
   cardInfo: {
     flex: 1,
@@ -428,6 +430,8 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.surfaceElevated,
     borderRadius: RADIUS.md,
     padding: 16,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   accordionHeaderText: {
     color: COLORS.textSecondary,
@@ -448,7 +452,7 @@ const styles = StyleSheet.create({
   desktopCard: {
     flex: 1,
     margin: 24, 
-    borderRadius: RADIUS.xl,
+    borderRadius: RADIUS.md,
     
     elevation: 8,
   },
@@ -496,5 +500,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.surfaceElevated,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
 });

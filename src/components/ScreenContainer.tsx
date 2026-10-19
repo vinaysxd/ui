@@ -1,6 +1,7 @@
 import { ReactNode } from "react";
 import { KeyboardAvoidingView, Platform, StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { COLORS } from "../constants/theme";
 
 type Props = {
   children: ReactNode;
@@ -21,6 +22,6 @@ export default function ScreenContainer({ children }: Props) {
 }
 
 const styles = StyleSheet.create({
-  flex: { flex: 1, backgroundColor: "#1A1A1A" },
-  safe: { flex: 1, backgroundColor: "#1A1A1A" },
+  flex: { flex: 1, backgroundColor: COLORS.surface },
+  safe: { flex: 1, backgroundColor: COLORS.surface },
 });

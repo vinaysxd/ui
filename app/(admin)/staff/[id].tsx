@@ -334,7 +334,6 @@ export default function StaffDetailScreen() {
                     style={styles.card}
                     onPress={() => router.push(`/(admin)/sites/${site.id}`)}
                   >
-                    <View style={styles.goldBar} />
                     <Text style={styles.cardTitle}>{site.name}</Text>
                     <Text style={styles.detail}>{site.address}</Text>
                   </TouchableOpacity>
@@ -353,7 +352,6 @@ export default function StaffDetailScreen() {
                   const afterCount = record.photos.filter((photo) => photo.after_photo_url).length;
                   return (
                     <View key={record.id} style={styles.card}>
-                      <View style={styles.goldBar} />
                       <View style={styles.cardHeader}>
                         <Text style={styles.cardTitle}>
                           {siteNameById[record.site_id] ?? "Unknown site"}
@@ -556,7 +554,6 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
     borderRadius: RADIUS.md,
     padding: 16,
-    paddingLeft: 19,
     marginBottom: 12,
     overflow: "hidden",
     shadowColor: "#000",
@@ -564,15 +561,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.15,
     shadowRadius: 6,
     elevation: 2,
-  },
-  goldBar: {
-    position: "absolute",
-    left: 0,
-    top: 0,
-    bottom: 0,
-    width: 3,
-    borderRadius: RADIUS.full,
-    backgroundColor: COLORS.gold,
   },
   cardHeader: {
     flexDirection: "row",

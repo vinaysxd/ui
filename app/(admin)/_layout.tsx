@@ -3,7 +3,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Stack, Slot, usePathname, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import Constants from "expo-constants";
-import { COLORS, SPACING, RADIUS } from "../../src/constants/theme";
+import { THEME_MODE, COLORS, SPACING, RADIUS } from "../../src/constants/theme";
 
 const NAV_ITEMS = [
   { name: "dashboard", label: "Dashboard", icon: "grid-outline" as const, href: "/(admin)/dashboard" as const },
@@ -73,7 +73,7 @@ function SidebarLayout() {
 function StackLayout() {
   return (
     <SafeAreaView style={styles.safeArea} edges={["top", "left", "right"]}>
-      <StatusBar backgroundColor="#1A1A1A" barStyle="light-content" />
+      <StatusBar backgroundColor={COLORS.surface} barStyle={THEME_MODE === "dark" ? "light-content" : "dark-content"} />
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="staff/[id]" />
@@ -97,7 +97,7 @@ export default function AdminLayout() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#1A1A1A",
+    backgroundColor: COLORS.surface,
   },
   root: {
     flex: 1,
@@ -105,6 +105,7 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+    backgroundColor: COLORS.surface,
   },
   sidebar: {
     width: 220,

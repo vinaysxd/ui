@@ -196,7 +196,7 @@ export default function ClientsScreen() {
 
   if (isDesktop) {
     return (
-      <LinearGradient colors={["#1A1A1A", "#0D0D0D"]} style={styles.desktopScreen}>
+      <LinearGradient colors={[COLORS.surface, COLORS.surface]} style={styles.desktopScreen}>
         <View style={styles.desktopCard}>
           <FlatList keyboardShouldPersistTaps="handled"
             data={filteredActiveClients}
@@ -253,7 +253,6 @@ export default function ClientsScreen() {
 function ClientCard({ item, onPress, inactive }: { item: Client; onPress: () => void; inactive?: boolean }) {
   return (
     <TouchableOpacity style={[styles.card, inactive && styles.cardInactive]} onPress={onPress}>
-      <View style={styles.goldBar} />
       <View style={styles.avatar}>
         <Text style={styles.avatarText}>{getInitials(item.full_name)}</Text>
       </View>
@@ -363,7 +362,7 @@ const styles = StyleSheet.create({
   card: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: COLORS.surfaceElevated,
+    backgroundColor: COLORS.surface,
     borderWidth: 1,
     borderColor: COLORS.border,
     borderRadius: RADIUS.md,
@@ -371,24 +370,27 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     overflow: "hidden",
     gap: 12,
+    shadowColor: "#000000",
+    shadowOpacity: COLORS.shadowOpacity,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 3,
   },
   cardInactive: {
     backgroundColor: COLORS.surface,
-  },
-  goldBar: {
-    position: "absolute",
-    left: 0,
-    top: 0,
-    bottom: 0,
-    width: 3,
-    borderRadius: RADIUS.full,
-    backgroundColor: COLORS.gold,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    shadowColor: "#000000",
+    shadowOpacity: COLORS.shadowOpacity,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 3,
   },
   avatar: {
     width: 44,
     height: 44,
     borderRadius: RADIUS.full,
-    backgroundColor: "#3A3520",
+    backgroundColor: COLORS.goldTint,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -456,6 +458,8 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.surfaceElevated,
     borderRadius: RADIUS.md,
     padding: 16,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   accordionHeaderText: {
     color: COLORS.textSecondary,
@@ -476,7 +480,7 @@ const styles = StyleSheet.create({
   desktopCard: {
     flex: 1,
     margin: 24, 
-    borderRadius: RADIUS.xl,
+    borderRadius: RADIUS.md,
     
     elevation: 8,
   },
@@ -524,6 +528,8 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.surfaceElevated,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   tableNameCell: {
     flexDirection: "row",
@@ -534,7 +540,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: RADIUS.full,
-    backgroundColor: "#3A3520",
+    backgroundColor: COLORS.goldTint,
     alignItems: "center",
     justifyContent: "center",
   },

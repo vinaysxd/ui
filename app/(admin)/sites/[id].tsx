@@ -656,7 +656,6 @@ export default function SiteDetailScreen() {
 
               <Text style={styles.sectionTitle}>Client Details</Text>
               <View style={styles.clientCard}>
-                <View style={styles.goldBar} />
                 {site.client ? (
                   <>
                     <Row label="Full Name" icon="person-outline" value={site.client.full_name} />
@@ -703,7 +702,6 @@ export default function SiteDetailScreen() {
                 assignedStaff.map((member) => (
                   <View key={member.id} style={styles.cardShadow}>
                     <View style={styles.staffCard}>
-                      <View style={styles.goldBar} />
                       <View style={styles.avatarCircle}>
                         <Text style={styles.avatarText}>{getInitials(member.full_name)}</Text>
                       </View>
@@ -763,7 +761,6 @@ export default function SiteDetailScreen() {
                           setExpandedAttendanceId(isExpanded ? null : record.id)
                         }
                       >
-                        <View style={styles.goldBar} />
                         <View style={styles.attendanceCardTop}>
                           <View style={styles.attendanceLeft}>
                             <View style={styles.attendanceAvatar}>
@@ -863,7 +860,6 @@ export default function SiteDetailScreen() {
                   const isClient = note.type === "client";
                   const card = (
                     <View style={[styles.card, isClient ? styles.cardClient : styles.cardStaff]}>
-                      <View style={isClient ? styles.goldBar : styles.staffBar} />
                       <View style={styles.cardHeader}>
                         <Text style={styles.authorName}>{note.author?.full_name ?? "Unknown author"}</Text>
                         <View style={styles.cardHeaderRight}>
@@ -1262,7 +1258,7 @@ const styles = StyleSheet.create({
     letterSpacing: 2,
   },
   section: { 
-    borderRadius: RADIUS.xl,
+    borderRadius: RADIUS.md,
     padding: 24,
     marginBottom: 24,
      
@@ -1286,44 +1282,45 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   clientCard: {
-    backgroundColor: COLORS.surfaceElevated,
+    backgroundColor: COLORS.surface,
     borderRadius: RADIUS.md,
     padding: 16,
-    paddingLeft: 20,
     marginBottom: 24,
     overflow: "hidden",
-  },
-  goldBar: {
-    position: "absolute",
-    left: 0,
-    top: 0,
-    bottom: 0,
-    width: 3,
-    borderRadius: RADIUS.full,
-    backgroundColor: COLORS.gold,
-  },
-  staffBar: {
-    position: "absolute",
-    left: 0,
-    top: 0,
-    bottom: 0,
-    width: 3,
-    borderRadius: RADIUS.full,
-    backgroundColor: COLORS.border,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    shadowColor: "#000000",
+    shadowOpacity: COLORS.shadowOpacity,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 3,
   },
   card: {
     backgroundColor: COLORS.surface,
     borderRadius: RADIUS.md,
     padding: 16,
-    paddingLeft: 20,
     marginBottom: 12,
     overflow: "hidden",
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    shadowColor: "#000000",
+    shadowOpacity: COLORS.shadowOpacity,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 3,
   },
   cardClient: {
-    backgroundColor: "#2A2310",
+    backgroundColor: COLORS.accentBg,
   },
   cardStaff: {
     backgroundColor: COLORS.surface,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    shadowColor: "#000000",
+    shadowOpacity: COLORS.shadowOpacity,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 3,
   },
   cardHeader: {
     flexDirection: "row",
@@ -1352,6 +1349,13 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 16,
     overflow: "hidden",
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    shadowColor: "#000000",
+    shadowOpacity: COLORS.shadowOpacity,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 3,
   },
   attendanceCardTop: {
     flexDirection: "row",
@@ -1371,7 +1375,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: RADIUS.full,
-    backgroundColor: "#3A3520",
+    backgroundColor: COLORS.goldTint,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -1518,9 +1522,16 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.md,
     padding: 16,
     marginBottom: 12,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    shadowColor: "#000000",
+    shadowOpacity: COLORS.shadowOpacity,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 3,
   },
   taskLabel: {
-    color: "#FFFFFF",
+    color: COLORS.textPrimary,
     fontSize: 15,
     fontWeight: "600",
     flexShrink: 1,
@@ -1536,8 +1547,8 @@ const styles = StyleSheet.create({
   },
   addTaskInput: {
     flex: 1,
-    backgroundColor: "#2E2E2E",
-    color: "#FFFFFF",
+    backgroundColor: COLORS.surface,
+    color: COLORS.textPrimary,
     borderWidth: 1,
     borderColor: COLORS.gold,
     borderRadius: RADIUS.md,
@@ -1603,7 +1614,6 @@ const styles = StyleSheet.create({
     borderColor: COLORS.gold,
   },
   inputDisabled: {
-    borderColor: COLORS.border,
     backgroundColor: COLORS.surfaceElevated,
     color: COLORS.textPrimary,
     fontWeight: "normal",
@@ -1718,15 +1728,21 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.surface,
     borderRadius: RADIUS.md,
     padding: 16,
-    paddingLeft: 20,
     marginBottom: 12,
     overflow: "hidden",
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    shadowColor: "#000000",
+    shadowOpacity: COLORS.shadowOpacity,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 3,
   },
   avatarCircle: {
     width: 40,
     height: 40,
     borderRadius: RADIUS.full,
-    backgroundColor: "#3A3520",
+    backgroundColor: COLORS.goldTint,
     justifyContent: "center",
     alignItems: "center",
     marginRight: 12,
@@ -1755,7 +1771,7 @@ const styles = StyleSheet.create({
   },
   unassignButton: {
     backgroundColor: COLORS.dangerBg,
-    borderRadius: RADIUS.sm,
+    borderRadius: RADIUS.md,
     paddingVertical: 8,
     paddingHorizontal: 12,
     marginLeft: 12,
@@ -1776,6 +1792,8 @@ const styles = StyleSheet.create({
     borderTopRightRadius: RADIUS.xl,
     maxHeight: "70%",
     padding: 16,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   modalHeader: {
     flexDirection: "row",

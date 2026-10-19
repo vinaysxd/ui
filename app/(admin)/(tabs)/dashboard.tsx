@@ -108,7 +108,7 @@ export default function AdminDashboardScreen() {
 
   if (isDesktop) {
     return (
-      <LinearGradient colors={["#1A1A1A", "#0D0D0D"]} style={styles.desktopScreen}>
+      <LinearGradient colors={[COLORS.surface, COLORS.surface]} style={styles.desktopScreen}>
         <View style={styles.card}>
           <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.webContent}>
             <View style={styles.maxWidthWrap}>
@@ -244,8 +244,11 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   table: {
-    borderTopWidth: 1,
-    borderTopColor: COLORS.border,
+    backgroundColor: COLORS.surface,
+    borderRadius: RADIUS.md,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   tableHeaderRow: {
     flexDirection: "row",
@@ -272,8 +275,12 @@ const styles = StyleSheet.create({
   },
   statsGridMobile: {
     flexDirection: "row",
+    flexWrap: "wrap",
     gap: 8,
     marginBottom: 24,
   },
-  statCardMobile: {},
+  statCardMobile: {
+    flexBasis: "48%",
+    flexGrow: 1,
+  },
 });

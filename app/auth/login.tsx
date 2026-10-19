@@ -132,7 +132,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   tagline: {
-    color: "#666666",
+    color: "#8A8A8A",
     fontSize: 13,
     letterSpacing: 2,
     textAlign: "center",
@@ -146,7 +146,7 @@ const styles = StyleSheet.create({
     opacity: 0.4,
   },
   label: {
-    color: "#666666",
+    color: "#8A8A8A",
     fontSize: 11,
     letterSpacing: 1.5,
     textTransform: "uppercase",
@@ -155,8 +155,8 @@ const styles = StyleSheet.create({
   input: {
     backgroundColor: "#1A1A1A",
     borderWidth: 1,
-    borderColor: "#333333",
-    borderRadius: 12,
+    borderColor: "#D0D0D0",
+    borderRadius: 8,
     color: "#FFFFFF",
     paddingVertical: 14,
     paddingHorizontal: 16,
@@ -166,7 +166,7 @@ const styles = StyleSheet.create({
   loginButton: {
     backgroundColor: "#C9A84C",
     height: 52,
-    borderRadius: 12,
+    borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
     marginTop: 8,

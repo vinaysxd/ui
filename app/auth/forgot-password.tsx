@@ -129,7 +129,7 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   subtitle: {
-    color: "#666666",
+    color: "#8A8A8A",
     fontSize: 14,
     marginTop: 8,
     marginBottom: 32,
@@ -137,8 +137,8 @@ const styles = StyleSheet.create({
   input: {
     backgroundColor: "#1A1A1A",
     borderWidth: 1,
-    borderColor: "#333333",
-    borderRadius: 12,
+    borderColor: "#D0D0D0",
+    borderRadius: 8,
     color: "#FFFFFF",
     paddingVertical: 14,
     paddingHorizontal: 16,
@@ -148,7 +148,7 @@ const styles = StyleSheet.create({
   button: {
     backgroundColor: "#C9A84C",
     height: 52,
-    borderRadius: 12,
+    borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
   },

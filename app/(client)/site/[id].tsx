@@ -295,7 +295,6 @@ function TasksList({ siteId }: { siteId: string }) {
       }
       renderItem={({ item }) => (
         <View style={styles.taskCard}>
-          <View style={styles.goldBar} />
           <Text style={styles.taskLabel}>{item.label}</Text>
         </View>
       )}
@@ -316,7 +315,6 @@ function AttendanceCard({
 
   return (
     <TouchableOpacity style={styles.historyCard} onPress={onToggle} activeOpacity={0.7}>
-      <View style={styles.goldBar} />
       <View style={styles.historyCardHeader}>
         <Text style={styles.historyStaff}>{record.staff?.full_name ?? "Unknown staff"}</Text>
         <View style={styles.historyHeaderRight}>
@@ -518,12 +516,17 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
     padding: 16,
     marginBottom: 12,
+    shadowColor: "#000000",
+    shadowOpacity: COLORS.shadowOpacity,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 3,
   },
   avatarCircle: {
     width: 40,
     height: 40,
     borderRadius: RADIUS.full,
-    backgroundColor: "#3A3520",
+    backgroundColor: COLORS.goldTint,
     justifyContent: "center",
     alignItems: "center",
     marginRight: 12,
@@ -537,12 +540,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   staffName: {
-    color: "#FFFFFF",
+    color: COLORS.textPrimary,
     fontWeight: "600",
     fontSize: 14,
   },
   staffPhone: {
-    color: "#9A9A9A",
+    color: COLORS.textSecondary,
     fontSize: 13,
     marginTop: 2,
   },
@@ -554,12 +557,16 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.border,
     padding: 16,
-    paddingLeft: 19,
     marginBottom: 12,
     overflow: "hidden",
+    shadowColor: "#000000",
+    shadowOpacity: COLORS.shadowOpacity,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 3,
   },
   taskLabel: {
-    color: "#FFFFFF",
+    color: COLORS.textPrimary,
     fontSize: 15,
     fontWeight: "600",
   },
@@ -569,18 +576,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.border,
     padding: 16,
-    paddingLeft: 19,
     marginBottom: 12,
     overflow: "hidden",
-  },
-  goldBar: {
-    position: "absolute",
-    left: 0,
-    top: 0,
-    bottom: 0,
-    width: 3,
-    borderRadius: RADIUS.full,
-    backgroundColor: COLORS.gold,
+    shadowColor: "#000000",
+    shadowOpacity: COLORS.shadowOpacity,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 3,
   },
   historyCardHeader: {
     flexDirection: "row",

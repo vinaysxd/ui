@@ -15,6 +15,7 @@ import { showError } from "../../../src/utils/toast";
 import { COLORS, RADIUS } from "../../../src/constants/theme";
 import { LOADING_STYLE } from "../../../src/constants/ui";
 import Loader from "../../../src/components/Loader";
+import ThemeToggle from "../../../src/components/ThemeToggle";
 
 const getInitials = (fullName: string): string => {
   const parts = fullName.trim().split(/\s+/).filter(Boolean);
@@ -112,7 +113,13 @@ export default function ClientProfileScreen() {
         <Row label="Company Name" value={profile.company_name ?? "—"} />
         <Row label="Billing Address" value={profile.billing_address ?? "—"} />
         <Row label="Contact Person" value={profile.contact_person ?? "—"} />
-        <Row label="Phone" value={profile.phone || "—"} last />
+        <Row label="Phone" value={profile.phone || "—"} />
+        <Row label="QuickBooks Account" value={profile.qb_customer_name ?? (profile.qb_customer_id ? "Linked" : "Not linked")} last />
+      </View>
+
+      <Text style={styles.sectionTitle}>App</Text>
+      <View style={styles.section}>
+        <ThemeToggle last />
       </View>
 
       <TouchableOpacity
@@ -167,12 +174,17 @@ const styles = StyleSheet.create({
     padding: 24,
     alignItems: "center",
     marginBottom: 24,
+    shadowColor: "#000000",
+    shadowOpacity: COLORS.shadowOpacity,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 3,
   },
   avatar: {
     width: 72,
     height: 72,
     borderRadius: RADIUS.full,
-    backgroundColor: "#3A3520",
+    backgroundColor: COLORS.goldTint,
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 12,
@@ -188,6 +200,8 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.full,
     backgroundColor: COLORS.surfaceElevated,
     marginBottom: 12,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   name: {
     fontSize: 22,

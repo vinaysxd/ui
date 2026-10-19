@@ -128,12 +128,19 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: COLORS.surface,
-    borderRadius: RADIUS.xl,
+    borderRadius: RADIUS.md,
     padding: 24,
     width: "100%",
     maxWidth: 400,
     alignSelf: "center",
     marginHorizontal: 24,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    shadowColor: "#000000",
+    shadowOpacity: COLORS.shadowOpacity,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 3,
   },
   accentLine: {
     height: 2,
@@ -171,6 +178,8 @@ const styles = StyleSheet.create({
   },
   cancelButton: {
     backgroundColor: COLORS.surfaceElevated,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   cancelButtonText: {
     color: COLORS.textMuted,

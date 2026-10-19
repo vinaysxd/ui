@@ -418,7 +418,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 18,
     fontWeight: "700",
-    color: "#FFFFFF",
+    color: COLORS.textPrimary,
     flex: 1,
     marginRight: 12,
   },
@@ -428,9 +428,9 @@ const styles = StyleSheet.create({
     color: COLORS.gold,
   },
   tabBar: {
-    backgroundColor: "#1A1A1A",
+    backgroundColor: COLORS.surface,
     borderBottomWidth: 1,
-    borderBottomColor: "#333333",
+    borderBottomColor: COLORS.border,
   },
   tabBarContent: {
     paddingHorizontal: 16,
@@ -447,7 +447,7 @@ const styles = StyleSheet.create({
   tabText: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#666666",
+    color: COLORS.textMuted,
   },
   tabTextActive: {
     color: COLORS.gold,
@@ -473,6 +473,13 @@ const styles = StyleSheet.create({
     paddingLeft: 20,
     marginBottom: 12,
     overflow: "hidden",
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    shadowColor: "#000000",
+    shadowOpacity: COLORS.shadowOpacity,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 3,
   },
   cardHeader: {
     flexDirection: "row",

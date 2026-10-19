@@ -27,6 +27,7 @@ import { getErrorMessage } from "../../../src/constants/errors";
 import api from "../../../src/lib/api";
 import { LOADING_STYLE } from "../../../src/constants/ui";
 import Loader from "../../../src/components/Loader";
+import ThemeToggle from "../../../src/components/ThemeToggle";
 
 const QB_GREEN = "#2CA01C";
 
@@ -94,9 +95,12 @@ export default function SettingsScreen() {
     setQbLoading(true);
     try {
       const response = await api.get("/integrations/quickbooks/status");
-      setQbConnected(!!response.data?.connected);
+      const connected = !!response.data?.connected;
+      setQbConnected(connected);
+      return connected;
     } catch (err: any) {
       setQbConnected(false);
+      return false;
     } finally {
       setQbLoading(false);
     }
@@ -127,7 +131,7 @@ export default function SettingsScreen() {
       showError(err.message ?? "Failed to open QuickBooks connection");
     } finally {
       setQbActionLoading(false);
-      await fetchQbStatus();
+      if (await fetchQbStatus()) showSuccess("QuickBooks connected");
     }
   };
 
@@ -294,17 +298,6 @@ export default function SettingsScreen() {
               placeholder="—"
               placeholderTextColor={COLORS.textMuted}
             />
-
-            <Text style={styles.fieldLabel}>Avatar URL</Text>
-            <TextInput
-              style={[styles.input, isEditing && styles.inputEditing]}
-              value={avatarUrl}
-              onChangeText={setAvatarUrl}
-              editable={isEditing}
-              autoCapitalize="none"
-              placeholder="—"
-              placeholderTextColor={COLORS.textMuted}
-            />
           </View>
 
           {isEditing ? (
@@ -330,6 +323,7 @@ export default function SettingsScreen() {
 
       <Text style={styles.sectionLabel}>App</Text>
       <View style={styles.section}>
+        <ThemeToggle />
         <SettingsRow label="Version" value={Constants.expoConfig?.version ?? "1.0.0"} />
         <SettingsRow label="API URL" value={api.defaults.baseURL ?? "—"} last />
       </View>
@@ -341,10 +335,15 @@ export default function SettingsScreen() {
             <Loader />
           </View>
         ) : qbConnected ? (
-          <View style={styles.qbRow}>
-            <View style={styles.qbStatusLeft}>
-              <View style={styles.qbStatusDot} />
-              <Text style={styles.qbStatusText}>Connected to QuickBooks</Text>
+          <View style={styles.qbConnectedWrap}>
+            <View style={styles.qbConnectedBanner}>
+              <Ionicons name="checkmark-circle" size={22} color={COLORS.success} />
+              <View style={styles.qbConnectedTextWrap}>
+                <Text style={styles.qbStatusText}>QuickBooks connected</Text>
+                <Text style={styles.qbConnectedSubtext}>
+                  Invoices and billing are syncing with your QuickBooks account.
+                </Text>
+              </View>
             </View>
             <TouchableOpacity
               style={[styles.qbDisconnectButton, qbActionLoading && LOADING_STYLE]}
@@ -394,7 +393,7 @@ export default function SettingsScreen() {
 
   if (isDesktop) {
     return (
-      <LinearGradient colors={["#1A1A1A", "#0D0D0D"]} style={styles.desktopScreen}>
+      <LinearGradient colors={[COLORS.surface, COLORS.surface]} style={styles.desktopScreen}>
         <View style={styles.desktopCard}>
           <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} contentContainerStyle={styles.webContent}>{content}</ScrollView>
         </View>
@@ -477,19 +476,24 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   profileCard: {
-    backgroundColor: COLORS.surfaceElevated,
+    backgroundColor: COLORS.surface,
     borderWidth: 1,
     borderColor: COLORS.border,
     borderRadius: RADIUS.md,
     padding: 24,
     alignItems: "center",
     marginBottom: 24,
+    shadowColor: "#000000",
+    shadowOpacity: COLORS.shadowOpacity,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 3,
   },
   avatar: {
     width: 64,
     height: 64,
     borderRadius: RADIUS.full,
-    backgroundColor: "#3A3520",
+    backgroundColor: COLORS.goldTint,
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 12,
@@ -505,6 +509,8 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.full,
     backgroundColor: COLORS.surface,
     marginBottom: 12,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   profileName: {
     color: COLORS.textPrimary,
@@ -673,6 +679,28 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 16,
   },
+  qbConnectedWrap: {
+    padding: 16,
+    gap: 12,
+  },
+  qbConnectedBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    padding: 12,
+    borderRadius: RADIUS.md,
+    backgroundColor: COLORS.successBg,
+    borderWidth: 1,
+    borderColor: COLORS.success,
+  },
+  qbConnectedTextWrap: {
+    flex: 1,
+    gap: 2,
+  },
+  qbConnectedSubtext: {
+    color: COLORS.textSecondary,
+    fontSize: 12,
+  },
   qbStatusLeft: {
     flexDirection: "row",
     alignItems: "center",
@@ -697,6 +725,7 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.md,
     paddingVertical: 8,
     paddingHorizontal: 14,
+    alignItems: "center",
   },
   qbDisconnectButtonText: {
     color: COLORS.danger,
@@ -733,7 +762,7 @@ const styles = StyleSheet.create({
   desktopCard: {
     flex: 1,
     margin: 24, 
-    borderRadius: RADIUS.xl,
+    borderRadius: RADIUS.md,
      
     elevation: 8,
   },

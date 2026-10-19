@@ -99,7 +99,6 @@ export default function ClientSitesScreen() {
             style={styles.card}
             onPress={() => router.push(`/(client)/site/${item.id}`)}
           >
-            <View style={styles.goldBar} />
             <View style={styles.cardHeader}>
               <Text style={styles.name}>{item.name}</Text>
               <View style={[styles.badge, item.is_active ? styles.badgeActive : styles.badgeInactive]}>
@@ -166,18 +165,13 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
     borderRadius: RADIUS.md,
     padding: 16,
-    paddingLeft: 20,
     marginBottom: 12,
     overflow: "hidden",
-  },
-  goldBar: {
-    position: "absolute",
-    left: 0,
-    top: 0,
-    bottom: 0,
-    width: 3,
-    borderRadius: RADIUS.full,
-    backgroundColor: COLORS.gold,
+    shadowColor: "#000000",
+    shadowOpacity: COLORS.shadowOpacity,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 3,
   },
   cardHeader: {
     flexDirection: "row",

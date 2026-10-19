@@ -266,9 +266,16 @@ const styles = StyleSheet.create({
   },
   cardStaff: {
     backgroundColor: COLORS.surface,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    shadowColor: "#000000",
+    shadowOpacity: COLORS.shadowOpacity,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 3,
   },
   cardClient: {
-    backgroundColor: "#2A2310",
+    backgroundColor: COLORS.accentBg,
   },
   cardHeader: {
     flexDirection: "row",
