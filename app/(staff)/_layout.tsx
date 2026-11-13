@@ -3,7 +3,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Stack, Slot, usePathname, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import Constants from "expo-constants";
-import { THEME_MODE, COLORS, SPACING, RADIUS } from "../../src/constants/theme";
+import { THEME_MODE, COLORS, SPACING, RADIUS, SHADOW } from "../../src/constants/theme";
 
 const NAV_ITEMS = [
   { name: "dashboard", label: "Home", icon: "home-outline" as const, href: "/(staff)/dashboard" as const },
@@ -26,7 +26,6 @@ function Sidebar() {
           />
           
         </View>
-        <View style={styles.divider} />
       </View>
 
       <View style={styles.navList}>
@@ -50,7 +49,6 @@ function Sidebar() {
       </View>
 
       <View style={styles.sidebarBottom}>
-        <View style={styles.divider} />
         <Text style={styles.version}>v{Constants.expoConfig?.version ?? "1.0.0"}</Text>
       </View>
     </View>
@@ -103,9 +101,9 @@ const styles = StyleSheet.create({
   },
   sidebar: {
     width: 220,
-    backgroundColor: COLORS.surface,
-    borderRightWidth: 1,
-    borderRightColor: COLORS.border,
+    backgroundColor: COLORS.foreground,
+    ...SHADOW.side,
+    zIndex: 1,
     paddingTop: 24,
   },
   sidebarTop: {
@@ -129,11 +127,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "700",
     letterSpacing: 3,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: COLORS.gold,
-    opacity: 0.3,
   },
   navList: {
     flex: 1,

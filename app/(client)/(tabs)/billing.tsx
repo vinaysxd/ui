@@ -26,7 +26,7 @@ import {
 } from "../../../src/services/billing.service";
 import { getErrorMessage } from "../../../src/constants/errors";
 import { showError } from "../../../src/utils/toast";
-import { COLORS, RADIUS } from "../../../src/constants/theme";
+import { COLORS, RADIUS, SHADOW } from "../../../src/constants/theme";
 import Loader from "../../../src/components/Loader";
 
 type Tab = "invoices" | "quotes" | "statement";
@@ -491,8 +491,6 @@ const styles = StyleSheet.create({
   },
   tabBar: {
     flexDirection: "row",
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
     marginBottom: 16,
   },
   tab: {
@@ -525,9 +523,7 @@ const styles = StyleSheet.create({
   },
   summaryCard: {
     flex: 1,
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    backgroundColor: COLORS.foreground,
     borderRadius: RADIUS.md,
     padding: 16,
     shadowColor: "#000000",
@@ -590,9 +586,7 @@ const styles = StyleSheet.create({
     marginTop: 6,
   },
   card: {
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    backgroundColor: COLORS.foreground,
     borderRadius: RADIUS.md,
     padding: 16,
     marginBottom: 12,
@@ -639,8 +633,6 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   rowBorder: {
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
   },
   rowLabel: {
     fontSize: 13,
@@ -666,8 +658,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 16,
     backgroundColor: COLORS.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
   },
   modalTitle: {
     fontSize: 18,
@@ -695,9 +685,8 @@ const styles = StyleSheet.create({
     letterSpacing: 2,
   },
   section: {
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    backgroundColor: COLORS.foreground,
+    ...SHADOW.card,
     borderRadius: RADIUS.md,
     padding: 16,
     marginBottom: 24,

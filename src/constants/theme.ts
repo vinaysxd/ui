@@ -4,7 +4,7 @@ import * as SecureStore from "expo-secure-store";
 // ---- Theme mode -----------------------------------------------------------
 // Styles across the app are built once at import time (StyleSheet.create with
 // COLORS), so the mode is read synchronously here and a change takes effect by
-// reloading the app (see `setThemeMode`). Defaults to light.
+// reloading the app (see `setThemeMode`). Defaults to dark, ignoring system theme.
 export type ThemeMode = "light" | "dark";
 const THEME_KEY = "theme_mode";
 
@@ -16,9 +16,9 @@ function readStoredMode(): ThemeMode {
           ? localStorage.getItem(THEME_KEY)
           : null
         : SecureStore.getItem(THEME_KEY);
-    return value === "dark" ? "dark" : "light";
+    return value === "light" ? "light" : "dark";
   } catch {
-    return "light";
+    return "dark";
   }
 }
 
@@ -38,6 +38,7 @@ const DARK_MONO = {
   background: "#141414",
   surface: "#141414",
   surfaceElevated: "#141414",
+  foreground: "#1F1F1F",
   border: "#3A3A3A",
   gold: "#C9A84C",
   goldLight: "#E8C97A",
@@ -63,6 +64,7 @@ const LIGHT_MONO: typeof DARK_MONO = {
   background: "#EBEBEB",
   surface: "#EBEBEB",
   surfaceElevated: "#EBEBEB",
+  foreground: "#F7F7F7",
   border: "#D0D0D0",
   gold: "#C9A84C",
   goldLight: "#E8C97A",
@@ -90,6 +92,7 @@ export const LIGHT_COLORS: typeof COLORS = {
   background: "#FAF8F3",
   surface: "#FFFFFF",
   surfaceElevated: "#F1EDE3",
+  foreground: "#FFFFFF",
   border: "#E2DCCB",
   gold: "#C9A84C",
   goldLight: "#E8C97A",
@@ -109,6 +112,14 @@ export const LIGHT_COLORS: typeof COLORS = {
   goldInk: "#8A6A25",
   outline: "#8A8578",
   dangerText: "#C62828",
+};
+
+// Shadows replace outline borders for separating cards, tables and inputs.
+const shadowBase = { shadowColor: "#000000", shadowOpacity: COLORS.shadowOpacity };
+export const SHADOW = {
+  card: { ...shadowBase, shadowRadius: 8, shadowOffset: { width: 0, height: 3 }, elevation: 3 },
+  side: { ...shadowBase, shadowRadius: 10, shadowOffset: { width: 4, height: 0 }, elevation: 6 },
+  up: { ...shadowBase, shadowRadius: 10, shadowOffset: { width: 0, height: -3 }, elevation: 8 },
 };
 
 export const SPACING = { xs: 4, sm: 8, md: 16, lg: 24, xl: 32 };

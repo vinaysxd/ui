@@ -10,9 +10,9 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { getClientSites, Site } from "../../../src/services/sites.service";
+import { getClientSite, getClientSites, Site } from "../../../src/services/sites.service";
 import { showError } from "../../../src/utils/toast";
-import { COLORS, RADIUS } from "../../../src/constants/theme";
+import { COLORS, RADIUS, SHADOW } from "../../../src/constants/theme";
 import Loader from "../../../src/components/Loader";
 
 export default function ClientSitesScreen() {
@@ -26,7 +26,21 @@ export default function ClientSitesScreen() {
   const loadSites = useCallback(async () => {
     try {
       const data = await getClientSites();
-      setSites(data);
+      // The list endpoint may omit assigned staff; fall back to the detail endpoint.
+      const withStaff = await Promise.all(
+        data.map(async (site) => {
+          if (site.staff) {
+            return site;
+          }
+          try {
+            const detail = await getClientSite(site.id);
+            return { ...site, staff: detail.staff ?? [] };
+          } catch {
+            return site;
+          }
+        })
+      );
+      setSites(withStaff);
     } catch (err: any) {
       showError(err.message);
     } finally {
@@ -108,6 +122,14 @@ export default function ClientSitesScreen() {
               </View>
             </View>
             <Text style={styles.detail}>{item.address}</Text>
+            <View style={styles.staffRow}>
+              <Ionicons name="people-outline" size={14} color={COLORS.textMuted} />
+              <Text style={styles.staffText} numberOfLines={2}>
+                {item.staff && item.staff.length > 0
+                  ? item.staff.map((member) => member.full_name).join(", ")
+                  : "No staff assigned"}
+              </Text>
+            </View>
           </TouchableOpacity>
         )}
       />
@@ -116,6 +138,17 @@ export default function ClientSitesScreen() {
 }
 
 const styles = StyleSheet.create({
+  staffRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginTop: 8,
+  },
+  staffText: {
+    flex: 1,
+    fontSize: 13,
+    color: COLORS.textMuted,
+  },
   container: {
     flex: 1,
     padding: 16,
@@ -137,9 +170,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    backgroundColor: COLORS.surfaceElevated,
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    backgroundColor: COLORS.foreground,
+    ...SHADOW.card,
     borderRadius: RADIUS.md,
     paddingHorizontal: 12,
     paddingVertical: 10,
@@ -160,9 +192,7 @@ const styles = StyleSheet.create({
     marginTop: 32,
   },
   card: {
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    backgroundColor: COLORS.foreground,
     borderRadius: RADIUS.md,
     padding: 16,
     marginBottom: 12,

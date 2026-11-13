@@ -1,6 +1,6 @@
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { COLORS, RADIUS, THEME_MODE, ThemeMode } from "../constants/theme";
+import { COLORS, RADIUS, THEME_MODE, ThemeMode, SHADOW } from "../constants/theme";
 import { setThemeMode } from "../theme/themeMode";
 
 const OPTIONS: { mode: ThemeMode; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
@@ -43,8 +43,6 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingVertical: 12,
     paddingHorizontal: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
   },
   rowLast: {
     borderBottomWidth: 0,
@@ -55,8 +53,7 @@ const styles = StyleSheet.create({
   },
   segmented: {
     flexDirection: "row",
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    ...SHADOW.card,
     borderRadius: RADIUS.md,
     padding: 2,
     gap: 2,

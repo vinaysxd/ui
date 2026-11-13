@@ -1,3 +1,4 @@
+import { SHADOW } from "../../src/constants/theme";
 import {
   View,
   Text,
@@ -60,7 +61,6 @@ export default function LoginScreen() {
         <Text style={styles.brand}>BROTHERS</Text>
         <Text style={styles.tagline}>Facility Management Portal</Text>
 
-        <View style={styles.divider} />
 
         <Text style={styles.label}>EMAIL</Text>
         <TextInput
@@ -138,13 +138,6 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: 4,
   },
-  divider: {
-    height: 1,
-    backgroundColor: "#C9A84C",
-    marginTop: 24,
-    marginBottom: 32,
-    opacity: 0.4,
-  },
   label: {
     color: "#8A8A8A",
     fontSize: 11,
@@ -154,8 +147,7 @@ const styles = StyleSheet.create({
   },
   input: {
     backgroundColor: "#1A1A1A",
-    borderWidth: 1,
-    borderColor: "#D0D0D0",
+    ...SHADOW.card,
     borderRadius: 8,
     color: "#FFFFFF",
     paddingVertical: 14,

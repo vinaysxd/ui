@@ -16,7 +16,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { getAllClients, Client } from "../../../src/services/client.service";
 import { showError } from "../../../src/utils/toast";
-import { COLORS, RADIUS } from "../../../src/constants/theme";
+import { COLORS, RADIUS, SHADOW } from "../../../src/constants/theme";
 import Loader from "../../../src/components/Loader";
 
 const COLUMN_FLEX = { name: 2, email: 2, phone: 1.3, company: 1.7, status: 1 };
@@ -338,9 +338,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    backgroundColor: COLORS.surfaceElevated,
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    backgroundColor: COLORS.foreground,
+    ...SHADOW.card,
     borderRadius: RADIUS.md,
     paddingHorizontal: 12,
     paddingVertical: 10,
@@ -362,9 +361,7 @@ const styles = StyleSheet.create({
   card: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    backgroundColor: COLORS.foreground,
     borderRadius: RADIUS.md,
     padding: 16,
     marginBottom: 12,
@@ -377,9 +374,7 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   cardInactive: {
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    backgroundColor: COLORS.foreground,
     shadowColor: "#000000",
     shadowOpacity: COLORS.shadowOpacity,
     shadowRadius: 8,
@@ -455,11 +450,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    backgroundColor: COLORS.surfaceElevated,
+    backgroundColor: COLORS.foreground,
     borderRadius: RADIUS.md,
     padding: 16,
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    ...SHADOW.card,
   },
   accordionHeaderText: {
     color: COLORS.textSecondary,
@@ -511,8 +505,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     paddingVertical: 10,
     paddingHorizontal: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
   },
   th: {
     color: COLORS.textMuted,
@@ -525,11 +517,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 14,
     paddingHorizontal: 12,
-    backgroundColor: COLORS.surfaceElevated,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    backgroundColor: COLORS.foreground,
+    ...SHADOW.card,
   },
   tableNameCell: {
     flexDirection: "row",

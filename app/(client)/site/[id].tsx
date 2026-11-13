@@ -17,7 +17,7 @@ import { showError } from "../../../src/utils/toast";
 import { formatDateTime } from "../../../src/utils/datetime";
 import PhotoThumb from "../../../src/components/PhotoThumb";
 import NotesPanel from "../../../src/components/NotesPanel";
-import { COLORS, RADIUS } from "../../../src/constants/theme";
+import { COLORS, RADIUS, SHADOW } from "../../../src/constants/theme";
 import PaginationControls from "../../../src/components/PaginationControls";
 import ScreenContainer from "../../../src/components/ScreenContainer";
 import Loader from "../../../src/components/Loader";
@@ -341,6 +341,10 @@ function AttendanceCard({
         </>
       ) : null}
 
+      <Text style={styles.historyDetail}>
+        {record.photos.length} photo {record.photos.length === 1 ? "pair" : "pairs"}
+      </Text>
+
       {expanded && record.photos.length > 0 ? (
         <View style={styles.photoPairsContainer}>
           {record.photos.map((photo) => (
@@ -397,8 +401,6 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingHorizontal: 16,
     backgroundColor: COLORS.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
   },
   tabBar: {
     flexDirection: "row",
@@ -467,10 +469,9 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   section: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: COLORS.foreground,
     borderRadius: RADIUS.md,
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    ...SHADOW.card,
     padding: 16,
     marginBottom: 16,
   },
@@ -478,8 +479,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
   },
   rowLabel: {
     fontSize: 14,
@@ -510,10 +509,8 @@ const styles = StyleSheet.create({
   staffCard: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: COLORS.surface,
+    backgroundColor: COLORS.foreground,
     borderRadius: RADIUS.md,
-    borderWidth: 1,
-    borderColor: COLORS.border,
     padding: 16,
     marginBottom: 12,
     shadowColor: "#000000",
@@ -552,10 +549,8 @@ const styles = StyleSheet.create({
   taskCard: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: COLORS.surface,
+    backgroundColor: COLORS.foreground,
     borderRadius: RADIUS.md,
-    borderWidth: 1,
-    borderColor: COLORS.border,
     padding: 16,
     marginBottom: 12,
     overflow: "hidden",
@@ -571,10 +566,8 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   historyCard: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: COLORS.foreground,
     borderRadius: RADIUS.md,
-    borderWidth: 1,
-    borderColor: COLORS.border,
     padding: 16,
     marginBottom: 12,
     overflow: "hidden",
@@ -610,8 +603,6 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   photoPair: {
-    borderTopWidth: 1,
-    borderTopColor: COLORS.border,
     paddingTop: 12,
   },
   photoPairLabel: {

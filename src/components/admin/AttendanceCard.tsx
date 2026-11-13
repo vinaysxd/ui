@@ -1,6 +1,6 @@
 import { View, Text, StyleSheet } from "react-native";
 import { Attendance } from "../../services/attendance.service";
-import { COLORS, RADIUS } from "../../constants/theme";
+import { COLORS, RADIUS, SHADOW } from "../../constants/theme";
 import { formatDateTime } from "../../utils/datetime";
 
 interface AttendanceCardProps {
@@ -33,14 +33,12 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    backgroundColor: COLORS.surface,
+    backgroundColor: COLORS.foreground,
     borderRadius: RADIUS.md,
     paddingVertical: 12,
     paddingHorizontal: 16,
     marginBottom: 8,
     overflow: "hidden",
-    borderWidth: 1,
-    borderColor: COLORS.border,
     shadowColor: "#000000",
     shadowOpacity: COLORS.shadowOpacity,
     shadowRadius: 8,

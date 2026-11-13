@@ -14,7 +14,7 @@ import * as ImagePicker from "expo-image-picker";
 import ImageSourceSheet from "../../../src/components/ImageSourceSheet";
 import { getProfile, updateProfile, uploadAvatar } from "../../../src/services/profile.service";
 import { showSuccess, showError } from "../../../src/utils/toast";
-import { COLORS, RADIUS } from "../../../src/constants/theme";
+import { COLORS, RADIUS, SHADOW } from "../../../src/constants/theme";
 import ScreenContainer from "../../../src/components/ScreenContainer";
 import { LOADING_STYLE } from "../../../src/constants/ui";
 import Loader from "../../../src/components/Loader";
@@ -275,10 +275,9 @@ const styles = StyleSheet.create({
     width: 88,
     height: 88,
     borderRadius: RADIUS.full,
-    backgroundColor: COLORS.surfaceElevated,
+    backgroundColor: COLORS.foreground,
     marginBottom: 12,
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    ...SHADOW.card,
   },
   avatarPlaceholder: {
     width: 88,
@@ -298,8 +297,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 16,
     borderRadius: RADIUS.md,
-    borderWidth: 1,
-    borderColor: COLORS.gold,
+    ...SHADOW.card,
   },
   changePhotoButtonText: {
     fontSize: 14,
@@ -316,12 +314,11 @@ const styles = StyleSheet.create({
     letterSpacing: 1.5,
   },
   input: {
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    ...SHADOW.card,
     borderRadius: RADIUS.md,
     paddingHorizontal: 14,
     paddingVertical: 12,
-    backgroundColor: COLORS.surfaceElevated,
+    backgroundColor: COLORS.foreground,
     color: COLORS.textPrimary,
     fontSize: 15,
   },

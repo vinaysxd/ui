@@ -2,7 +2,7 @@ import { useWindowDimensions } from "react-native";
 import { Tabs, Slot } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { COLORS } from "../../../src/constants/theme";
+import { COLORS, SHADOW } from "../../../src/constants/theme";
 
 const NAV_ITEMS = [
   { name: "dashboard", label: "Home", icon: "home-outline" as const },
@@ -16,9 +16,8 @@ const getTabBarStyle = (insets: { bottom: number }) => ({
   flexDirection: "row" as const,
   justifyContent: "space-around" as const,
   width: "100%" as const,
-  backgroundColor: COLORS.surface,
-  borderTopColor: COLORS.border,
-  borderTopWidth: 1,
+  backgroundColor: COLORS.foreground,
+  ...SHADOW.up,
   height: 60 + insets.bottom,
   paddingBottom: insets.bottom,
   paddingTop: 8,

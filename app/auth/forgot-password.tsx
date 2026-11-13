@@ -1,3 +1,4 @@
+import { SHADOW } from "../../src/constants/theme";
 import {
   View,
   Text,
@@ -136,8 +137,7 @@ const styles = StyleSheet.create({
   },
   input: {
     backgroundColor: "#1A1A1A",
-    borderWidth: 1,
-    borderColor: "#D0D0D0",
+    ...SHADOW.card,
     borderRadius: 8,
     color: "#FFFFFF",
     paddingVertical: 14,

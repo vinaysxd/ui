@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { View, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { getSignedPhotoUrl } from "../services/attendance.service";
-import { COLORS, RADIUS } from "../constants/theme";
+import { COLORS, RADIUS, SHADOW } from "../constants/theme";
 import Loader from "./Loader";
 import { PressableImage } from "./ImageViewerModal";
 
@@ -87,17 +87,15 @@ const styles = StyleSheet.create({
     width: 120,
     height: 120,
     borderRadius: RADIUS.md,
-    backgroundColor: COLORS.surfaceElevated,
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    backgroundColor: COLORS.foreground,
+    ...SHADOW.card,
   },
   thumbPlaceholder: {
     width: 120,
     height: 120,
     borderRadius: RADIUS.md,
-    backgroundColor: COLORS.surfaceElevated,
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    backgroundColor: COLORS.foreground,
+    ...SHADOW.card,
     justifyContent: "center",
     alignItems: "center",
   },

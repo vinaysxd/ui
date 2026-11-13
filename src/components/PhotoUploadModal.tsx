@@ -25,7 +25,7 @@ import {
 import { getSiteTasks, SiteTask } from "../services/tasks.service";
 import { showSuccess, showError } from "../utils/toast";
 import PhotoThumb from "./PhotoThumb";
-import { COLORS, RADIUS } from "../constants/theme";
+import { COLORS, RADIUS, SHADOW } from "../constants/theme";
 import { LOADING_STYLE } from "../constants/ui";
 import Loader from "./Loader";
 
@@ -412,8 +412,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 16,
     backgroundColor: COLORS.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
   },
   title: {
     fontSize: 18,
@@ -429,8 +427,6 @@ const styles = StyleSheet.create({
   },
   tabBar: {
     backgroundColor: COLORS.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
   },
   tabBarContent: {
     paddingHorizontal: 16,
@@ -467,14 +463,12 @@ const styles = StyleSheet.create({
     marginTop: 32,
   },
   card: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: COLORS.foreground,
     borderRadius: RADIUS.md,
     padding: 16,
     paddingLeft: 20,
     marginBottom: 12,
     overflow: "hidden",
-    borderWidth: 1,
-    borderColor: COLORS.border,
     shadowColor: "#000000",
     shadowOpacity: COLORS.shadowOpacity,
     shadowRadius: 8,
@@ -508,9 +502,8 @@ const styles = StyleSheet.create({
     width: 120,
     height: 120,
     borderRadius: RADIUS.md,
-    backgroundColor: COLORS.surfaceElevated,
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    backgroundColor: COLORS.foreground,
+    ...SHADOW.card,
     justifyContent: "center",
     alignItems: "center",
     gap: 4,
@@ -524,11 +517,10 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   input: {
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    ...SHADOW.card,
     borderRadius: RADIUS.md,
     padding: 12,
-    backgroundColor: COLORS.surfaceElevated,
+    backgroundColor: COLORS.foreground,
     color: COLORS.textPrimary,
     marginBottom: 12,
   },
@@ -537,9 +529,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     gap: 6,
-    borderWidth: 1,
-    borderStyle: "dashed",
-    borderColor: COLORS.gold,
+    ...SHADOW.card,
+    backgroundColor: COLORS.foreground,
     padding: 14,
     borderRadius: RADIUS.md,
   },

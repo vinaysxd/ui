@@ -11,7 +11,7 @@ import { useRouter } from "expo-router";
 import { getProfile, ProfileMe } from "../../../src/services/profile.service";
 import { logout } from "../../../src/services/auth.service";
 import { showError } from "../../../src/utils/toast";
-import { COLORS, RADIUS } from "../../../src/constants/theme";
+import { COLORS, RADIUS, SHADOW } from "../../../src/constants/theme";
 import { LOADING_STYLE } from "../../../src/constants/ui";
 import Loader from "../../../src/components/Loader";
 import { PressableImage } from "../../../src/components/ImageViewerModal";
@@ -189,9 +189,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
   },
   headerCard: {
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    backgroundColor: COLORS.foreground,
     borderRadius: RADIUS.md,
     padding: 24,
     alignItems: "center",
@@ -220,10 +218,9 @@ const styles = StyleSheet.create({
     width: 72,
     height: 72,
     borderRadius: RADIUS.full,
-    backgroundColor: COLORS.surfaceElevated,
+    backgroundColor: COLORS.foreground,
     marginBottom: 12,
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    ...SHADOW.card,
   },
   name: {
     fontSize: 22,
@@ -257,9 +254,8 @@ const styles = StyleSheet.create({
     letterSpacing: 2,
   },
   section: {
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    backgroundColor: COLORS.foreground,
+    ...SHADOW.card,
     borderRadius: RADIUS.md,
     marginBottom: 24,
     overflow: "hidden",
@@ -272,8 +268,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   rowBorder: {
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
   },
   rowLabel: {
     fontSize: 15,

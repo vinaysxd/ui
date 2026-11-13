@@ -19,7 +19,7 @@ import {
 import { getAllSites, getSiteStaff, Site } from "../../../src/services/sites.service";
 import { getAttendanceBySite, Attendance } from "../../../src/services/attendance.service";
 import { showSuccess, showError } from "../../../src/utils/toast";
-import { COLORS, RADIUS } from "../../../src/constants/theme";
+import { COLORS, RADIUS, SHADOW } from "../../../src/constants/theme";
 import ScreenContainer from "../../../src/components/ScreenContainer";
 import ConfirmModal from "../../../src/components/ConfirmModal";
 import { LOADING_STYLE } from "../../../src/constants/ui";
@@ -455,8 +455,6 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingHorizontal: 16,
     backgroundColor: COLORS.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
   },
   tabBar: {
     flexDirection: "row",
@@ -535,9 +533,8 @@ const styles = StyleSheet.create({
     color: COLORS.danger,
   },
   section: {
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    backgroundColor: COLORS.foreground,
+    ...SHADOW.card,
     borderRadius: RADIUS.md,
     padding: 16,
     marginBottom: 24,
@@ -549,9 +546,7 @@ const styles = StyleSheet.create({
     color: COLORS.textPrimary,
   },
   card: {
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    backgroundColor: COLORS.foreground,
     borderRadius: RADIUS.md,
     padding: 16,
     marginBottom: 12,
@@ -586,8 +581,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
   },
   rowLabel: {
     fontSize: 14,
@@ -603,16 +596,13 @@ const styles = StyleSheet.create({
   },
   fieldRow: {
     paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
   },
   input: {
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    ...SHADOW.card,
     borderRadius: RADIUS.md,
     padding: 10,
     marginTop: 6,
-    backgroundColor: COLORS.surfaceElevated,
+    backgroundColor: COLORS.foreground,
     color: COLORS.textPrimary,
     fontSize: 14,
     fontWeight: "600",

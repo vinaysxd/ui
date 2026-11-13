@@ -1,6 +1,6 @@
 import { View, Text, StyleSheet, ViewStyle } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { COLORS, RADIUS } from "../../constants/theme";
+import { COLORS, RADIUS, SHADOW } from "../../constants/theme";
 
 interface StatCardProps {
   icon: keyof typeof Ionicons.glyphMap;
@@ -26,9 +26,7 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: 0,
     padding: 12,
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    backgroundColor: COLORS.foreground,
     borderRadius: RADIUS.md,
     shadowColor: "#000000",
     shadowOpacity: COLORS.shadowOpacity,

@@ -29,7 +29,7 @@ import { ERRORS } from "../../../src/constants/errors";
 import PhotoUploadModal from "../../../src/components/PhotoUploadModal";
 import NotesModal from "../../../src/components/NotesModal";
 import ConfirmModal from "../../../src/components/ConfirmModal";
-import { COLORS, RADIUS } from "../../../src/constants/theme";
+import { COLORS, RADIUS, SHADOW } from "../../../src/constants/theme";
 import ProcessingOverlay from "../../../src/components/ProcessingOverlay";
 import { LOADING_STYLE } from "../../../src/constants/ui";
 import Loader from "../../../src/components/Loader";
@@ -415,7 +415,6 @@ export default function StaffHomeScreen() {
 
             {isClockedIn ? (
               <>
-                <View style={styles.divider} />
                 <Text style={styles.otherSitesLabel}>
                   OTHER SITES ({filteredOtherSites.length})
                 </Text>
@@ -523,9 +522,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    backgroundColor: COLORS.foreground,
+    ...SHADOW.card,
     borderRadius: RADIUS.md,
     paddingHorizontal: 12,
     paddingVertical: 10,
@@ -546,10 +544,9 @@ const styles = StyleSheet.create({
     marginTop: 32,
   },
   activeCard: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: COLORS.foreground,
     borderRadius: RADIUS.md,
-    borderWidth: 1,
-    borderColor: "rgba(201,168,76,0.35)",
+    ...SHADOW.card,
     padding: 20,
     marginBottom: 12,
     shadowColor: "#000000",
@@ -612,13 +609,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     letterSpacing: 0.3,
   },
-  divider: {
-    height: 1,
-    backgroundColor: COLORS.gold,
-    opacity: 0.3,
-    marginTop: 4,
-    marginBottom: 12,
-  },
   otherSitesLabel: {
     color: COLORS.textMuted,
     fontSize: 11,
@@ -627,13 +617,11 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   card: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: COLORS.foreground,
     borderRadius: RADIUS.md,
     padding: 16,
     marginBottom: 12,
     overflow: "hidden",
-    borderWidth: 1,
-    borderColor: COLORS.border,
     shadowColor: "#000000",
     shadowOpacity: COLORS.shadowOpacity,
     shadowRadius: 8,
@@ -695,8 +683,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 6,
     backgroundColor: "rgba(201,168,76,0.08)",
-    borderWidth: 1,
-    borderColor: "rgba(201,168,76,0.3)",
+    ...SHADOW.card,
     paddingVertical: 11,
     paddingHorizontal: 16,
     borderRadius: RADIUS.md,

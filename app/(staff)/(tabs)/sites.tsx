@@ -18,7 +18,7 @@ import {
 } from "../../../src/services/location.service";
 import { getMySites, Site } from "../../../src/services/sites.service";
 import { showError } from "../../../src/utils/toast";
-import { COLORS, RADIUS } from "../../../src/constants/theme";
+import { COLORS, RADIUS, SHADOW } from "../../../src/constants/theme";
 import Loader from "../../../src/components/Loader";
 
 interface SiteWithDistance extends Site {
@@ -181,9 +181,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    backgroundColor: COLORS.foreground,
+    ...SHADOW.card,
     borderRadius: RADIUS.md,
     paddingHorizontal: 12,
     paddingVertical: 10,
@@ -204,13 +203,11 @@ const styles = StyleSheet.create({
     marginTop: 32,
   },
   card: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: COLORS.foreground,
     borderRadius: RADIUS.md,
     padding: 16,
     marginBottom: 12,
     overflow: "hidden",
-    borderWidth: 1,
-    borderColor: COLORS.border,
     shadowColor: "#000000",
     shadowOpacity: COLORS.shadowOpacity,
     shadowRadius: 8,

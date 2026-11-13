@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { View, Text, Modal, TouchableOpacity, StyleSheet } from "react-native";
-import { COLORS, RADIUS } from "../constants/theme";
+import { COLORS, RADIUS, SHADOW } from "../constants/theme";
 import Loader from "./Loader";
 
 type ConfirmButtonStyle = "default" | "destructive" | "warning";
@@ -28,11 +28,11 @@ const BUTTON_VISUALS: Record<ConfirmButtonStyle, { button: object; text: object 
     text: { color: "#000000" },
   },
   destructive: {
-    button: { backgroundColor: COLORS.dangerBg, borderWidth: 1, borderColor: COLORS.danger },
+    button: { backgroundColor: COLORS.dangerBg },
     text: { color: COLORS.danger },
   },
   warning: {
-    button: { backgroundColor: COLORS.warningBg, borderWidth: 1, borderColor: COLORS.warning },
+    button: { backgroundColor: COLORS.warningBg },
     text: { color: COLORS.warning },
   },
 };
@@ -77,7 +77,6 @@ export default function ConfirmModal({
           <View style={styles.accentLine} />
           <Text style={styles.title}>{title}</Text>
           <Text style={styles.message}>{message}</Text>
-          <View style={styles.divider} />
 
           <TouchableOpacity
             style={[styles.button, confirmVisuals.button]}
@@ -127,15 +126,13 @@ const styles = StyleSheet.create({
     padding: 24,
   },
   card: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: COLORS.foreground,
     borderRadius: RADIUS.md,
     padding: 24,
     width: "100%",
     maxWidth: 400,
     alignSelf: "center",
     marginHorizontal: 24,
-    borderWidth: 1,
-    borderColor: COLORS.border,
     shadowColor: "#000000",
     shadowOpacity: COLORS.shadowOpacity,
     shadowRadius: 8,
@@ -160,11 +157,6 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     marginTop: 8,
   },
-  divider: {
-    height: 1,
-    backgroundColor: COLORS.border,
-    marginTop: 24,
-  },
   button: {
     height: 52,
     borderRadius: RADIUS.md,
@@ -177,9 +169,8 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   cancelButton: {
-    backgroundColor: COLORS.surfaceElevated,
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    backgroundColor: COLORS.foreground,
+    ...SHADOW.card,
   },
   cancelButtonText: {
     color: COLORS.textMuted,

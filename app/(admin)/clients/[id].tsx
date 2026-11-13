@@ -20,7 +20,7 @@ import { getAllSites, Site } from "../../../src/services/sites.service";
 import api from "../../../src/lib/api";
 import { getErrorMessage } from "../../../src/constants/errors";
 import { showSuccess, showError } from "../../../src/utils/toast";
-import { COLORS, RADIUS } from "../../../src/constants/theme";
+import { COLORS, RADIUS, SHADOW } from "../../../src/constants/theme";
 import ScreenContainer from "../../../src/components/ScreenContainer";
 import ConfirmModal from "../../../src/components/ConfirmModal";
 import { LOADING_STYLE } from "../../../src/constants/ui";
@@ -565,8 +565,6 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingHorizontal: 16,
     backgroundColor: COLORS.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
   },
   tabBar: {
     flexDirection: "row",
@@ -645,9 +643,8 @@ const styles = StyleSheet.create({
     color: COLORS.danger,
   },
   section: {
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    backgroundColor: COLORS.foreground,
+    ...SHADOW.card,
     borderRadius: RADIUS.md,
     padding: 16,
     marginBottom: 24,
@@ -656,8 +653,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
   },
   rowLabel: {
     fontSize: 14,
@@ -673,16 +668,13 @@ const styles = StyleSheet.create({
   },
   fieldRow: {
     paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
   },
   input: {
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    ...SHADOW.card,
     borderRadius: RADIUS.md,
     padding: 10,
     marginTop: 6,
-    backgroundColor: COLORS.surfaceElevated,
+    backgroundColor: COLORS.foreground,
     color: COLORS.textPrimary,
     fontSize: 14,
     fontWeight: "600",
@@ -737,17 +729,14 @@ const styles = StyleSheet.create({
   },
   qbDropdown: {
     marginTop: 8,
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    ...SHADOW.card,
     borderRadius: RADIUS.md,
-    backgroundColor: COLORS.surfaceElevated,
+    backgroundColor: COLORS.foreground,
     overflow: "hidden",
   },
   qbDropdownItem: {
     paddingVertical: 10,
     paddingHorizontal: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
   },
   qbDropdownName: {
     fontSize: 14,
@@ -830,9 +819,7 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
   card: {
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    backgroundColor: COLORS.foreground,
     borderRadius: RADIUS.md,
     padding: 16,
     marginBottom: 12,

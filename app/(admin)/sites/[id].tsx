@@ -37,7 +37,7 @@ import {
 import { getSiteNotes, deleteNote, SiteNote } from "../../../src/services/notes.service";
 import { getSiteTasks, addSiteTask, deleteSiteTask, SiteTask } from "../../../src/services/tasks.service";
 import { showSuccess, showError } from "../../../src/utils/toast";
-import { COLORS, RADIUS } from "../../../src/constants/theme";
+import { COLORS, RADIUS, SHADOW } from "../../../src/constants/theme";
 import ScreenContainer from "../../../src/components/ScreenContainer";
 import ConfirmModal from "../../../src/components/ConfirmModal";
 import PhotoThumb from "../../../src/components/PhotoThumb";
@@ -546,7 +546,6 @@ export default function SiteDetailScreen() {
           {activeTab === "details" && (
             <>
               <Text style={styles.sectionTitle}>Site Details</Text>
-              <View style={styles.goldDivider} />
               <View style={styles.section}>
                 <FieldInput
                   label="Name"
@@ -918,7 +917,6 @@ export default function SiteDetailScreen() {
           {activeTab === "tasks" && (
             <>
               <Text style={styles.sectionTitle}>Tasks</Text>
-              <View style={styles.goldDivider} />
               {tasksLoading && !tasksRefreshing ? (
                 <Loader style={styles.staffLoading} />
               ) : tasks.length === 0 ? (
@@ -1160,8 +1158,6 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingHorizontal: 16,
     backgroundColor: COLORS.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
   },
   tabBar: {
     flexDirection: "row",
@@ -1264,12 +1260,6 @@ const styles = StyleSheet.create({
      
     elevation: 3,
   },
-  goldDivider: {
-    height: 1,
-    backgroundColor: COLORS.gold,
-    opacity: 0.3,
-    marginBottom: 16,
-  },
   labelRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -1282,13 +1272,11 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   clientCard: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: COLORS.foreground,
     borderRadius: RADIUS.md,
     padding: 16,
     marginBottom: 24,
     overflow: "hidden",
-    borderWidth: 1,
-    borderColor: COLORS.border,
     shadowColor: "#000000",
     shadowOpacity: COLORS.shadowOpacity,
     shadowRadius: 8,
@@ -1296,13 +1284,11 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   card: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: COLORS.foreground,
     borderRadius: RADIUS.md,
     padding: 16,
     marginBottom: 12,
     overflow: "hidden",
-    borderWidth: 1,
-    borderColor: COLORS.border,
     shadowColor: "#000000",
     shadowOpacity: COLORS.shadowOpacity,
     shadowRadius: 8,
@@ -1313,9 +1299,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.accentBg,
   },
   cardStaff: {
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    backgroundColor: COLORS.foreground,
     shadowColor: "#000000",
     shadowOpacity: COLORS.shadowOpacity,
     shadowRadius: 8,
@@ -1344,13 +1328,11 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   attendanceCard: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: COLORS.foreground,
     borderRadius: RADIUS.md,
     paddingVertical: 12,
     paddingHorizontal: 16,
     overflow: "hidden",
-    borderWidth: 1,
-    borderColor: COLORS.border,
     shadowColor: "#000000",
     shadowOpacity: COLORS.shadowOpacity,
     shadowRadius: 8,
@@ -1448,8 +1430,6 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   photoPair: {
-    borderTopWidth: 1,
-    borderTopColor: COLORS.border,
     paddingTop: 12,
   },
   photoPairLabel: {
@@ -1474,8 +1454,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: COLORS.textMuted,
     marginTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.border,
     paddingTop: 12,
   },
   noteText: {
@@ -1518,12 +1496,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: COLORS.surface,
+    backgroundColor: COLORS.foreground,
     borderRadius: RADIUS.md,
     padding: 16,
     marginBottom: 12,
-    borderWidth: 1,
-    borderColor: COLORS.border,
     shadowColor: "#000000",
     shadowOpacity: COLORS.shadowOpacity,
     shadowRadius: 8,
@@ -1549,8 +1525,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.surface,
     color: COLORS.textPrimary,
-    borderWidth: 1,
-    borderColor: COLORS.gold,
+    ...SHADOW.card,
     borderRadius: RADIUS.md,
     padding: 12,
     fontSize: 14,
@@ -1571,8 +1546,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
   },
   rowLabel: {
     fontSize: 11,
@@ -1596,16 +1569,13 @@ const styles = StyleSheet.create({
   },
   fieldRow: {
     paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
   },
   input: {
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    ...SHADOW.card,
     borderRadius: RADIUS.md,
     padding: 12,
     marginTop: 6,
-    backgroundColor: COLORS.surfaceElevated,
+    backgroundColor: COLORS.foreground,
     color: COLORS.textPrimary,
     fontSize: 14,
     fontWeight: "600",
@@ -1622,12 +1592,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    ...SHADOW.card,
     borderRadius: RADIUS.md,
     padding: 12,
     marginTop: 6,
-    backgroundColor: COLORS.surfaceElevated,
+    backgroundColor: COLORS.foreground,
   },
   dropdownText: {
     fontSize: 14,
@@ -1725,13 +1694,11 @@ const styles = StyleSheet.create({
   staffCard: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: COLORS.surface,
+    backgroundColor: COLORS.foreground,
     borderRadius: RADIUS.md,
     padding: 16,
     marginBottom: 12,
     overflow: "hidden",
-    borderWidth: 1,
-    borderColor: COLORS.border,
     shadowColor: "#000000",
     shadowOpacity: COLORS.shadowOpacity,
     shadowRadius: 8,
@@ -1787,13 +1754,12 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   modalContent: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: COLORS.foreground,
     borderTopLeftRadius: RADIUS.xl,
     borderTopRightRadius: RADIUS.xl,
     maxHeight: "70%",
     padding: 16,
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    ...SHADOW.card,
   },
   modalHeader: {
     flexDirection: "row",
@@ -1810,9 +1776,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    backgroundColor: COLORS.surfaceElevated,
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    backgroundColor: COLORS.foreground,
+    ...SHADOW.card,
     borderRadius: RADIUS.md,
     paddingVertical: 14,
     paddingHorizontal: 14,

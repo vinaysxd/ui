@@ -10,7 +10,7 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import { getAdminDashboard, AdminDashboard } from "../../../src/services/dashboard.service";
 import { getRecentAttendance, Attendance } from "../../../src/services/attendance.service";
-import { COLORS, RADIUS } from "../../../src/constants/theme";
+import { COLORS, RADIUS, SHADOW } from "../../../src/constants/theme";
 import StatCard from "../../../src/components/admin/StatCard";
 import AttendanceCard from "../../../src/components/admin/AttendanceCard";
 import AttendanceRow, { COLUMN_FLEX } from "../../../src/components/admin/AttendanceRow";
@@ -244,18 +244,15 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   table: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: COLORS.foreground,
     borderRadius: RADIUS.md,
     overflow: "hidden",
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    ...SHADOW.card,
   },
   tableHeaderRow: {
     flexDirection: "row",
     paddingVertical: 10,
     paddingHorizontal: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
   },
   th: {
     color: COLORS.textMuted,

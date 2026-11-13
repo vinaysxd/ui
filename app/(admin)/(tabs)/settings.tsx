@@ -21,7 +21,7 @@ import Constants from "expo-constants";
 import { getProfile, updateProfile, uploadAvatar, ProfileMe } from "../../../src/services/profile.service";
 import { logout } from "../../../src/services/auth.service";
 import { showSuccess, showError } from "../../../src/utils/toast";
-import { COLORS, RADIUS } from "../../../src/constants/theme";
+import { COLORS, RADIUS, SHADOW } from "../../../src/constants/theme";
 import { getErrorMessage } from "../../../src/constants/errors";
 import api from "../../../src/lib/api";
 import { LOADING_STYLE } from "../../../src/constants/ui";
@@ -476,9 +476,7 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   profileCard: {
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    backgroundColor: COLORS.foreground,
     borderRadius: RADIUS.md,
     padding: 24,
     alignItems: "center",
@@ -507,10 +505,9 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: RADIUS.full,
-    backgroundColor: COLORS.surface,
+    backgroundColor: COLORS.foreground,
     marginBottom: 12,
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    ...SHADOW.card,
   },
   profileName: {
     color: COLORS.textPrimary,
@@ -540,8 +537,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 16,
     borderRadius: RADIUS.md,
-    borderWidth: 1,
-    borderColor: COLORS.gold,
+    ...SHADOW.card,
   },
   changePhotoButtonText: {
     color: COLORS.gold,
@@ -561,9 +557,8 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   input: {
-    backgroundColor: COLORS.surfaceElevated,
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    backgroundColor: COLORS.foreground,
+    ...SHADOW.card,
     borderRadius: RADIUS.md,
     color: COLORS.textPrimary,
     paddingVertical: 12,
@@ -624,9 +619,8 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   section: {
-    backgroundColor: COLORS.surfaceElevated,
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    backgroundColor: COLORS.foreground,
+    ...SHADOW.card,
     borderRadius: RADIUS.md,
     marginBottom: 24,
     overflow: "hidden",
@@ -644,8 +638,6 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   rowBorder: {
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
   },
   rowLabel: {
     color: COLORS.textPrimary,
@@ -690,8 +682,7 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: RADIUS.md,
     backgroundColor: COLORS.successBg,
-    borderWidth: 1,
-    borderColor: COLORS.success,
+    ...SHADOW.card,
   },
   qbConnectedTextWrap: {
     flex: 1,
@@ -720,8 +711,7 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
   qbDisconnectButton: {
-    borderWidth: 1,
-    borderColor: COLORS.danger,
+    ...SHADOW.card,
     borderRadius: RADIUS.md,
     paddingVertical: 8,
     paddingHorizontal: 14,

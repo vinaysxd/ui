@@ -22,7 +22,7 @@ import { showError } from "../../../src/utils/toast";
 import { formatDateTime } from "../../../src/utils/datetime";
 import NotesPanel from "../../../src/components/NotesPanel";
 import PhotoThumb from "../../../src/components/PhotoThumb";
-import { COLORS, RADIUS } from "../../../src/constants/theme";
+import { COLORS, RADIUS, SHADOW } from "../../../src/constants/theme";
 import ScreenContainer from "../../../src/components/ScreenContainer";
 import PaginationControls from "../../../src/components/PaginationControls";
 import Loader from "../../../src/components/Loader";
@@ -343,8 +343,6 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingHorizontal: 16,
     backgroundColor: COLORS.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
   },
   tabBar: {
     flexDirection: "row",
@@ -418,9 +416,8 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   section: {
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    backgroundColor: COLORS.foreground,
+    ...SHADOW.card,
     borderRadius: RADIUS.md,
     padding: 16,
     marginBottom: 16,
@@ -429,8 +426,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
   },
   rowLabel: {
     fontSize: 14,
@@ -451,13 +446,11 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   historyCard: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: COLORS.foreground,
     borderRadius: RADIUS.md,
     padding: 16,
     marginBottom: 12,
     overflow: "hidden",
-    borderWidth: 1,
-    borderColor: COLORS.border,
     shadowColor: "#000000",
     shadowOpacity: COLORS.shadowOpacity,
     shadowRadius: 8,
@@ -490,8 +483,6 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   photoPair: {
-    borderTopWidth: 1,
-    borderTopColor: COLORS.border,
     paddingTop: 12,
   },
   photoPairLabel: {

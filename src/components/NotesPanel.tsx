@@ -23,7 +23,7 @@ import {
 import { getUser } from "../store/auth";
 import { showSuccess, showError } from "../utils/toast";
 import { formatDateTime } from "../utils/datetime";
-import { COLORS, RADIUS } from "../constants/theme";
+import { COLORS, RADIUS, SHADOW } from "../constants/theme";
 import ConfirmModal from "./ConfirmModal";
 import Loader from "./Loader";
 
@@ -265,9 +265,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   cardStaff: {
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    backgroundColor: COLORS.foreground,
     shadowColor: "#000000",
     shadowOpacity: COLORS.shadowOpacity,
     shadowRadius: 8,
@@ -316,8 +314,6 @@ const styles = StyleSheet.create({
   footer: {
     padding: 16,
     backgroundColor: COLORS.surface,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.border,
   },
   composeRow: {
     flexDirection: "row",
@@ -327,13 +323,12 @@ const styles = StyleSheet.create({
   composeInput: {
     flex: 1,
     height: 44,
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    ...SHADOW.card,
     borderRadius: RADIUS.md,
     paddingHorizontal: 12,
     paddingVertical: 0,
     textAlignVertical: "center",
-    backgroundColor: COLORS.surfaceElevated,
+    backgroundColor: COLORS.foreground,
     color: COLORS.textPrimary,
   },
   sendButton: {

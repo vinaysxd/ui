@@ -2,7 +2,7 @@ import { Modal, View, Text, TouchableOpacity, Pressable, StyleSheet, Platform } 
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { COLORS, RADIUS } from "../constants/theme";
+import { COLORS, RADIUS, SHADOW } from "../constants/theme";
 import { showError } from "../utils/toast";
 
 interface ImageSourceSheetProps {
@@ -103,14 +103,13 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   sheet: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: COLORS.foreground,
     borderTopLeftRadius: RADIUS.xl,
     borderTopRightRadius: RADIUS.xl,
     paddingHorizontal: 16,
     paddingTop: 16,
     paddingBottom: 8,
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    ...SHADOW.card,
   },
   option: {
     flexDirection: "row",

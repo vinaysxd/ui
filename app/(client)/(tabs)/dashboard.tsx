@@ -11,7 +11,7 @@ import { getClientSites, Site } from "../../../src/services/sites.service";
 import { getClientHistory, Attendance } from "../../../src/services/attendance.service";
 import { showError } from "../../../src/utils/toast";
 import { formatDateTime } from "../../../src/utils/datetime";
-import { COLORS, RADIUS } from "../../../src/constants/theme";
+import { COLORS, RADIUS, SHADOW } from "../../../src/constants/theme";
 import Loader from "../../../src/components/Loader";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -168,9 +168,7 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
   activityCard: {
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    backgroundColor: COLORS.foreground,
     borderRadius: RADIUS.md,
     padding: 16,
     marginBottom: 12,
