@@ -32,6 +32,8 @@ export interface Attendance {
   clock_out: string | null;
   clock_out_lat: number | null;
   clock_out_lng: number | null;
+  /** Computed by the server: "clocked_in" | "clocked_out" | "long_shift". */
+  status?: string;
   staff: AttendanceStaff | null;
   site?: AttendanceSite | null;
   photos: AttendancePhoto[];

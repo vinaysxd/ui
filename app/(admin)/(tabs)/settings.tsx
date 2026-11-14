@@ -321,9 +321,14 @@ export default function SettingsScreen() {
         </View>
       ) : null}
 
-      <Text style={styles.sectionLabel}>App</Text>
+      <Text style={styles.sectionLabel}>Appearance</Text>
       <View style={styles.section}>
-        <ThemeToggle />
+        <ThemeToggle last />
+      </View>
+
+      <Text style={styles.sectionLabel}>About</Text>
+      <View style={styles.section}>
+        <SettingsRow label="App" value={Constants.expoConfig?.name ?? "Brothers"} />
         <SettingsRow label="Version" value={Constants.expoConfig?.version ?? "1.0.0"} />
         <SettingsRow label="API URL" value={api.defaults.baseURL ?? "—"} last />
       </View>
@@ -481,7 +486,7 @@ const styles = StyleSheet.create({
     padding: 24,
     alignItems: "center",
     marginBottom: 24,
-    shadowColor: "#000000",
+    shadowColor: COLORS.shadow,
     shadowOpacity: COLORS.shadowOpacity,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 3 },

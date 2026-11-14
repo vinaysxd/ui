@@ -35,17 +35,17 @@ export function storeThemeMode(mode: ThemeMode) {
 // Mono palettes: page, side nav, cards and list items share one fill; division
 // comes from borders and shadows.
 const DARK_MONO = {
-  background: "#141414",
-  surface: "#141414",
-  surfaceElevated: "#141414",
-  foreground: "#1F1F1F",
+  background: "#111111",
+  surface: "#111111",
+  surfaceElevated: "#111111",
+  foreground: "#242424",
   border: "#3A3A3A",
   gold: "#C9A84C",
   goldLight: "#E8C97A",
   goldDark: "#A67C35",
   goldTint: "#3A3520",
   textPrimary: "#FFFFFF",
-  textSecondary: "#9A9A9A",
+  textSecondary: "#B4B4B4",
   textMuted: "#666666",
   success: "#4CAF50",
   successBg: "#1A2E1A",
@@ -57,7 +57,11 @@ const DARK_MONO = {
   goldInk: "#C9A84C",
   outline: "#757575",
   dangerText: "#EF5350",
-  shadowOpacity: 0.45,
+  // Dark mode: shadow takes the lighter card tone so it reads as a soft halo on the dark page.
+  shadow: "#242424",
+  shadowOpacity: 0.6,
+  zebra: "rgba(255,255,255,0.03)",
+  hover: "rgba(255,255,255,0.06)",
 };
 
 const LIGHT_MONO: typeof DARK_MONO = {
@@ -83,7 +87,10 @@ const LIGHT_MONO: typeof DARK_MONO = {
   goldInk: "#8A6A25",
   outline: "#8A8A8A",
   dangerText: "#C62828",
+  shadow: "#000000",
   shadowOpacity: 0.14,
+  zebra: "rgba(0,0,0,0.03)",
+  hover: "rgba(0,0,0,0.06)",
 };
 
 export const COLORS: typeof DARK_MONO = THEME_MODE === "dark" ? DARK_MONO : LIGHT_MONO;
@@ -108,14 +115,17 @@ export const LIGHT_COLORS: typeof COLORS = {
   warningBg: "#FFF8E1",
   accentBg: "#F5EFDA",
   goldTint: "#F0E8CC",
+  shadow: "#000000",
   shadowOpacity: 0.14,
+  zebra: "rgba(0,0,0,0.025)",
+  hover: "rgba(0,0,0,0.05)",
   goldInk: "#8A6A25",
   outline: "#8A8578",
   dangerText: "#C62828",
 };
 
 // Shadows replace outline borders for separating cards, tables and inputs.
-const shadowBase = { shadowColor: "#000000", shadowOpacity: COLORS.shadowOpacity };
+const shadowBase = { shadowColor: COLORS.shadow, shadowOpacity: COLORS.shadowOpacity };
 export const SHADOW = {
   card: { ...shadowBase, shadowRadius: 8, shadowOffset: { width: 0, height: 3 }, elevation: 3 },
   side: { ...shadowBase, shadowRadius: 10, shadowOffset: { width: 4, height: 0 }, elevation: 6 },

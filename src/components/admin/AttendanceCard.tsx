@@ -1,30 +1,30 @@
-import { View, Text, StyleSheet } from "react-native";
+import { Text, View, Pressable, StyleSheet } from "react-native";
 import { Attendance } from "../../services/attendance.service";
 import { COLORS, RADIUS, SHADOW } from "../../constants/theme";
-import { formatDateTime } from "../../utils/datetime";
+import { formatClockOut, formatDuration, formatRelativeDateTime } from "../../utils/datetime";
+import { getAttendanceStatus } from "../../utils/attendanceStatus";
+import StatusPill from "./StatusPill";
+import { isRecent } from "./AttendanceRow";
 
 interface AttendanceCardProps {
   record: Attendance;
+  onPress?: (record: Attendance) => void;
 }
 
-export default function AttendanceCard({ record }: AttendanceCardProps) {
+export default function AttendanceCard({ record, onPress }: AttendanceCardProps) {
+  const when = record.clock_out
+    ? `${formatRelativeDateTime(record.clock_in)} → ${formatClockOut(record.clock_in, record.clock_out)} · ${formatDuration(record.clock_in, record.clock_out)}`
+    : formatRelativeDateTime(record.clock_in);
+
   return (
-    <View style={styles.card}>
+    <Pressable onPress={() => onPress?.(record)} style={[styles.card, isRecent(record) && styles.cardRecent]}>
       <View style={styles.info}>
         <Text style={styles.staffName}>{record.staff?.full_name ?? "Unknown staff"}</Text>
         <Text style={styles.siteName}>{record.site?.name ?? "Unknown site"}</Text>
-        <Text style={styles.time}>{formatDateTime(record.clock_in)}</Text>
+        <Text style={styles.time}>{when}</Text>
       </View>
-      {record.clock_out ? (
-        <View style={styles.clockedOutBadge}>
-          <Text style={styles.clockedOutBadgeText}>Clocked Out</Text>
-        </View>
-      ) : (
-        <View style={styles.activeBadge}>
-          <Text style={styles.activeBadgeText}>Active</Text>
-        </View>
-      )}
-    </View>
+      <StatusPill status={getAttendanceStatus(record)} />
+    </Pressable>
   );
 }
 
@@ -39,14 +39,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     marginBottom: 8,
     overflow: "hidden",
-    shadowColor: "#000000",
-    shadowOpacity: COLORS.shadowOpacity,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 3,
+    borderLeftWidth: 3,
+    borderLeftColor: "transparent",
+    ...SHADOW.card,
   },
+  cardRecent: { borderLeftColor: COLORS.gold },
   info: {
     flex: 1,
+    paddingRight: 8,
   },
   staffName: {
     color: COLORS.textPrimary,
@@ -62,27 +62,5 @@ const styles = StyleSheet.create({
     color: COLORS.textMuted,
     fontSize: 12,
     marginTop: 4,
-  },
-  activeBadge: {
-    backgroundColor: COLORS.successBg,
-    borderRadius: RADIUS.full,
-    paddingVertical: 4,
-    paddingHorizontal: 10,
-  },
-  activeBadgeText: {
-    color: COLORS.success,
-    fontSize: 12,
-    fontWeight: "600",
-  },
-  clockedOutBadge: {
-    backgroundColor: COLORS.border,
-    borderRadius: RADIUS.full,
-    paddingVertical: 4,
-    paddingHorizontal: 10,
-  },
-  clockedOutBadgeText: {
-    color: COLORS.textMuted,
-    fontSize: 12,
-    fontWeight: "600",
   },
 });

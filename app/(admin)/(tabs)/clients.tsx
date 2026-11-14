@@ -367,7 +367,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     overflow: "hidden",
     gap: 12,
-    shadowColor: "#000000",
+    shadowColor: COLORS.shadow,
     shadowOpacity: COLORS.shadowOpacity,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 3 },
@@ -375,7 +375,7 @@ const styles = StyleSheet.create({
   },
   cardInactive: {
     backgroundColor: COLORS.foreground,
-    shadowColor: "#000000",
+    shadowColor: COLORS.shadow,
     shadowOpacity: COLORS.shadowOpacity,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 3 },

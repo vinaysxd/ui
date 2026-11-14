@@ -2,7 +2,6 @@ import { View, Text, Image, TouchableOpacity, StyleSheet, useWindowDimensions, S
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Stack, Slot, usePathname, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import Constants from "expo-constants";
 import { THEME_MODE, COLORS, SPACING, RADIUS, SHADOW } from "../../src/constants/theme";
 
 const NAV_ITEMS = [
@@ -49,9 +48,6 @@ function Sidebar() {
         })}
       </View>
 
-      <View style={styles.sidebarBottom}>
-        <Text style={styles.version}>v{Constants.expoConfig?.version ?? "1.0.0"}</Text>
-      </View>
     </View>
   );
 }
@@ -141,20 +137,10 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.md,
   },
   navItemActive: {
-    backgroundColor: COLORS.accentBg,
+    backgroundColor: "rgba(201,168,76,0.12)",
   },
   navLabel: {
     fontSize: 16,
     letterSpacing: 0.3,
-  },
-  sidebarBottom: {
-    paddingHorizontal: 20,
-    paddingBottom: 20,
-  },
-  version: {
-    color: COLORS.textMuted,
-    fontSize: 11,
-    marginTop: SPACING.sm,
-    textAlign: "center",
   },
 });
