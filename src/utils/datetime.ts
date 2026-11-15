@@ -54,11 +54,10 @@ export const formatDuration = (fromIso: string, toIso?: string | null, now: Date
   return `${m}m`;
 };
 
-/** Clock-out time; overnight / multi-day shifts get a "+1d" style marker instead of an ambiguous bare time. */
-export const formatClockOut = (clockInIso: string, clockOutIso: string): string => {
-  const offset = Math.round(
-    (startOfDay(new Date(clockOutIso)) - startOfDay(new Date(clockInIso))) / DAY_MS
-  );
-  const time = formatTime(clockOutIso);
-  return offset > 0 ? `${time} +${offset}d` : time;
-};
+/** True when the shift ends on a later calendar day than it started (overnight or multi-day). */
+export const spansDays = (clockInIso: string, clockOutIso: string): boolean =>
+  startOfDay(new Date(clockOutIso)) > startOfDay(new Date(clockInIso));
+
+/** Clock-out: bare time for same-day shifts, full date + time when the shift spans days. */
+export const formatClockOut = (clockInIso: string, clockOutIso: string): string =>
+  spansDays(clockInIso, clockOutIso) ? formatRelativeDateTime(clockOutIso) : formatTime(clockOutIso);

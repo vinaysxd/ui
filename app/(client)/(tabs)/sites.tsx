@@ -13,7 +13,9 @@ import { Ionicons } from "@expo/vector-icons";
 import { getClientSite, getClientSites, Site } from "../../../src/services/sites.service";
 import { showError } from "../../../src/utils/toast";
 import { COLORS, RADIUS, SHADOW } from "../../../src/constants/theme";
-import Loader from "../../../src/components/Loader";
+import Skeleton from "../../../src/components/Skeleton";
+import EmptyState from "../../../src/components/EmptyState";
+import { ActivePill } from "../../../src/components/admin/DirectoryScreen";
 
 export default function ClientSitesScreen() {
   const router = useRouter();
@@ -71,8 +73,13 @@ export default function ClientSitesScreen() {
 
   if (loading) {
     return (
-      <View style={styles.centered}>
-        <Loader size="large" />
+      <View style={styles.container}>
+        <Skeleton width={140} height={24} style={{ marginBottom: 8 }} />
+        <Skeleton width={90} height={13} style={{ marginBottom: 20 }} />
+        <Skeleton height={42} radius={RADIUS.md} style={{ marginBottom: 16 }} />
+        {[0, 1, 2, 3].map((i) => (
+          <Skeleton key={i} height={84} radius={RADIUS.md} style={{ marginBottom: 12 }} />
+        ))}
       </View>
     );
   }
@@ -80,9 +87,12 @@ export default function ClientSitesScreen() {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Sites</Text>
+      <Text style={styles.subtitle}>
+        {sites.length} {sites.length === 1 ? "site" : "sites"}
+      </Text>
 
       <View style={styles.searchBar}>
-        <Ionicons name="search-outline" size={18} color={COLORS.gold} />
+        <Ionicons name="search" size={16} color={COLORS.textMuted} />
         <TextInput
           style={styles.searchInput}
           value={searchQuery}
@@ -93,7 +103,7 @@ export default function ClientSitesScreen() {
         />
         {searchQuery.length > 0 ? (
           <TouchableOpacity onPress={() => setSearchQuery("")}>
-            <Ionicons name="close-outline" size={18} color={COLORS.textMuted} />
+            <Ionicons name="close-circle" size={16} color={COLORS.textMuted} />
           </TouchableOpacity>
         ) : null}
       </View>
@@ -104,9 +114,16 @@ export default function ClientSitesScreen() {
         contentContainerStyle={styles.listContent}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.gold} colors={[COLORS.gold]} />}
         ListEmptyComponent={
-          <Text style={styles.emptyText}>
-            {searchQuery.trim() ? "No sites found" : "No sites yet."}
-          </Text>
+          searchQuery.trim() ? (
+            <EmptyState
+              icon="search-outline"
+              title="No sites match your search"
+              actionLabel="Clear search"
+              onAction={() => setSearchQuery("")}
+            />
+          ) : (
+            <EmptyState icon="business-outline" title="No sites yet" hint="Sites linked to your account will appear here." />
+          )
         }
         renderItem={({ item }) => (
           <TouchableOpacity
@@ -115,11 +132,7 @@ export default function ClientSitesScreen() {
           >
             <View style={styles.cardHeader}>
               <Text style={styles.name}>{item.name}</Text>
-              <View style={[styles.badge, item.is_active ? styles.badgeActive : styles.badgeInactive]}>
-                <Text style={[styles.badgeText, item.is_active ? styles.badgeTextActive : styles.badgeTextInactive]}>
-                  {item.is_active ? "Active" : "Inactive"}
-                </Text>
-              </View>
+              <ActivePill active={item.is_active} />
             </View>
             <Text style={styles.detail}>{item.address}</Text>
             <View style={styles.staffRow}>
@@ -161,10 +174,15 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
   },
   title: {
-    fontSize: 24,
-    fontWeight: "bold",
+    fontSize: 22,
+    fontWeight: "700",
     color: COLORS.textPrimary,
-    marginBottom: 16,
+  },
+  subtitle: {
+    color: COLORS.textMuted,
+    fontSize: 13,
+    marginTop: 2,
+    marginBottom: 20,
   },
   searchBar: {
     flexDirection: "row",
@@ -174,7 +192,7 @@ const styles = StyleSheet.create({
     ...SHADOW.card,
     borderRadius: RADIUS.md,
     paddingHorizontal: 12,
-    paddingVertical: 10,
+    height: 42,
     marginBottom: 16,
   },
   searchInput: {
@@ -182,14 +200,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
     padding: 0,
     color: COLORS.textPrimary,
-  },
+    outlineStyle: "none",
+  } as any,
   listContent: {
     paddingBottom: 32,
-  },
-  emptyText: {
-    color: COLORS.textMuted,
-    textAlign: "center",
-    marginTop: 32,
   },
   card: {
     backgroundColor: COLORS.foreground,
@@ -219,26 +233,5 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: COLORS.textSecondary,
     marginTop: 4,
-  },
-  badge: {
-    borderRadius: RADIUS.full,
-    paddingVertical: 4,
-    paddingHorizontal: 10,
-  },
-  badgeActive: {
-    backgroundColor: COLORS.successBg,
-  },
-  badgeInactive: {
-    backgroundColor: COLORS.dangerBg,
-  },
-  badgeText: {
-    fontSize: 12,
-    fontWeight: "600",
-  },
-  badgeTextActive: {
-    color: COLORS.success,
-  },
-  badgeTextInactive: {
-    color: COLORS.danger,
   },
 });

@@ -12,9 +12,18 @@ import { getClientHistory, Attendance } from "../../../src/services/attendance.s
 import { showError } from "../../../src/utils/toast";
 import { formatDateTime } from "../../../src/utils/datetime";
 import { COLORS, RADIUS, SHADOW } from "../../../src/constants/theme";
-import Loader from "../../../src/components/Loader";
+import Skeleton from "../../../src/components/Skeleton";
+import EmptyState from "../../../src/components/EmptyState";
+import StatusPill from "../../../src/components/admin/StatusPill";
+import { getAttendanceStatus } from "../../../src/utils/attendanceStatus";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const formatToday = (): string => {
+  const now = new Date();
+  return `${WEEKDAYS[now.getDay()]}, ${MONTHS[now.getMonth()]} ${now.getDate()}`;
+};
 
 export default function ClientHomeScreen() {
   const [sites, setSites] = useState<Site[]>([]);
@@ -74,8 +83,19 @@ export default function ClientHomeScreen() {
 
   if (loading) {
     return (
-      <View style={styles.centered}>
-        <Loader size="large" />
+      <View style={styles.container}>
+        <View style={styles.content}>
+          <Skeleton width={140} height={24} style={{ marginBottom: 8 }} />
+          <Skeleton width={120} height={13} style={{ marginBottom: 24 }} />
+          <View style={styles.statsGrid}>
+            {[0, 1, 2, 3].map((i) => (
+              <Skeleton key={i} height={96} radius={RADIUS.md} style={{ flexBasis: "48%", flexGrow: 1 }} />
+            ))}
+          </View>
+          {[0, 1, 2].map((i) => (
+            <Skeleton key={i} height={84} radius={RADIUS.md} style={{ marginBottom: 12 }} />
+          ))}
+        </View>
       </View>
     );
   }
@@ -89,6 +109,7 @@ export default function ClientHomeScreen() {
       }
     >
       <Text style={styles.title}>Home</Text>
+      <Text style={styles.subtitle}>{formatToday()}</Text>
 
       <View style={styles.statsGrid}>
         <StatCard icon="business-outline" label="Total Sites" value={stats.totalSites} style={styles.statCard} />
@@ -99,17 +120,13 @@ export default function ClientHomeScreen() {
 
       <Text style={styles.sectionTitle}>Recent Activity</Text>
       {recentActivity.length === 0 ? (
-        <Text style={styles.emptyText}>No recent activity.</Text>
+        <EmptyState icon="time-outline" title="No recent activity" hint="Staff visits to your sites will show up here." />
       ) : (
         recentActivity.map((record) => (
           <View key={record.id} style={styles.activityCard}>
             <View style={styles.activityHeader}>
               <Text style={styles.activityStaff}>{record.staff?.full_name ?? "Unknown staff"}</Text>
-              {record.clock_out ? null : (
-                <View style={styles.activeBadge}>
-                  <Text style={styles.activeBadgeText}>Active</Text>
-                </View>
-              )}
+              <StatusPill status={getAttendanceStatus(record)} />
             </View>
             <Text style={styles.activitySite}>{siteNameById[record.site_id] ?? "Unknown site"}</Text>
             <Text style={styles.activityDetail}>In: {formatDateTime(record.clock_in)}</Text>
@@ -132,40 +149,32 @@ const styles = StyleSheet.create({
     padding: 16,
     paddingBottom: 32,
   },
-  centered: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: COLORS.background,
-  },
   title: {
-    fontSize: 24,
-    fontWeight: "bold",
+    fontSize: 22,
+    fontWeight: "700",
     color: COLORS.textPrimary,
-    marginBottom: 16,
+  },
+  subtitle: {
+    color: COLORS.textMuted,
+    fontSize: 13,
+    marginTop: 2,
+    marginBottom: 24,
   },
   statsGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 8,
-    marginBottom: 24,
+    gap: 10,
+    marginBottom: 32,
   },
   statCard: {
     flexBasis: "48%",
     flexGrow: 1,
   },
   sectionTitle: {
-    fontSize: 11,
-    fontWeight: "600",
-    color: COLORS.gold,
-    marginBottom: 8,
-    textTransform: "uppercase",
-    letterSpacing: 2,
-  },
-  emptyText: {
-    color: COLORS.textMuted,
-    textAlign: "center",
-    marginTop: 16,
+    fontSize: 16,
+    fontWeight: "700",
+    color: COLORS.textPrimary,
+    marginBottom: 12,
   },
   activityCard: {
     backgroundColor: COLORS.foreground,
@@ -189,17 +198,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "600",
     color: COLORS.textPrimary,
-  },
-  activeBadge: {
-    backgroundColor: COLORS.successBg,
-    borderRadius: RADIUS.full,
-    paddingVertical: 3,
-    paddingHorizontal: 8,
-  },
-  activeBadgeText: {
-    color: COLORS.success,
-    fontSize: 11,
-    fontWeight: "600",
   },
   activitySite: {
     fontSize: 13,

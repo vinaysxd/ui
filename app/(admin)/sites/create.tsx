@@ -154,7 +154,6 @@ export default function CreateSiteScreen() {
             <Ionicons name="arrow-back" size={22} color={COLORS.gold} />
           </TouchableOpacity>
 
-          <Text style={styles.eyebrow}>CREATE</Text>
           <Text style={styles.title}>New Site</Text>
 
           <View style={styles.card}>
@@ -352,13 +351,6 @@ const styles = StyleSheet.create({
     alignSelf: "flex-start",
     marginBottom: 16,
   },
-  eyebrow: {
-    color: COLORS.gold,
-    fontSize: 11,
-    letterSpacing: 3,
-    textTransform: "uppercase",
-    marginBottom: 4,
-  },
   title: {
     color: COLORS.textPrimary,
     fontSize: 22,
@@ -369,11 +361,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.foreground,
     borderRadius: RADIUS.md,
     padding: 24,
-    shadowColor: COLORS.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 12,
-    elevation: 4,
+    ...SHADOW.card,
   },
   fieldSpacing: {
     marginBottom: 16,
@@ -386,7 +374,7 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   input: {
-    backgroundColor: COLORS.foreground,
+    backgroundColor: COLORS.cardHigh,
     ...SHADOW.card,
     borderRadius: RADIUS.md,
     color: COLORS.textPrimary,
@@ -395,7 +383,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
   inputFocused: {
-    borderColor: COLORS.gold,
+    backgroundColor: COLORS.accentBg,
   },
   clientLoading: {
     alignSelf: "flex-start",
@@ -405,7 +393,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    backgroundColor: COLORS.foreground,
+    backgroundColor: COLORS.cardHigh,
     ...SHADOW.card,
     borderRadius: RADIUS.md,
     paddingHorizontal: 14,

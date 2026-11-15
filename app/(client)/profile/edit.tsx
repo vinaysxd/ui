@@ -130,7 +130,6 @@ export default function ClientEditProfileScreen() {
       <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} style={styles.container} contentContainerStyle={styles.content}>
         <BackButton onPress={() => router.replace("/(client)/profile")} />
 
-        <Text style={styles.eyebrow}>EDIT</Text>
         <Text style={styles.title}>Edit Profile</Text>
 
         {loading ? (
@@ -293,13 +292,6 @@ const styles = StyleSheet.create({
   backButton: {
     alignSelf: "flex-start",
     marginBottom: 16,
-  },
-  eyebrow: {
-    color: COLORS.gold,
-    fontSize: 11,
-    letterSpacing: 3,
-    textTransform: "uppercase",
-    marginBottom: 4,
   },
   title: {
     fontSize: 22,

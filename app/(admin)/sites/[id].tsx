@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { ComponentProps } from "react";
 import {
   View,
   Text,
@@ -34,12 +33,16 @@ import {
   Attendance,
   AttendancePhoto,
 } from "../../../src/services/attendance.service";
-import { getSiteNotes, deleteNote, SiteNote } from "../../../src/services/notes.service";
+import { getSiteNotes, addAdminNote, deleteNote, SiteNote } from "../../../src/services/notes.service";
 import { getSiteTasks, addSiteTask, deleteSiteTask, SiteTask } from "../../../src/services/tasks.service";
 import { showSuccess, showError } from "../../../src/utils/toast";
 import { COLORS, RADIUS, SHADOW } from "../../../src/constants/theme";
 import ScreenContainer from "../../../src/components/ScreenContainer";
 import ConfirmModal from "../../../src/components/ConfirmModal";
+import { daysAgo, formatDuration as formatElapsed } from "../../../src/utils/datetime";
+import { getShiftFlag } from "../../../src/utils/attendanceStatus";
+import EmptyState from "../../../src/components/EmptyState";
+import ChatMessages from "../../../src/components/chat/ChatMessages";
 import PhotoThumb from "../../../src/components/PhotoThumb";
 import { LOADING_STYLE } from "../../../src/constants/ui";
 import Loader from "../../../src/components/Loader";
@@ -47,7 +50,6 @@ import Loader from "../../../src/components/Loader";
 const ATTENDANCE_PAGE_SIZE = 10;
 
 type Tab = "details" | "staff" | "attendance" | "notes" | "tasks";
-type IconName = ComponentProps<typeof Ionicons>["name"];
 
 const getInitials = (fullName: string): string => {
   const parts = fullName.trim().split(/\s+/).filter(Boolean);
@@ -68,6 +70,11 @@ const TABS: { key: Tab; label: string }[] = [
   { key: "tasks", label: "Tasks" },
 ];
 
+const capitalise = (s: string): string => (s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : s);
+
+// Collapse stray whitespace/newlines so multi-line addresses read as one clean line.
+const tidy = (s?: string | null): string => (s ?? "").replace(/\s*\n+\s*/g, ", ").replace(/\s{2,}/g, " ").trim();
+
 const clientDisplayLabel = (client: { full_name: string; company_name?: string | null }): string =>
   client.company_name ? `${client.full_name} (${client.company_name})` : client.full_name;
 
@@ -85,6 +92,19 @@ const formatDuration = (startIso: string, endIso: string): string => {
   const minutes = totalMinutes % 60;
   return hours === 0 ? `${minutes}m` : `${hours}h ${minutes}m`;
 };
+
+const formatShiftDate = (iso: string): string => {
+  const date = new Date(iso);
+  return `${String(date.getDate()).padStart(2, "0")} ${MONTHS[date.getMonth()]} ${date.getFullYear()}`;
+};
+
+type AttRange = "all" | "today" | "7d" | "30d";
+const ATT_RANGES: { key: AttRange; label: string; maxDays: number }[] = [
+  { key: "all", label: "All", maxDays: Infinity },
+  { key: "today", label: "Today", maxDays: 0 },
+  { key: "7d", label: "7 days", maxDays: 6 },
+  { key: "30d", label: "30 days", maxDays: 29 },
+];
 
 const formatDateTime = (iso: string): string => {
   const date = new Date(iso);
@@ -132,10 +152,14 @@ export default function SiteDetailScreen() {
   const [attendanceTotal, setAttendanceTotal] = useState<number>(0);
   const [expandedAttendanceId, setExpandedAttendanceId] = useState<string | null>(null);
   const scrollRef = useRef<ScrollView>(null);
+  const [attSearch, setAttSearch] = useState<string>("");
+  const [attRange, setAttRange] = useState<AttRange>("all");
 
   const [notes, setNotes] = useState<SiteNote[]>([]);
   const [notesLoading, setNotesLoading] = useState<boolean>(false);
   const [notesLoaded, setNotesLoaded] = useState<boolean>(false);
+  const [newNote, setNewNote] = useState<string>("");
+  const [addingNote, setAddingNote] = useState<boolean>(false);
 
   const [tasks, setTasks] = useState<SiteTask[]>([]);
   const [tasksLoading, setTasksLoading] = useState<boolean>(false);
@@ -292,6 +316,21 @@ export default function SiteDetailScreen() {
       showError(err.message);
     } finally {
       setDeleteTaskModalLoading(false);
+    }
+  };
+
+  const handleAddNote = async () => {
+    if (!newNote.trim()) return;
+    setAddingNote(true);
+    try {
+      const note = await addAdminNote(id, newNote.trim());
+      setNotes((prev) => [note, ...prev]);
+      setNewNote("");
+      showSuccess("Note added");
+    } catch (err: any) {
+      showError(err.message);
+    } finally {
+      setAddingNote(false);
     }
   };
 
@@ -491,39 +530,48 @@ export default function SiteDetailScreen() {
     <ScreenContainer>
       <View style={styles.screen}>
         <View style={styles.topBar}>
-          <BackButton onPress={() => router.replace("/(admin)/sites")} />
+          <View style={styles.inner}>
+            <BackButton onPress={() => router.replace("/(admin)/sites")} />
 
-          <View style={styles.header}>
-            <View style={styles.headerInfo}>
-              <Text style={styles.name}>{site.name}</Text>
-              <Text style={styles.addressText}>{site.address}</Text>
-            </View>
-            <View style={[styles.badge, site.is_active ? styles.badgeActive : styles.badgeInactive]}>
-              <Text
-                style={[
-                  styles.badgeText,
-                  site.is_active ? styles.badgeTextActive : styles.badgeTextInactive,
-                ]}
-              >
-                {site.is_active ? "Active" : "Inactive"}
-              </Text>
-            </View>
-          </View>
-
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabBar}>
-            {TABS.map((tab) => {
-              const active = activeTab === tab.key;
-              return (
-                <TouchableOpacity
-                  key={tab.key}
-                  style={[styles.tab, active && styles.tabActive]}
-                  onPress={() => setActiveTab(tab.key)}
+            <View style={styles.header}>
+              <View style={styles.headerIcon}>
+                <Ionicons name="business" size={26} color={COLORS.gold} />
+              </View>
+              <View style={styles.headerInfo}>
+                <Text style={styles.name} numberOfLines={2}>
+                  {site.name}
+                </Text>
+                <Text style={styles.addressText} numberOfLines={2}>
+                  {tidy(site.address) || "No address"}
+                </Text>
+              </View>
+              <View style={[styles.badge, site.is_active ? styles.badgeActive : styles.badgeInactive]}>
+                <View
+                  style={[styles.badgeDot, { backgroundColor: site.is_active ? COLORS.success : COLORS.dangerText }]}
+                />
+                <Text
+                  style={[styles.badgeText, site.is_active ? styles.badgeTextActive : styles.badgeTextInactive]}
                 >
-                  <Text style={[styles.tabText, active && styles.tabTextActive]}>{tab.label}</Text>
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
+                  {site.is_active ? "Active" : "Inactive"}
+                </Text>
+              </View>
+            </View>
+
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabBar}>
+              {TABS.map((tab) => {
+                const active = activeTab === tab.key;
+                return (
+                  <TouchableOpacity
+                    key={tab.key}
+                    style={[styles.tab, active && styles.tabActive]}
+                    onPress={() => setActiveTab(tab.key)}
+                  >
+                    <Text style={[styles.tabText, active && styles.tabTextActive]}>{tab.label}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
         </View>
 
         <ScrollView
@@ -543,141 +591,120 @@ export default function SiteDetailScreen() {
             ) : undefined
           }
         >
+          <View style={styles.inner}>
           {activeTab === "details" && (
             <>
-              <Text style={styles.sectionTitle}>Site Details</Text>
-              <View style={styles.section}>
-                <FieldInput
+              <View style={styles.panel}>
+                <SectionHeading title="Site Information" first />
+                <Field
                   label="Name"
-                  icon="business-outline"
                   value={name}
                   onChangeText={setName}
-                  editable={isEditing}
+                  editing={isEditing}
+                  placeholder="Site name"
                   focused={focusedField === "name"}
                   onFocus={() => setFocusedField("name")}
                   onBlur={() => setFocusedField(null)}
                 />
-                <FieldInput
+                <Field
                   label="Address"
-                  icon="location-outline"
-                  value={address}
+                  value={tidy(address)}
                   onChangeText={setAddress}
-                  editable={isEditing}
+                  editing={isEditing}
+                  placeholder="Street, suburb"
                   focused={focusedField === "address"}
                   onFocus={() => setFocusedField("address")}
                   onBlur={() => setFocusedField(null)}
                 />
-                <FieldInput
+                <Field
                   label="Latitude"
-                  icon="navigate-outline"
                   value={latitude}
                   onChangeText={setLatitude}
-                  editable={isEditing}
+                  editing={isEditing}
                   keyboardType="numbers-and-punctuation"
+                  placeholder="-34.8800"
                   focused={focusedField === "latitude"}
                   onFocus={() => setFocusedField("latitude")}
                   onBlur={() => setFocusedField(null)}
                 />
-                <FieldInput
+                <Field
                   label="Longitude"
-                  icon="navigate-outline"
                   value={longitude}
                   onChangeText={setLongitude}
-                  editable={isEditing}
+                  editing={isEditing}
                   keyboardType="numbers-and-punctuation"
+                  placeholder="150.6000"
                   focused={focusedField === "longitude"}
                   onFocus={() => setFocusedField("longitude")}
                   onBlur={() => setFocusedField(null)}
                 />
-                <View style={styles.fieldRow}>
-                  <View style={styles.labelRow}>
-                    <Ionicons name="briefcase-outline" size={16} color={COLORS.gold} />
-                    <Text style={styles.rowLabel}>Client</Text>
-                  </View>
-                  {isEditing ? (
-                    <TouchableOpacity
-                      style={styles.dropdown}
-                      onPress={() => setClientPickerVisible(true)}
-                    >
-                      <Text
-                        style={selectedClientLabel ? styles.dropdownText : styles.dropdownPlaceholder}
-                      >
+
+                <SectionHeading title="Client" />
+                {isEditing ? (
+                  <View style={styles.editField}>
+                    <Text style={styles.editLabel}>Client</Text>
+                    <TouchableOpacity style={styles.select} onPress={() => setClientPickerVisible(true)}>
+                      <Text style={selectedClientLabel ? styles.selectText : styles.selectPlaceholder}>
                         {selectedClientLabel || "Select a client"}
                       </Text>
                       <Ionicons name="chevron-down-outline" size={18} color={COLORS.textMuted} />
                     </TouchableOpacity>
-                  ) : (
-                    <Text style={styles.rowValueBlock}>{selectedClientLabel || "No client"}</Text>
-                  )}
-                </View>
-
-                {isEditing ? (
+                  </View>
+                ) : (
+                  <Field label="Client" value={selectedClientLabel} />
+                )}
+                {site.client ? (
                   <>
-                    <TouchableOpacity style={[styles.saveButton, saving && LOADING_STYLE]} onPress={handleSave} disabled={saving}>
-                      {saving ? (
-                        <Loader tone="dark" />
-                      ) : (
-                        <Text style={styles.saveButtonText}>Save</Text>
-                      )}
-                    </TouchableOpacity>
-                    <TouchableOpacity style={[styles.cancelButton, saving && LOADING_STYLE]} onPress={handleCancel} disabled={saving}>
-                      <Text style={styles.cancelButtonText}>Cancel</Text>
-                    </TouchableOpacity>
+                    <Field label="Contact Person" value={site.client.contact_person ?? ""} />
+                    <Field label="Email" value={site.client.email} />
+                    <Field label="Phone" value={site.client.phone} />
+                    <Field label="Company" value={site.client.company_name ?? ""} />
+                    <Field label="Billing Address" value={tidy(site.client.billing_address)} />
                   </>
                 ) : (
-                  <>
-                    <TouchableOpacity style={styles.editButton} onPress={handleEdit}>
-                      <Text style={styles.editButtonText}>Edit</Text>
-                    </TouchableOpacity>
-                    {site.is_active ? (
-                      <TouchableOpacity
-                        style={styles.deactivateButton}
-                        onPress={() => setDeactivateModalVisible(true)}
-                      >
-                        <Text style={styles.deactivateButtonText}>Deactivate</Text>
-                      </TouchableOpacity>
-                    ) : (
-                      <TouchableOpacity
-                        style={[styles.reactivateButton, reactivating && LOADING_STYLE]}
-                        onPress={handleReactivate}
-                        disabled={reactivating}
-                      >
-                        {reactivating ? (
-                          <Loader />
-                        ) : (
-                          <Text style={styles.reactivateButtonText}>Reactivate</Text>
-                        )}
-                      </TouchableOpacity>
-                    )}
-                  </>
+                  <Text style={styles.noClient}>No client assigned.</Text>
                 )}
               </View>
 
-              <Text style={styles.sectionTitle}>Client Details</Text>
-              <View style={styles.clientCard}>
-                {site.client ? (
+              <View style={styles.actions}>
+                {isEditing ? (
                   <>
-                    <Row label="Full Name" icon="person-outline" value={site.client.full_name} />
-                    <Row label="Email" icon="mail-outline" value={site.client.email} />
-                    <Row label="Phone" icon="call-outline" value={site.client.phone} />
-                    <Row
-                      label="Company Name"
-                      icon="briefcase-outline"
-                      value={site.client.company_name ?? "—"}
-                    />
-                    <Row
-                      label="Billing Address"
-                      icon="location-outline"
-                      value={site.client.billing_address ?? "—"}
-                    />
-                    <Row
-                      label="Contact Person"
-                      icon="person-circle-outline"
-                      value={site.client.contact_person ?? "—"}
-                    />
+                    <TouchableOpacity
+                      style={[styles.primaryButton, saving && LOADING_STYLE]}
+                      onPress={handleSave}
+                      disabled={saving}
+                    >
+                      {saving ? <Loader tone="dark" /> : <Text style={styles.primaryButtonText}>Save Changes</Text>}
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.secondaryButton, saving && LOADING_STYLE]}
+                      onPress={handleCancel}
+                      disabled={saving}
+                    >
+                      <Text style={styles.secondaryButtonText}>Cancel</Text>
+                    </TouchableOpacity>
                   </>
                 ) : (
-                  <Text style={styles.emptyText}>No client assigned.</Text>
+                  <>
+                    <TouchableOpacity style={styles.primaryButton} onPress={handleEdit}>
+                      <Ionicons name="create-outline" size={16} color="#1A1A1A" />
+                      <Text style={styles.primaryButtonText}>Edit</Text>
+                    </TouchableOpacity>
+                    <View style={{ flex: 1 }} />
+                    {site.is_active ? (
+                      <TouchableOpacity style={styles.textButton} onPress={() => setDeactivateModalVisible(true)}>
+                        <Text style={styles.dangerText}>Deactivate</Text>
+                      </TouchableOpacity>
+                    ) : (
+                      <TouchableOpacity
+                        style={[styles.textButton, reactivating && LOADING_STYLE]}
+                        onPress={handleReactivate}
+                        disabled={reactivating}
+                      >
+                        {reactivating ? <Loader /> : <Text style={styles.successText}>Reactivate</Text>}
+                      </TouchableOpacity>
+                    )}
+                  </>
                 )}
               </View>
             </>
@@ -742,175 +769,252 @@ export default function SiteDetailScreen() {
             </>
           )}
 
-          {activeTab === "attendance" && (
-            <>
-              {attendanceLoading ? (
-                <Loader style={styles.staffLoading} />
-              ) : attendance.length === 0 ? (
-                <Text style={styles.emptyText}>No attendance records.</Text>
-              ) : (
-                attendance.map((record) => {
-                  const isExpanded = expandedAttendanceId === record.id;
-                  return (
-                    <View key={record.id} style={styles.attendanceCardShadow}>
-                      <TouchableOpacity
-                        style={styles.attendanceCard}
-                        activeOpacity={0.7}
-                        onPress={() =>
-                          setExpandedAttendanceId(isExpanded ? null : record.id)
-                        }
-                      >
-                        <View style={styles.attendanceCardTop}>
-                          <View style={styles.attendanceLeft}>
-                            <View style={styles.attendanceAvatar}>
-                              <Text style={styles.attendanceAvatarText}>
-                                {getInitials(record.staff?.full_name ?? "?")}
+          {activeTab === "attendance" && (() => {
+            const range = ATT_RANGES.find((r) => r.key === attRange)!;
+            const q = attSearch.trim().toLowerCase();
+            const shown = attendance.filter(
+              (r) =>
+                daysAgo(r.clock_in) <= range.maxDays &&
+                (!q || (r.staff?.full_name ?? "").toLowerCase().includes(q))
+            );
+            const staffCount = new Set(attendance.map((r) => r.staff_id)).size;
+            const filtering = attRange !== "all" || q.length > 0;
+
+            return (
+              <>
+                <View style={styles.attSummary}>
+                  <Text style={styles.attSummaryText}>
+                    <Text style={styles.attSummaryStrong}>{attendanceTotal}</Text>{" "}
+                    {attendanceTotal === 1 ? "record" : "records"} ·{" "}
+                    <Text style={styles.attSummaryStrong}>{staffCount}</Text> staff
+                    {filtering ? `  ·  ${shown.length} shown` : ""}
+                  </Text>
+                </View>
+
+                <View style={styles.attFilters}>
+                  <View style={styles.attSearchBox}>
+                    <Ionicons name="search" size={15} color={COLORS.textMuted} />
+                    <TextInput
+                      style={styles.attSearchInput}
+                      value={attSearch}
+                      onChangeText={setAttSearch}
+                      placeholder="Search staff"
+                      placeholderTextColor={COLORS.textMuted}
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                    />
+                    {attSearch ? (
+                      <TouchableOpacity onPress={() => setAttSearch("")} hitSlop={8}>
+                        <Ionicons name="close-circle" size={15} color={COLORS.textMuted} />
+                      </TouchableOpacity>
+                    ) : null}
+                  </View>
+                  <View style={styles.attChips}>
+                    {ATT_RANGES.map((r) => {
+                      const active = r.key === attRange;
+                      return (
+                        <TouchableOpacity
+                          key={r.key}
+                          style={[styles.attChip, active && styles.attChipActive]}
+                          onPress={() => setAttRange(r.key)}
+                        >
+                          <Text style={[styles.attChipText, active && styles.attChipTextActive]}>{r.label}</Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                </View>
+
+                {attendanceLoading ? (
+                  <Loader style={styles.staffLoading} />
+                ) : attendance.length === 0 ? (
+                  <EmptyState
+                    icon="time-outline"
+                    title="No attendance records"
+                    hint="Clock-ins at this site will show up here."
+                  />
+                ) : shown.length === 0 ? (
+                  <EmptyState
+                    icon="search-outline"
+                    title="No records match"
+                    hint="Try a different date range or name."
+                    actionLabel="Clear filters"
+                    onAction={() => {
+                      setAttSearch("");
+                      setAttRange("all");
+                    }}
+                  />
+                ) : (
+                  shown.map((record) => {
+                    const isExpanded = expandedAttendanceId === record.id;
+                    const flag = getShiftFlag(record);
+                    const flagColor = flag
+                      ? flag.level === "danger"
+                        ? COLORS.dangerText
+                        : COLORS.warning
+                      : null;
+                    const open = !record.clock_out;
+                    const durationText = record.clock_out
+                      ? formatDuration(record.clock_in, record.clock_out)
+                      : formatElapsed(record.clock_in);
+                    const pairs = record.photos.length;
+                    return (
+                      <View key={record.id} style={styles.attCard}>
+                        <TouchableOpacity
+                          style={styles.attCardHeader}
+                          activeOpacity={0.7}
+                          onPress={() => setExpandedAttendanceId(isExpanded ? null : record.id)}
+                        >
+                          <View style={styles.attAvatar}>
+                            <Text style={styles.attAvatarText}>{getInitials(record.staff?.full_name ?? "?")}</Text>
+                          </View>
+                          <View style={styles.attInfo}>
+                            <Text style={styles.attName} numberOfLines={1}>
+                              {record.staff?.full_name ?? "Unknown staff"}
+                            </Text>
+                            <View style={styles.attMetaRow}>
+                              <Text style={styles.attMeta}>{formatShiftDate(record.clock_in)}</Text>
+                              <Text style={styles.attMetaDot}>·</Text>
+                              <Ionicons name="camera-outline" size={12} color={COLORS.textMuted} />
+                              <Text style={styles.attMeta}>
+                                {pairs} {pairs === 1 ? "photo pair" : "photo pairs"}
                               </Text>
                             </View>
-                            <View>
-                              <Text style={styles.attendanceStaffName}>
-                                {record.staff?.full_name ?? "Unknown staff"}
+                          </View>
+                          <View style={styles.attRight}>
+                            <View style={styles.attDurationRow}>
+                              {flag && <Ionicons name="warning" size={14} color={flagColor!} />}
+                              <Text
+                                style={[
+                                  styles.attDuration,
+                                  open && { color: COLORS.success },
+                                  flagColor ? { color: flagColor } : null,
+                                ]}
+                              >
+                                {durationText}
                               </Text>
-                              <Text style={styles.attendanceSiteName}>
-                                {record.site?.name ?? "Today"}
-                              </Text>
-                              <View style={styles.attendancePhotoCount}>
-                                <Ionicons name="camera-outline" size={12} color={COLORS.textMuted} />
-                                <Text style={styles.attendancePhotoCountText}>
-                                  {record.photos.length}{" "}
-                                  {record.photos.length === 1 ? "photo pair" : "photo pairs"}
+                            </View>
+                            {open && <Text style={styles.attActive}>Clocked in</Text>}
+                          </View>
+                          <Ionicons
+                            name={isExpanded ? "chevron-up" : "chevron-down"}
+                            size={18}
+                            color={COLORS.textMuted}
+                          />
+                        </TouchableOpacity>
+
+                        {isExpanded && (
+                          <View style={styles.attExpanded}>
+                            <View style={styles.attFacts}>
+                              <View style={styles.attFact}>
+                                <Text style={styles.attFactLabel}>Clock in</Text>
+                                <Text style={styles.attFactValue}>{formatDateTime(record.clock_in)}</Text>
+                              </View>
+                              <View style={styles.attFact}>
+                                <Text style={styles.attFactLabel}>Clock out</Text>
+                                <Text style={styles.attFactValue}>
+                                  {record.clock_out ? formatDateTime(record.clock_out) : "Still clocked in"}
+                                </Text>
+                              </View>
+                              <View style={styles.attFact}>
+                                <Text style={styles.attFactLabel}>{open ? "Elapsed" : "Duration"}</Text>
+                                <Text style={[styles.attFactValue, flagColor ? { color: flagColor } : null]}>
+                                  {durationText}
                                 </Text>
                               </View>
                             </View>
-                          </View>
-                          <View style={styles.attendanceRight}>
-                            <Ionicons
-                              name={isExpanded ? "chevron-up" : "chevron-down"}
-                              size={16}
-                              color={COLORS.textMuted}
-                              style={styles.attendanceChevron}
-                            />
-                            <View style={styles.attendanceStatusRow}>
-                              <View
-                                style={[
-                                  styles.attendanceStatusDot,
-                                  record.clock_out
-                                    ? styles.attendanceStatusDotMuted
-                                    : styles.attendanceStatusDotActive,
-                                ]}
-                              />
+
+                            {flag && (
                               <Text
                                 style={[
-                                  styles.attendanceStatusText,
-                                  record.clock_out
-                                    ? styles.attendanceStatusTextMuted
-                                    : styles.attendanceStatusTextActive,
+                                  styles.attFlag,
+                                  flag.level === "danger" ? styles.attFlagDanger : styles.attFlagWarning,
                                 ]}
                               >
-                                {record.clock_out ? formatDateTime(record.clock_out) : "Active"}
+                                ⚠ {flag.label}
                               </Text>
-                            </View>
-                            <Text style={styles.attendanceClockIn}>
-                              {formatDateTime(record.clock_in)}
-                            </Text>
-                            {record.clock_out ? (
-                              <Text style={styles.attendanceDuration}>
-                                {formatDuration(record.clock_in, record.clock_out)}
-                              </Text>
-                            ) : null}
-                          </View>
-                        </View>
+                            )}
 
-                        {isExpanded ? (
-                          record.photos.length > 0 ? (
-                            <View style={styles.photoPairsContainer}>
-                              {record.photos.map((photo) => (
-                                <AttendancePhotoPair key={photo.id} photo={photo} />
-                              ))}
-                            </View>
-                          ) : (
-                            <Text style={styles.noPhotosText}>No photos for this record.</Text>
-                          )
-                        ) : null}
-                      </TouchableOpacity>
-                    </View>
-                  );
-                })
-              )}
-              <PaginationControls
-                page={attendancePage}
-                totalPages={attendanceTotalPages}
-                total={attendanceTotal}
-                limit={ATTENDANCE_PAGE_SIZE}
-                disabled={attendanceLoading}
-                onPageChange={fetchAttendance}
-              />
-            </>
-          )}
+                            {pairs > 0 ? (
+                              record.photos.map((photo) => <AttendancePhotoPair key={photo.id} photo={photo} />)
+                            ) : (
+                              <Text style={styles.noPhotosText}>No photos for this record.</Text>
+                            )}
+                          </View>
+                        )}
+                      </View>
+                    );
+                  })
+                )}
+                <PaginationControls
+                  page={attendancePage}
+                  totalPages={attendanceTotalPages}
+                  total={attendanceTotal}
+                  limit={ATTENDANCE_PAGE_SIZE}
+                  disabled={attendanceLoading}
+                  onPageChange={fetchAttendance}
+                />
+              </>
+            );
+          })()}
 
           {activeTab === "notes" && (
             <>
-              {notesLoading ? (
+              <View style={styles.notesToolbar}>
+                <Text style={styles.chatHintText} numberOfLines={2}>
+                  {notes.length > 0
+                    ? "Admin notes appear on the left · client messages on the right · tap a message to delete"
+                    : ""}
+                </Text>
+                <TouchableOpacity
+                  style={[styles.refreshBtn, notesLoading && LOADING_STYLE]}
+                  onPress={fetchNotes}
+                  disabled={notesLoading}
+                  accessibilityLabel="Refresh notes"
+                >
+                  <Ionicons name="refresh" size={14} color={COLORS.gold} />
+                  <Text style={styles.refreshText}>{notesLoading ? "Refreshing…" : "Refresh"}</Text>
+                </TouchableOpacity>
+              </View>
+              {notesLoading && notes.length === 0 ? (
                 <Loader style={styles.staffLoading} />
               ) : notes.length === 0 ? (
-                <Text style={styles.emptyText}>No notes for this site.</Text>
+                <EmptyState
+                  icon="chatbubbles-outline"
+                  title="No notes yet"
+                  hint="Write the first note below."
+                />
               ) : (
-                notes.map((note) => {
-                  const isClient = note.type === "client";
-                  const card = (
-                    <View style={[styles.card, isClient ? styles.cardClient : styles.cardStaff]}>
-                      <View style={styles.cardHeader}>
-                        <Text style={styles.authorName}>{note.author?.full_name ?? "Unknown author"}</Text>
-                        <View style={styles.cardHeaderRight}>
-                          <View
-                            style={[styles.noteBadge, isClient ? styles.noteBadgeClient : styles.noteBadgeStaff]}
-                          >
-                            <Text
-                              style={[
-                                styles.noteBadgeText,
-                                isClient ? styles.noteBadgeTextClient : styles.noteBadgeTextStaff,
-                              ]}
-                            >
-                              {isClient ? "CLIENT" : "STAFF"}
-                            </Text>
-                          </View>
-                          <Pressable
-                            onPress={(e: any) => {
-                              e.stopPropagation();
-                              console.log("delete button pressed", note.id);
-                              console.log("site_id:", id);
-                              openDeleteNoteModal(note.id);
-                            }}
-                            {...(Platform.OS === "web"
-                              ? {
-                                  onClick: (e: any) => {
-                                    e.stopPropagation();
-                                    console.log("delete button pressed", note.id);
-                                    console.log("site_id:", id);
-                                    openDeleteNoteModal(note.id);
-                                  },
-                                }
-                              : {})}
-                            style={styles.deleteNoteButton}
-                            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                          >
-                            <Ionicons name="trash-outline" size={16} color={COLORS.danger} />
-                          </Pressable>
-                        </View>
-                      </View>
-                      <Text style={styles.noteText}>{note.note}</Text>
-                      <Text style={styles.noteTimestamp}>{formatDateTime(note.created_at)}</Text>
-                    </View>
-                  );
-                  return isClient ? (
-                    <View key={note.id} style={styles.cardShadow}>
-                      {card}
-                    </View>
-                  ) : (
-                    <View key={note.id}>{card}</View>
-                  );
-                })
+                <>
+                  <View style={styles.chatPanel}>
+                    <ChatMessages
+                      notes={notes}
+                      alignBy="type"
+                      canDelete={() => true}
+                      onDelete={(n) => openDeleteNoteModal(n.id)}
+                    />
+                  </View>
+                </>
               )}
+
+              <View style={styles.addTaskRow}>
+                <TextInput
+                  style={[styles.addTaskInput, styles.noteInput]}
+                  value={newNote}
+                  onChangeText={setNewNote}
+                  placeholder="Write a note..."
+                  placeholderTextColor={COLORS.textMuted}
+                  multiline
+                  editable={!addingNote}
+                />
+                <TouchableOpacity
+                  style={[styles.addTaskButton, (addingNote || !newNote.trim()) && LOADING_STYLE]}
+                  onPress={handleAddNote}
+                  disabled={addingNote || !newNote.trim()}
+                >
+                  {addingNote ? <Loader tone="dark" /> : <Text style={styles.addTaskButtonText}>Send</Text>}
+                </TouchableOpacity>
+              </View>
             </>
           )}
 
@@ -959,6 +1063,7 @@ export default function SiteDetailScreen() {
               </View>
             </>
           )}
+          </View>
         </ScrollView>
 
         <Modal visible={clientPickerVisible} animationType="slide" transparent>
@@ -1072,7 +1177,10 @@ export default function SiteDetailScreen() {
 function AttendancePhotoPair({ photo }: { photo: AttendancePhoto }) {
   return (
     <View style={styles.photoPair}>
-      <Text style={styles.photoPairLabel}>{photo.label}</Text>
+      <View style={styles.photoPairHeader}>
+        <Ionicons name="location-outline" size={14} color={COLORS.gold} />
+        <Text style={styles.photoPairLabel}>{photo.label}</Text>
+      </View>
       <View style={styles.thumbRow}>
         <View style={styles.thumbColumn}>
           <Text style={styles.thumbCaption}>Before</Text>
@@ -1087,55 +1195,56 @@ function AttendancePhotoPair({ photo }: { photo: AttendancePhoto }) {
   );
 }
 
-function Row({ label, icon, value }: { label: string; icon: IconName; value: string }) {
-  return (
-    <View style={styles.row}>
-      <View style={styles.labelRow}>
-        <Ionicons name={icon} size={16} color={COLORS.gold} />
-        <Text style={styles.rowLabel}>{label}</Text>
-      </View>
-      <Text style={styles.rowValue}>{value}</Text>
-    </View>
-  );
+function SectionHeading({ title, first }: { title: string; first?: boolean }) {
+  return <Text style={[styles.sectionHeading, first && { marginTop: 0 }]}>{title}</Text>;
 }
 
-function FieldInput({
+// Read-only row (label left, value left-aligned in a fixed column) that turns into a
+// labelled input while `editing`. Fields without `onChangeText` are never editable.
+function Field({
   label,
-  icon,
   value,
   onChangeText,
-  editable,
+  editing,
+  placeholder,
   keyboardType,
   focused,
   onFocus,
   onBlur,
 }: {
   label: string;
-  icon: IconName;
   value: string;
   onChangeText?: (text: string) => void;
-  editable: boolean;
+  editing?: boolean;
+  placeholder?: string;
   keyboardType?: "default" | "numbers-and-punctuation";
   focused?: boolean;
   onFocus?: () => void;
   onBlur?: () => void;
 }) {
-  return (
-    <View style={styles.fieldRow}>
-      <View style={styles.labelRow}>
-        <Ionicons name={icon} size={16} color={COLORS.gold} />
-        <Text style={styles.rowLabel}>{label}</Text>
+  if (editing && onChangeText) {
+    return (
+      <View style={styles.editField}>
+        <Text style={styles.editLabel}>{label}</Text>
+        <TextInput
+          style={[styles.input, focused && styles.inputFocused]}
+          value={value}
+          onChangeText={onChangeText}
+          keyboardType={keyboardType}
+          onFocus={onFocus}
+          onBlur={onBlur}
+          placeholder={placeholder}
+          placeholderTextColor={COLORS.textMuted}
+        />
       </View>
-      <TextInput
-        style={[styles.input, !editable && styles.inputDisabled, editable && focused && styles.inputFocused]}
-        value={value}
-        onChangeText={onChangeText}
-        editable={editable}
-        keyboardType={keyboardType}
-        onFocus={onFocus}
-        onBlur={onBlur}
-        placeholderTextColor={COLORS.textMuted}
-      />
+    );
+  }
+  return (
+    <View style={styles.row}>
+      <Text style={styles.rowLabel}>{label}</Text>
+      <Text style={[styles.rowValue, !value && styles.rowValueEmpty]} selectable>
+        {value || "—"}
+      </Text>
     </View>
   );
 }
@@ -1143,7 +1252,7 @@ function FieldInput({
 function BackButton({ onPress }: { onPress: () => void }) {
   return (
     <TouchableOpacity style={styles.backButton} onPress={onPress}>
-      <Ionicons name="arrow-back" size={20} color={COLORS.gold} />
+      <Ionicons name="arrow-back" size={18} color={COLORS.gold} />
       <Text style={styles.backButtonText}>Back</Text>
     </TouchableOpacity>
   );
@@ -1154,17 +1263,23 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
+  inner: {
+    width: "100%",
+    maxWidth: 880,
+    alignSelf: "center",
+  },
   topBar: {
-    paddingTop: 16,
-    paddingHorizontal: 16,
+    paddingTop: 20,
+    paddingHorizontal: 24,
     backgroundColor: COLORS.surface,
   },
   tabBar: {
     flexDirection: "row",
+    marginTop: 8,
   },
   tab: {
     paddingVertical: 12,
-    paddingHorizontal: 16,
+    paddingHorizontal: 18,
     borderBottomWidth: 2,
     borderBottomColor: "transparent",
   },
@@ -1172,11 +1287,9 @@ const styles = StyleSheet.create({
     borderBottomColor: COLORS.gold,
   },
   tabText: {
-    fontSize: 11,
+    fontSize: 14,
     fontWeight: "600",
     color: COLORS.textMuted,
-    textTransform: "uppercase",
-    letterSpacing: 1.5,
   },
   tabTextActive: {
     color: COLORS.gold,
@@ -1185,8 +1298,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
-    padding: 16,
-    paddingBottom: 32,
+    padding: 24,
+    paddingBottom: 40,
   },
   centered: {
     flex: 1,
@@ -1199,51 +1312,201 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 6,
     alignSelf: "flex-start",
-    marginBottom: 16,
+    marginBottom: 18,
   },
   backButtonText: {
-    fontSize: 16,
+    fontSize: 15,
+    fontWeight: "500",
     color: COLORS.gold,
   },
   header: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 16,
+    gap: 16,
+    marginBottom: 14,
+  },
+  headerIcon: {
+    width: 60,
+    height: 60,
+    borderRadius: RADIUS.lg,
+    backgroundColor: COLORS.goldTint,
+    alignItems: "center",
+    justifyContent: "center",
   },
   headerInfo: {
-    flexShrink: 1,
+    flex: 1,
+    minWidth: 0,
   },
   name: {
-    fontSize: 22,
+    fontSize: 28,
     fontWeight: "700",
+    letterSpacing: -0.3,
     color: COLORS.textPrimary,
   },
   addressText: {
     fontSize: 13,
-    color: COLORS.textSecondary,
+    color: COLORS.textMuted,
     marginTop: 2,
   },
   badge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
     borderRadius: RADIUS.full,
-    paddingVertical: 4,
-    paddingHorizontal: 10,
+    paddingVertical: 5,
+    paddingHorizontal: 12,
+  },
+  badgeDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
   },
   badgeActive: {
-    backgroundColor: COLORS.successBg,
+    backgroundColor: `${COLORS.success}38`,
   },
   badgeInactive: {
-    backgroundColor: COLORS.dangerBg,
+    backgroundColor: `${COLORS.dangerText}38`,
   },
   badgeText: {
     fontSize: 12,
-    fontWeight: "600",
+    fontWeight: "700",
   },
   badgeTextActive: {
     color: COLORS.success,
   },
   badgeTextInactive: {
-    color: COLORS.danger,
+    color: COLORS.dangerText,
+  },
+  panel: {
+    backgroundColor: COLORS.foreground,
+    ...SHADOW.card,
+    borderRadius: RADIUS.lg,
+    paddingVertical: 24,
+    paddingHorizontal: 28,
+    marginBottom: 20,
+  },
+  sectionHeading: {
+    fontSize: 11,
+    fontWeight: "700",
+    letterSpacing: 1.2,
+    textTransform: "uppercase",
+    color: COLORS.gold,
+    marginTop: 28,
+    marginBottom: 6,
+  },
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 10,
+  },
+  rowLabel: {
+    width: 130,
+    fontSize: 14,
+    color: COLORS.textMuted,
+  },
+  rowValue: {
+    flex: 1,
+    fontSize: 15,
+    fontWeight: "500",
+    color: COLORS.textPrimary,
+  },
+  rowValueEmpty: {
+    color: COLORS.textMuted,
+    fontWeight: "400",
+  },
+  editField: {
+    marginBottom: 14,
+    marginTop: 4,
+  },
+  editLabel: {
+    fontSize: 12,
+    color: COLORS.textMuted,
+    marginBottom: 6,
+  },
+  input: {
+    borderRadius: RADIUS.md,
+    paddingVertical: 11,
+    paddingHorizontal: 12,
+    backgroundColor: COLORS.cardHigh,
+    ...SHADOW.card,
+    color: COLORS.textPrimary,
+    fontSize: 15,
+    outlineStyle: "none",
+  } as any,
+  inputFocused: {
+    backgroundColor: COLORS.accentBg,
+  },
+  select: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    borderRadius: RADIUS.md,
+    paddingVertical: 11,
+    paddingHorizontal: 12,
+    backgroundColor: COLORS.cardHigh,
+    ...SHADOW.card,
+  },
+  selectText: {
+    color: COLORS.textPrimary,
+    fontSize: 15,
+    flexShrink: 1,
+  },
+  selectPlaceholder: {
+    color: COLORS.textMuted,
+    fontSize: 15,
+  },
+  noClient: {
+    color: COLORS.textMuted,
+    fontSize: 14,
+    paddingVertical: 8,
+  },
+  actions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  primaryButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    minWidth: 120,
+    height: 44,
+    paddingHorizontal: 24,
+    borderRadius: RADIUS.md,
+    backgroundColor: COLORS.gold,
+  },
+  primaryButtonText: {
+    color: "#1A1A1A",
+    fontWeight: "700",
+    fontSize: 14,
+  },
+  secondaryButton: {
+    height: 44,
+    paddingHorizontal: 22,
+    justifyContent: "center",
+    alignItems: "center",
+    borderRadius: RADIUS.md,
+    backgroundColor: COLORS.hover,
+  },
+  secondaryButtonText: {
+    color: COLORS.textPrimary,
+    fontWeight: "600",
+    fontSize: 14,
+  },
+  textButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+  },
+  dangerText: {
+    color: COLORS.dangerText,
+    fontWeight: "600",
+    fontSize: 14,
+  },
+  successText: {
+    color: COLORS.success,
+    fontWeight: "600",
+    fontSize: 14,
   },
   sectionTitle: {
     fontSize: 11,
@@ -1321,132 +1584,242 @@ const styles = StyleSheet.create({
     zIndex: 999,
     padding: 8,
   },
-  attendanceCardShadow: {
-    borderRadius: RADIUS.md,
-     
-    elevation: 3,
-    marginBottom: 10,
-  },
-  attendanceCard: {
-    backgroundColor: COLORS.foreground,
-    borderRadius: RADIUS.md,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    overflow: "hidden",
-    shadowColor: COLORS.shadow,
-    shadowOpacity: COLORS.shadowOpacity,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 3,
-  },
-  attendanceCardTop: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-  },
-  attendanceChevron: {
-    alignSelf: "flex-end",
-    marginBottom: 4,
-  },
-  attendanceLeft: {
+  notesToolbar: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
+    justifyContent: "space-between",
+    gap: 12,
+    marginBottom: 10,
+    minHeight: 30,
   },
-  attendanceAvatar: {
-    width: 36,
-    height: 36,
+  refreshBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginLeft: "auto",
+    backgroundColor: COLORS.foreground,
+    borderRadius: RADIUS.md,
+    paddingVertical: 7,
+    paddingHorizontal: 12,
+    ...SHADOW.card,
+  },
+  refreshText: { color: COLORS.gold, fontSize: 12, fontWeight: "600" },
+  chatHint: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginBottom: 10,
+  },
+  chatHintText: {
+    color: COLORS.textMuted,
+    fontSize: 12,
+    flexShrink: 1,
+  },
+  chatPanel: {
+    backgroundColor: COLORS.foreground,
+    borderRadius: RADIUS.lg,
+    padding: 16,
+    paddingTop: 4,
+    ...SHADOW.card,
+  },
+  attSummary: {
+    marginBottom: 12,
+  },
+  attSummaryText: {
+    color: COLORS.textSecondary,
+    fontSize: 13,
+  },
+  attSummaryStrong: {
+    color: COLORS.textPrimary,
+    fontWeight: "700",
+  },
+  attFilters: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    alignItems: "center",
+    gap: 10,
+    marginBottom: 14,
+  },
+  attSearchBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    flexGrow: 1,
+    flexBasis: 200,
+    height: 38,
+    paddingHorizontal: 12,
+    borderRadius: RADIUS.md,
+    backgroundColor: COLORS.foreground,
+    ...SHADOW.card,
+  },
+  attSearchInput: {
+    flex: 1,
+    color: COLORS.textPrimary,
+    fontSize: 14,
+    outlineStyle: "none",
+  } as any,
+  attChips: {
+    flexDirection: "row",
+    gap: 6,
+  },
+  attChip: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: RADIUS.full,
+    backgroundColor: COLORS.foreground,
+    ...SHADOW.card,
+  },
+  attChipActive: {
+    backgroundColor: COLORS.accentBg,
+  },
+  attChipText: {
+    color: COLORS.textSecondary,
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  attChipTextActive: {
+    color: COLORS.gold,
+  },
+  attCard: {
+    backgroundColor: COLORS.foreground,
+    borderRadius: RADIUS.md,
+    marginBottom: 8,
+    overflow: "hidden",
+    ...SHADOW.card,
+  },
+  attCardHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingVertical: 11,
+    paddingHorizontal: 14,
+  },
+  attAvatar: {
+    width: 38,
+    height: 38,
     borderRadius: RADIUS.full,
     backgroundColor: COLORS.goldTint,
     justifyContent: "center",
     alignItems: "center",
   },
-  attendanceAvatarText: {
+  attAvatarText: {
     color: COLORS.gold,
     fontSize: 14,
     fontWeight: "700",
   },
-  attendanceStaffName: {
-    fontSize: 14,
+  attInfo: {
+    flex: 1,
+    minWidth: 0,
+  },
+  attName: {
+    fontSize: 15,
     fontWeight: "600",
     color: COLORS.textPrimary,
   },
-  attendanceSiteName: {
-    fontSize: 12,
-    color: COLORS.textMuted,
-    marginTop: 2,
-  },
-  attendancePhotoCount: {
+  attMetaRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
-    marginTop: 4,
+    gap: 5,
+    marginTop: 3,
   },
-  attendancePhotoCountText: {
-    fontSize: 11,
+  attMeta: {
+    fontSize: 12,
     color: COLORS.textMuted,
   },
-  attendanceRight: {
+  attMetaDot: {
+    fontSize: 12,
+    color: COLORS.textMuted,
+  },
+  attRight: {
     alignItems: "flex-end",
   },
-  attendanceStatusRow: {
+  attDurationRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 5,
   },
-  attendanceStatusDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
+  attDuration: {
+    fontSize: 17,
+    fontWeight: "700",
+    color: COLORS.gold,
+    letterSpacing: -0.2,
   },
-  attendanceStatusDotActive: {
-    backgroundColor: COLORS.success,
-  },
-  attendanceStatusDotMuted: {
-    backgroundColor: COLORS.textMuted,
-  },
-  attendanceStatusText: {
+  attActive: {
     fontSize: 11,
-  },
-  attendanceStatusTextActive: {
     color: COLORS.success,
+    marginTop: 1,
   },
-  attendanceStatusTextMuted: {
+  attExpanded: {
+    paddingHorizontal: 14,
+    paddingBottom: 14,
+    paddingTop: 4,
+    backgroundColor: COLORS.zebra,
+  },
+  attFacts: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 16,
+    paddingVertical: 12,
+  },
+  attFact: {
+    flexGrow: 1,
+    flexBasis: 140,
+  },
+  attFactLabel: {
+    fontSize: 11,
+    letterSpacing: 0.8,
+    textTransform: "uppercase",
     color: COLORS.textMuted,
   },
-  attendanceClockIn: {
-    fontSize: 11,
-    color: COLORS.textSecondary,
-    marginTop: 4,
-  },
-  attendanceDuration: {
-    fontSize: 11,
+  attFactValue: {
+    fontSize: 14,
     fontWeight: "600",
-    color: COLORS.gold,
-    marginTop: 2,
+    color: COLORS.textPrimary,
+    marginTop: 3,
   },
-  photoPairsContainer: {
-    marginTop: 12,
-    gap: 12,
-  },
-  photoPair: {
-    paddingTop: 12,
-  },
-  photoPairLabel: {
+  attFlag: {
+    borderRadius: RADIUS.md,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    marginBottom: 8,
     fontSize: 13,
     fontWeight: "600",
-    marginBottom: 8,
+  },
+  attFlagDanger: {
+    backgroundColor: "rgba(220,38,38,0.15)",
+    color: COLORS.dangerText,
+  },
+  attFlagWarning: {
+    backgroundColor: "rgba(245,158,11,0.15)",
+    color: COLORS.warning,
+  },
+  photoPair: {
+    paddingTop: 10,
+  },
+  photoPairHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginBottom: 10,
+  },
+  photoPairLabel: {
+    fontSize: 14,
+    fontWeight: "700",
     color: COLORS.textPrimary,
   },
   thumbRow: {
     flexDirection: "row",
-    gap: 16,
+    flexWrap: "wrap",
+    gap: 20,
   },
   thumbColumn: {
     alignItems: "flex-start",
   },
   thumbCaption: {
-    fontSize: 12,
+    fontSize: 11,
+    fontWeight: "700",
+    letterSpacing: 0.8,
+    textTransform: "uppercase",
     color: COLORS.textMuted,
     marginBottom: 6,
   },
@@ -1530,6 +1903,11 @@ const styles = StyleSheet.create({
     padding: 12,
     fontSize: 14,
   },
+  noteInput: {
+    minHeight: 44,
+    maxHeight: 120,
+    textAlignVertical: "top",
+  },
   addTaskButton: {
     backgroundColor: COLORS.gold,
     borderRadius: RADIUS.md,
@@ -1541,52 +1919,6 @@ const styles = StyleSheet.create({
     color: "#000000",
     fontWeight: "700",
     fontSize: 14,
-  },
-  row: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingVertical: 8,
-  },
-  rowLabel: {
-    fontSize: 11,
-    color: COLORS.textMuted,
-    textTransform: "uppercase",
-    letterSpacing: 1.5,
-  },
-  rowValue: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: COLORS.textPrimary,
-    textAlign: "right",
-    flexShrink: 1,
-    marginLeft: 16,
-  },
-  rowValueBlock: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: COLORS.textPrimary,
-    marginTop: 6,
-  },
-  fieldRow: {
-    paddingVertical: 8,
-  },
-  input: {
-    ...SHADOW.card,
-    borderRadius: RADIUS.md,
-    padding: 12,
-    marginTop: 6,
-    backgroundColor: COLORS.foreground,
-    color: COLORS.textPrimary,
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  inputFocused: {
-    borderColor: COLORS.gold,
-  },
-  inputDisabled: {
-    backgroundColor: COLORS.surfaceElevated,
-    color: COLORS.textPrimary,
-    fontWeight: "normal",
   },
   dropdown: {
     flexDirection: "row",

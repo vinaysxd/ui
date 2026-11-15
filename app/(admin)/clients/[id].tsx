@@ -5,6 +5,7 @@ import {
   TextInput,
   ScrollView,
   TouchableOpacity,
+  Image,
   StyleSheet,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -23,6 +24,8 @@ import { showSuccess, showError } from "../../../src/utils/toast";
 import { COLORS, RADIUS, SHADOW } from "../../../src/constants/theme";
 import ScreenContainer from "../../../src/components/ScreenContainer";
 import ConfirmModal from "../../../src/components/ConfirmModal";
+import SitesTable from "../../../src/components/admin/SitesTable";
+import EmptyState from "../../../src/components/EmptyState";
 import { LOADING_STYLE } from "../../../src/constants/ui";
 import Loader from "../../../src/components/Loader";
 
@@ -52,11 +55,23 @@ const formatDate = (iso: string): string => {
   return `${day} ${month} ${year}`;
 };
 
+const capitalise = (s: string): string => (s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : s);
+
+// Collapse stray whitespace/newlines so multi-line addresses read as one clean line.
+const tidy = (s?: string | null): string => (s ?? "").replace(/\s*\n+\s*/g, ", ").replace(/\s{2,}/g, " ").trim();
+
+const initialsOf = (name: string): string => {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  return (parts[0][0] + (parts.length > 1 ? parts[parts.length - 1][0] : "")).toUpperCase();
+};
+
 export default function ClientDetailScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [activeTab, setActiveTab] = useState<Tab>("details");
   const [focusedField, setFocusedField] = useState<string | null>(null);
+  const [avatarFailed, setAvatarFailed] = useState<boolean>(false);
 
   const [client, setClient] = useState<Client | null>(null);
   const [isEditing, setIsEditing] = useState<boolean>(false);
@@ -91,7 +106,7 @@ export default function ClientDetailScreen() {
     setPhone(data.phone ?? "");
     setAvatarUrl(data.avatar_url ?? "");
     setCompanyName(data.company_name ?? "");
-    setBillingAddress(data.billing_address ?? "");
+    setBillingAddress(tidy(data.billing_address));
     setContactPerson(data.contact_person ?? "");
     setQbCustomerId((data as any).qb_customer_id ?? null);
     setQbCustomerName((data as any).qb_customer_name ?? null);
@@ -140,7 +155,7 @@ export default function ClientDetailScreen() {
 
   const handleLinkCustomer = async (customer: QBCustomerResult) => {
     setQbLinking(true);
-    try { 
+    try {
       await api.patch(`/integrations/quickbooks/clients/${id}/link`, {
         qb_customer_id: customer.qb_customer_id,
       });
@@ -270,227 +285,245 @@ export default function ClientDetailScreen() {
     );
   }
 
+  const field = (key: string) => ({
+    focused: focusedField === key,
+    onFocus: () => setFocusedField(key),
+    onBlur: () => setFocusedField(null),
+  });
+
   return (
     <ScreenContainer>
       <View style={styles.screen}>
         <View style={styles.topBar}>
-          <BackButton onPress={() => router.replace("/(admin)/clients")} />
+          <View style={styles.inner}>
+            <BackButton onPress={() => router.replace("/(admin)/clients")} />
 
-          <View style={styles.header}>
-            <Text style={styles.name}>{client.full_name}</Text>
-            <View style={[styles.badge, client.is_active ? styles.badgeActive : styles.badgeInactive]}>
-              <Text style={[styles.badgeText, client.is_active ? styles.badgeTextActive : styles.badgeTextInactive]}>
-                {client.is_active ? "Active" : "Inactive"}
-              </Text>
+            <View style={styles.header}>
+              {client.avatar_url && !avatarFailed ? (
+                <Image
+                  source={{ uri: client.avatar_url }}
+                  style={styles.avatar}
+                  onError={() => setAvatarFailed(true)}
+                />
+              ) : (
+                <View style={[styles.avatar, styles.avatarFallback]}>
+                  <Text style={styles.avatarText}>{initialsOf(client.full_name)}</Text>
+                </View>
+              )}
+              <View style={styles.headerText}>
+                <Text style={styles.name} numberOfLines={2}>
+                  {client.full_name}
+                </Text>
+                <Text style={styles.subtitle}>{client.company_name || client.email}</Text>
+              </View>
+              <View style={[styles.badge, client.is_active ? styles.badgeActive : styles.badgeInactive]}>
+                <View style={[styles.badgeDot, { backgroundColor: client.is_active ? COLORS.success : COLORS.dangerText }]} />
+                <Text style={[styles.badgeText, client.is_active ? styles.badgeTextActive : styles.badgeTextInactive]}>
+                  {client.is_active ? "Active" : "Inactive"}
+                </Text>
+              </View>
             </View>
-          </View>
 
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabBar}>
-            {TABS.map((tab) => {
-              const active = activeTab === tab.key;
-              return (
-                <TouchableOpacity
-                  key={tab.key}
-                  style={[styles.tab, active && styles.tabActive]}
-                  onPress={() => setActiveTab(tab.key)}
-                >
-                  <Text style={[styles.tabText, active && styles.tabTextActive]}>{tab.label}</Text>
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabBar}>
+              {TABS.map((tab) => {
+                const active = activeTab === tab.key;
+                return (
+                  <TouchableOpacity
+                    key={tab.key}
+                    style={[styles.tab, active && styles.tabActive]}
+                    onPress={() => setActiveTab(tab.key)}
+                  >
+                    <Text style={[styles.tabText, active && styles.tabTextActive]}>{tab.label}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
         </View>
 
-        <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} style={styles.container} contentContainerStyle={styles.content}>
-          {activeTab === "details" && (
-            <>
-              <View style={styles.section}>
-                <FieldInput label="Email" value={client.email} editable={false} />
-                <FieldInput
-                  label="Full Name"
-                  value={fullName}
-                  onChangeText={setFullName}
-                  editable={isEditing}
-                  focused={focusedField === "fullName"}
-                  onFocus={() => setFocusedField("fullName")}
-                  onBlur={() => setFocusedField(null)}
-                />
-                <FieldInput
-                  label="Phone"
-                  value={phone}
-                  onChangeText={setPhone}
-                  editable={isEditing}
-                  keyboardType="phone-pad"
-                  focused={focusedField === "phone"}
-                  onFocus={() => setFocusedField("phone")}
-                  onBlur={() => setFocusedField(null)}
-                />
-                <FieldInput label="Role" value={client.role} editable={false} />
-                <FieldInput
-                  label="Company Name"
-                  value={companyName}
-                  onChangeText={setCompanyName}
-                  editable={isEditing}
-                  focused={focusedField === "companyName"}
-                  onFocus={() => setFocusedField("companyName")}
-                  onBlur={() => setFocusedField(null)}
-                />
-                <FieldInput
-                  label="Billing Address"
-                  value={billingAddress}
-                  onChangeText={setBillingAddress}
-                  editable={isEditing}
-                  focused={focusedField === "billingAddress"}
-                  onFocus={() => setFocusedField("billingAddress")}
-                  onBlur={() => setFocusedField(null)}
-                />
-                <FieldInput
-                  label="Contact Person"
-                  value={contactPerson}
-                  onChangeText={setContactPerson}
-                  editable={isEditing}
-                  focused={focusedField === "contactPerson"}
-                  onFocus={() => setFocusedField("contactPerson")}
-                  onBlur={() => setFocusedField(null)}
-                />
-                <FieldInput label="Joined" value={client.created_at ? formatDate(client.created_at) : "—"} editable={false} />
-              </View>
+        <ScrollView
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+          style={styles.container}
+          contentContainerStyle={styles.content}
+        >
+          <View style={styles.inner}>
+            {activeTab === "details" && (
+              <>
+                <View style={styles.panel}>
+                  <SectionHeading title="Contact Information" first />
+                  <Field
+                    label="Full Name"
+                    value={fullName}
+                    onChangeText={setFullName}
+                    editing={isEditing}
+                    placeholder="Full name"
+                    {...field("fullName")}
+                  />
+                  <Field label="Email" value={client.email} />
+                  <Field
+                    label="Phone"
+                    value={phone}
+                    onChangeText={setPhone}
+                    editing={isEditing}
+                    keyboardType="phone-pad"
+                    placeholder="e.g. 0412 345 678"
+                    {...field("phone")}
+                  />
+                  <Field
+                    label="Contact Person"
+                    value={contactPerson}
+                    onChangeText={setContactPerson}
+                    editing={isEditing}
+                    placeholder="Primary contact"
+                    {...field("contactPerson")}
+                  />
 
-              <Text style={styles.sectionTitle}>QuickBooks</Text>
-              <View style={styles.section}>
-                {qbCustomerId ? (
-                  <View style={styles.qbLinkedRow}>
-                    <View style={styles.qbLinkedInfo}>
-                      <Ionicons name="checkmark-circle" size={18} color={COLORS.success} />
-                      <Text style={styles.qbLinkedText} numberOfLines={1}>
-                        Linked: {qbCustomerName ?? qbCustomerId}
-                      </Text>
+                  <SectionHeading title="Company" />
+                  <Field
+                    label="Company Name"
+                    value={companyName}
+                    onChangeText={setCompanyName}
+                    editing={isEditing}
+                    placeholder="Company name"
+                    {...field("companyName")}
+                  />
+                  <Field
+                    label="Billing Address"
+                    value={billingAddress}
+                    onChangeText={setBillingAddress}
+                    editing={isEditing}
+                    placeholder="Street, suburb"
+                    {...field("billingAddress")}
+                  />
+                  <View style={styles.row}>
+                    <Text style={styles.rowLabel}>Role</Text>
+                    <View style={styles.roleBadge}>
+                      <Text style={styles.roleBadgeText}>{capitalise(client.role)}</Text>
                     </View>
-                    <TouchableOpacity
-                      style={[styles.qbUnlinkButton, qbUnlinking && LOADING_STYLE]}
-                      onPress={handleUnlinkCustomer}
-                      disabled={qbUnlinking}
-                    >
-                      {qbUnlinking ? (
-                        <Loader tone="danger" />
-                      ) : (
-                        <Text style={styles.qbUnlinkButtonText}>Unlink</Text>
-                      )}
-                    </TouchableOpacity>
                   </View>
-                ) : (
-                  <View>
-                    <TextInput
-                      style={styles.input}
-                      value={qbSearchQuery}
-                      onChangeText={setQbSearchQuery}
-                      placeholder="Search QuickBooks customer by name"
-                      placeholderTextColor={COLORS.textMuted}
-                    />
+                  <Field label="Joined" value={client.created_at ? formatDate(client.created_at) : ""} />
 
-                    {qbSearching ? (
-                      <Loader style={styles.qbSearchLoading} />
-                    ) : qbSearchResults.length > 0 ? (
-                      <View style={styles.qbDropdown}>
-                        {qbSearchResults.map((customer) => (
-                          <TouchableOpacity
-                            key={customer.qb_customer_id}
-                            style={[styles.qbDropdownItem, qbLinking && LOADING_STYLE]}
-                            onPress={() => handleLinkCustomer(customer)}
-                            disabled={qbLinking}
-                          >
-                            <Text style={styles.qbDropdownName}>{customer.name}</Text>
-                            {customer.email ? (
-                              <Text style={styles.qbDropdownEmail}>{customer.email}</Text>
-                            ) : null}
-                          </TouchableOpacity>
-                        ))}
-                      </View>
-                    ) : qbSearchQuery.trim().length > 0 ? (
-                      <Text style={styles.qbEmptyText}>No matching QuickBooks customers</Text>
-                    ) : null}
-                  </View>
-                )}
-              </View>
-
-              {isEditing ? (
-                <>
-                  <TouchableOpacity style={[styles.saveButton, saving && LOADING_STYLE]} onPress={handleSave} disabled={saving}>
-                    {saving ? (
-                      <Loader tone="dark" />
-                    ) : (
-                      <Text style={styles.saveButtonText}>Save</Text>
-                    )}
-                  </TouchableOpacity>
-                  <TouchableOpacity style={[styles.cancelButton, saving && LOADING_STYLE]} onPress={handleCancel} disabled={saving}>
-                    <Text style={styles.cancelButtonText}>Cancel</Text>
-                  </TouchableOpacity>
-                </>
-              ) : (
-                <>
-                  <TouchableOpacity style={styles.editButton} onPress={handleEdit}>
-                    <Text style={styles.editButtonText}>Edit</Text>
-                  </TouchableOpacity>
-                  {client.is_active ? (
-                    <TouchableOpacity
-                      style={styles.deactivateButton}
-                      onPress={() => setDeactivateModalVisible(true)}
-                    >
-                      <Text style={styles.deactivateButtonText}>Deactivate</Text>
-                    </TouchableOpacity>
-                  ) : (
-                    <TouchableOpacity
-                      style={[styles.reactivateButton, reactivating && LOADING_STYLE]}
-                      onPress={handleReactivate}
-                      disabled={reactivating}
-                    >
-                      {reactivating ? (
-                        <Loader />
-                      ) : (
-                        <Text style={styles.reactivateButtonText}>Reactivate</Text>
-                      )}
-                    </TouchableOpacity>
-                  )}
-                </>
-              )}
-            </>
-          )}
-
-          {activeTab === "sites" && (
-            <>
-              {sitesLoading ? (
-                <Loader style={styles.sitesLoading} />
-              ) : assignedSites.length === 0 ? (
-                <Text style={styles.emptyText}>No sites assigned</Text>
-              ) : (
-                assignedSites.map((site) => (
-                  <TouchableOpacity
-                    key={site.id}
-                    style={styles.card}
-                    onPress={() => router.push(`/(admin)/sites/${site.id}`)}
-                  >
-                    <View style={styles.cardHeader}>
-                      <Text style={styles.cardTitle}>{site.name}</Text>
-                      <View
-                        style={[styles.badge, site.is_active ? styles.badgeActive : styles.badgeInactive]}
-                      >
-                        <Text style={[styles.badgeText, site.is_active ? styles.badgeTextActive : styles.badgeTextInactive]}>
-                          {site.is_active ? "Active" : "Inactive"}
+                  <SectionHeading title="QuickBooks" />
+                  {qbCustomerId ? (
+                    <View style={styles.qbLinkedRow}>
+                      <View style={styles.qbLinkedInfo}>
+                        <Ionicons name="checkmark-circle" size={18} color={COLORS.success} />
+                        <Text style={styles.qbLinkedText} numberOfLines={1}>
+                          Linked: {qbCustomerName ?? qbCustomerId}
                         </Text>
                       </View>
+                      <TouchableOpacity
+                        style={[styles.textButton, qbUnlinking && LOADING_STYLE]}
+                        onPress={handleUnlinkCustomer}
+                        disabled={qbUnlinking}
+                      >
+                        {qbUnlinking ? <Loader tone="danger" /> : <Text style={styles.dangerText}>Unlink</Text>}
+                      </TouchableOpacity>
                     </View>
-                    <Text style={styles.detail}>{site.address}</Text>
-                  </TouchableOpacity>
-                ))
-              )}
-            </>
-          )}
+                  ) : (
+                    <View>
+                      <TextInput
+                        style={[styles.input, focusedField === "qb" && styles.inputFocused]}
+                        value={qbSearchQuery}
+                        onChangeText={setQbSearchQuery}
+                        onFocus={() => setFocusedField("qb")}
+                        onBlur={() => setFocusedField(null)}
+                        placeholder="Search QuickBooks customer by name"
+                        placeholderTextColor={COLORS.textMuted}
+                      />
+
+                      {qbSearching ? (
+                        <Loader style={styles.qbSearchLoading} />
+                      ) : qbSearchResults.length > 0 ? (
+                        <View style={styles.qbDropdown}>
+                          {qbSearchResults.map((customer) => (
+                            <TouchableOpacity
+                              key={customer.qb_customer_id}
+                              style={[styles.qbDropdownItem, qbLinking && LOADING_STYLE]}
+                              onPress={() => handleLinkCustomer(customer)}
+                              disabled={qbLinking}
+                            >
+                              <Text style={styles.qbDropdownName}>{customer.name}</Text>
+                              {customer.email ? (
+                                <Text style={styles.qbDropdownEmail}>{customer.email}</Text>
+                              ) : null}
+                            </TouchableOpacity>
+                          ))}
+                        </View>
+                      ) : qbSearchQuery.trim().length > 0 ? (
+                        <Text style={styles.qbEmptyText}>No matching QuickBooks customers</Text>
+                      ) : null}
+                    </View>
+                  )}
+                </View>
+
+                <View style={styles.actions}>
+                  {isEditing ? (
+                    <>
+                      <TouchableOpacity
+                        style={[styles.primaryButton, saving && LOADING_STYLE]}
+                        onPress={handleSave}
+                        disabled={saving}
+                      >
+                        {saving ? <Loader tone="dark" /> : <Text style={styles.primaryButtonText}>Save Changes</Text>}
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[styles.secondaryButton, saving && LOADING_STYLE]}
+                        onPress={handleCancel}
+                        disabled={saving}
+                      >
+                        <Text style={styles.secondaryButtonText}>Cancel</Text>
+                      </TouchableOpacity>
+                    </>
+                  ) : (
+                    <>
+                      <TouchableOpacity style={styles.primaryButton} onPress={handleEdit}>
+                        <Ionicons name="create-outline" size={16} color="#1A1A1A" />
+                        <Text style={styles.primaryButtonText}>Edit</Text>
+                      </TouchableOpacity>
+                      <View style={{ flex: 1 }} />
+                      {client.is_active ? (
+                        <TouchableOpacity style={styles.textButton} onPress={() => setDeactivateModalVisible(true)}>
+                          <Text style={styles.dangerText}>Deactivate</Text>
+                        </TouchableOpacity>
+                      ) : (
+                        <TouchableOpacity
+                          style={[styles.textButton, reactivating && LOADING_STYLE]}
+                          onPress={handleReactivate}
+                          disabled={reactivating}
+                        >
+                          {reactivating ? <Loader /> : <Text style={styles.successText}>Reactivate</Text>}
+                        </TouchableOpacity>
+                      )}
+                    </>
+                  )}
+                </View>
+              </>
+            )}
+
+            {activeTab === "sites" && (
+              <>
+                {sitesLoading ? (
+                  <Loader style={styles.sitesLoading} />
+                ) : assignedSites.length === 0 ? (
+                  <EmptyState
+                    icon="business-outline"
+                    title="No sites assigned"
+                    hint="Sites linked to this client will show up here."
+                  />
+                ) : (
+                  <SitesTable sites={assignedSites} showStatus />
+                )}
+              </>
+            )}
+          </View>
         </ScrollView>
 
         <ConfirmModal
           visible={deactivateModalVisible}
           title="Deactivate Client"
-          message="Are you sure you want to deactivate this client?"
+          message={`Are you sure you want to deactivate ${client.full_name}?`}
           confirmText="Deactivate"
           confirmStyle="destructive"
           loading={deactivating}
@@ -502,20 +535,18 @@ export default function ClientDetailScreen() {
   );
 }
 
-function Row({ label, value }: { label: string; value: string }) {
-  return (
-    <View style={styles.row}>
-      <Text style={styles.rowLabel}>{label}</Text>
-      <Text style={styles.rowValue}>{value}</Text>
-    </View>
-  );
+function SectionHeading({ title, first }: { title: string; first?: boolean }) {
+  return <Text style={[styles.sectionHeading, first && { marginTop: 0 }]}>{title}</Text>;
 }
 
-function FieldInput({
+// Read-only row (label left, value left-aligned in a fixed column) that turns into a
+// labelled input while `editing`. Fields without `onChangeText` are never editable.
+function Field({
   label,
   value,
   onChangeText,
-  editable,
+  editing,
+  placeholder,
   keyboardType,
   focused,
   onFocus,
@@ -524,25 +555,36 @@ function FieldInput({
   label: string;
   value: string;
   onChangeText?: (text: string) => void;
-  editable: boolean;
+  editing?: boolean;
+  placeholder?: string;
   keyboardType?: "default" | "phone-pad";
   focused?: boolean;
   onFocus?: () => void;
   onBlur?: () => void;
 }) {
+  if (editing && onChangeText) {
+    return (
+      <View style={styles.editField}>
+        <Text style={styles.editLabel}>{label}</Text>
+        <TextInput
+          style={[styles.input, focused && styles.inputFocused]}
+          value={value}
+          onChangeText={onChangeText}
+          keyboardType={keyboardType}
+          onFocus={onFocus}
+          onBlur={onBlur}
+          placeholder={placeholder}
+          placeholderTextColor={COLORS.textMuted}
+        />
+      </View>
+    );
+  }
   return (
-    <View style={styles.fieldRow}>
+    <View style={styles.row}>
       <Text style={styles.rowLabel}>{label}</Text>
-      <TextInput
-        style={[styles.input, !editable && styles.inputDisabled, focused && styles.inputFocused]}
-        value={value}
-        onChangeText={onChangeText}
-        editable={editable}
-        keyboardType={keyboardType}
-        onFocus={onFocus}
-        onBlur={onBlur}
-        placeholderTextColor={COLORS.textMuted}
-      />
+      <Text style={[styles.rowValue, !value && styles.rowValueEmpty]} selectable>
+        {value || "—"}
+      </Text>
     </View>
   );
 }
@@ -550,7 +592,7 @@ function FieldInput({
 function BackButton({ onPress }: { onPress: () => void }) {
   return (
     <TouchableOpacity style={styles.backButton} onPress={onPress}>
-      <Ionicons name="arrow-back" size={20} color={COLORS.gold} />
+      <Ionicons name="arrow-back" size={18} color={COLORS.gold} />
       <Text style={styles.backButtonText}>Back</Text>
     </TouchableOpacity>
   );
@@ -561,17 +603,23 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
+  inner: {
+    width: "100%",
+    maxWidth: 880,
+    alignSelf: "center",
+  },
   topBar: {
-    paddingTop: 16,
-    paddingHorizontal: 16,
+    paddingTop: 20,
+    paddingHorizontal: 24,
     backgroundColor: COLORS.surface,
   },
   tabBar: {
     flexDirection: "row",
+    marginTop: 8,
   },
   tab: {
     paddingVertical: 12,
-    paddingHorizontal: 16,
+    paddingHorizontal: 18,
     borderBottomWidth: 2,
     borderBottomColor: "transparent",
   },
@@ -590,8 +638,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
-    padding: 16,
-    paddingBottom: 32,
+    padding: 24,
+    paddingBottom: 40,
   },
   centered: {
     flex: 1,
@@ -604,102 +652,153 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 6,
     alignSelf: "flex-start",
-    marginBottom: 16,
+    marginBottom: 18,
   },
   backButtonText: {
-    fontSize: 16,
+    fontSize: 15,
+    fontWeight: "500",
     color: COLORS.gold,
   },
   header: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 16,
+    gap: 16,
+    marginBottom: 14,
+  },
+  avatar: {
+    width: 60,
+    height: 60,
+    borderRadius: RADIUS.full,
+  },
+  avatarFallback: {
+    backgroundColor: COLORS.goldTint,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  avatarText: {
+    color: COLORS.gold,
+    fontSize: 22,
+    fontWeight: "700",
+  },
+  headerText: {
+    flex: 1,
+    minWidth: 0,
   },
   name: {
-    fontSize: 24,
-    fontWeight: "bold",
+    fontSize: 28,
+    fontWeight: "700",
+    letterSpacing: -0.3,
     color: COLORS.textPrimary,
   },
+  subtitle: {
+    fontSize: 13,
+    color: COLORS.textMuted,
+    marginTop: 2,
+  },
   badge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
     borderRadius: RADIUS.full,
-    paddingVertical: 4,
-    paddingHorizontal: 10,
+    paddingVertical: 5,
+    paddingHorizontal: 12,
+  },
+  badgeDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
   },
   badgeActive: {
-    backgroundColor: COLORS.successBg,
+    backgroundColor: `${COLORS.success}38`,
   },
   badgeInactive: {
-    backgroundColor: COLORS.dangerBg,
+    backgroundColor: `${COLORS.dangerText}38`,
   },
   badgeText: {
     fontSize: 12,
-    fontWeight: "600",
+    fontWeight: "700",
   },
   badgeTextActive: {
     color: COLORS.success,
   },
   badgeTextInactive: {
-    color: COLORS.danger,
+    color: COLORS.dangerText,
   },
-  section: {
+  panel: {
     backgroundColor: COLORS.foreground,
     ...SHADOW.card,
-    borderRadius: RADIUS.md,
-    padding: 16,
-    marginBottom: 24,
+    borderRadius: RADIUS.lg,
+    paddingVertical: 24,
+    paddingHorizontal: 28,
+    marginBottom: 20,
+  },
+  sectionHeading: {
+    fontSize: 11,
+    fontWeight: "700",
+    letterSpacing: 1.2,
+    textTransform: "uppercase",
+    color: COLORS.gold,
+    marginTop: 28,
+    marginBottom: 6,
   },
   row: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    paddingVertical: 8,
+    alignItems: "center",
+    paddingVertical: 10,
   },
   rowLabel: {
+    width: 130,
     fontSize: 14,
-    color: COLORS.textSecondary,
+    color: COLORS.textMuted,
   },
   rowValue: {
-    fontSize: 14,
-    fontWeight: "600",
-    textAlign: "right",
-    flexShrink: 1,
-    marginLeft: 16,
+    flex: 1,
+    fontSize: 15,
+    fontWeight: "500",
     color: COLORS.textPrimary,
   },
-  fieldRow: {
-    paddingVertical: 8,
+  rowValueEmpty: {
+    color: COLORS.textMuted,
+    fontWeight: "400",
+  },
+  roleBadge: {
+    backgroundColor: COLORS.hover,
+    borderRadius: RADIUS.full,
+    paddingVertical: 4,
+    paddingHorizontal: 12,
+  },
+  roleBadgeText: {
+    color: COLORS.textPrimary,
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  editField: {
+    marginBottom: 14,
+    marginTop: 4,
+  },
+  editLabel: {
+    fontSize: 12,
+    color: COLORS.textMuted,
+    marginBottom: 6,
   },
   input: {
-    ...SHADOW.card,
     borderRadius: RADIUS.md,
-    padding: 10,
-    marginTop: 6,
-    backgroundColor: COLORS.foreground,
+    paddingVertical: 11,
+    paddingHorizontal: 12,
+    backgroundColor: COLORS.cardHigh,
+    ...SHADOW.card,
     color: COLORS.textPrimary,
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  inputDisabled: {
-    borderColor: "transparent",
-    backgroundColor: COLORS.surfaceElevated,
-    color: COLORS.textMuted,
-    fontWeight: "normal",
-  },
+    fontSize: 15,
+    outlineStyle: "none",
+  } as any,
   inputFocused: {
-    borderColor: COLORS.gold,
-  },
-  sectionTitle: {
-    fontSize: 11,
-    fontWeight: "600",
-    color: COLORS.gold,
-    marginBottom: 8,
-    textTransform: "uppercase",
-    letterSpacing: 2,
+    backgroundColor: COLORS.accentBg,
   },
   qbLinkedRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+    paddingVertical: 6,
   },
   qbLinkedInfo: {
     flexDirection: "row",
@@ -708,21 +807,10 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
   qbLinkedText: {
-    fontSize: 14,
-    fontWeight: "600",
+    fontSize: 15,
+    fontWeight: "500",
     color: COLORS.textPrimary,
     flexShrink: 1,
-  },
-  qbUnlinkButton: {
-    backgroundColor: COLORS.dangerBg,
-    borderRadius: RADIUS.md,
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-  },
-  qbUnlinkButtonText: {
-    color: COLORS.danger,
-    fontWeight: "600",
-    fontSize: 13,
   },
   qbSearchLoading: {
     marginTop: 12,
@@ -731,7 +819,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
     ...SHADOW.card,
     borderRadius: RADIUS.md,
-    backgroundColor: COLORS.foreground,
+    backgroundColor: COLORS.cardHigh,
     overflow: "hidden",
   },
   qbDropdownItem: {
@@ -753,69 +841,55 @@ const styles = StyleSheet.create({
     color: COLORS.textMuted,
     marginTop: 10,
   },
-  editButton: {
+  actions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  primaryButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    minWidth: 120,
+    height: 44,
+    paddingHorizontal: 24,
+    borderRadius: RADIUS.md,
     backgroundColor: COLORS.gold,
-    height: 52,
-    justifyContent: "center",
-    borderRadius: RADIUS.md,
-    alignItems: "center",
-    marginBottom: 12,
   },
-  editButtonText: {
+  primaryButtonText: {
     color: "#1A1A1A",
-    fontWeight: "bold",
+    fontWeight: "700",
+    fontSize: 14,
   },
-  saveButton: {
-    backgroundColor: COLORS.gold,
-    height: 52,
+  secondaryButton: {
+    height: 44,
+    paddingHorizontal: 22,
     justifyContent: "center",
-    borderRadius: RADIUS.md,
     alignItems: "center",
-    marginBottom: 12,
-  },
-  saveButtonText: {
-    color: "#1A1A1A",
-    fontWeight: "bold",
-  },
-  cancelButton: {
-    height: 48,
-    justifyContent: "center",
     borderRadius: RADIUS.md,
-    alignItems: "center",
-    backgroundColor: COLORS.border,
+    backgroundColor: COLORS.hover,
   },
-  cancelButtonText: {
+  secondaryButtonText: {
     color: COLORS.textPrimary,
     fontWeight: "600",
+    fontSize: 14,
   },
-  deactivateButton: {
-    backgroundColor: COLORS.dangerBg,
-    height: 52,
-    justifyContent: "center",
-    borderRadius: RADIUS.md,
-    alignItems: "center",
+  textButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 8,
   },
-  deactivateButtonText: {
-    color: COLORS.danger,
-    fontWeight: "bold",
+  dangerText: {
+    color: COLORS.dangerText,
+    fontWeight: "600",
+    fontSize: 14,
   },
-  reactivateButton: {
-    backgroundColor: COLORS.successBg,
-    height: 52,
-    justifyContent: "center",
-    borderRadius: RADIUS.md,
-    alignItems: "center",
-  },
-  reactivateButtonText: {
+  successText: {
     color: COLORS.success,
-    fontWeight: "bold",
+    fontWeight: "600",
+    fontSize: 14,
   },
   sitesLoading: {
-    marginTop: 16,
-  },
-  emptyText: {
-    color: COLORS.textMuted,
-    textAlign: "center",
     marginTop: 16,
   },
   card: {
@@ -824,11 +898,7 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 12,
     overflow: "hidden",
-    shadowColor: COLORS.shadow,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
-    elevation: 2,
+    ...SHADOW.card,
   },
   cardHeader: {
     flexDirection: "row",

@@ -19,7 +19,8 @@ import {
 import { getMySites, Site } from "../../../src/services/sites.service";
 import { showError } from "../../../src/utils/toast";
 import { COLORS, RADIUS, SHADOW } from "../../../src/constants/theme";
-import Loader from "../../../src/components/Loader";
+import Skeleton from "../../../src/components/Skeleton";
+import EmptyState from "../../../src/components/EmptyState";
 
 interface SiteWithDistance extends Site {
   distanceKm: number | null;
@@ -100,8 +101,13 @@ export default function StaffSitesScreen() {
 
   if (loading) {
     return (
-      <View style={styles.centered}>
-        <Loader size="large" />
+      <View style={styles.container}>
+        <Skeleton width={140} height={24} style={{ marginBottom: 8 }} />
+        <Skeleton width={90} height={13} style={{ marginBottom: 20 }} />
+        <Skeleton height={42} radius={RADIUS.md} style={{ marginBottom: 16 }} />
+        {[0, 1, 2, 3].map((i) => (
+          <Skeleton key={i} height={84} radius={RADIUS.md} style={{ marginBottom: 12 }} />
+        ))}
       </View>
     );
   }
@@ -109,9 +115,12 @@ export default function StaffSitesScreen() {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Sites</Text>
+      <Text style={styles.subtitle}>
+        {sites.length} assigned {sites.length === 1 ? "site" : "sites"} · nearest first
+      </Text>
 
       <View style={styles.searchBar}>
-        <Ionicons name="search-outline" size={18} color={COLORS.gold} />
+        <Ionicons name="search" size={16} color={COLORS.textMuted} />
         <TextInput
           style={styles.searchInput}
           value={searchQuery}
@@ -122,7 +131,7 @@ export default function StaffSitesScreen() {
         />
         {searchQuery.length > 0 ? (
           <TouchableOpacity onPress={() => setSearchQuery("")}>
-            <Ionicons name="close-outline" size={18} color={COLORS.textMuted} />
+            <Ionicons name="close-circle" size={16} color={COLORS.textMuted} />
           </TouchableOpacity>
         ) : null}
       </View>
@@ -140,9 +149,16 @@ export default function StaffSitesScreen() {
           />
         }
         ListEmptyComponent={
-          <Text style={styles.emptyText}>
-            {searchQuery.trim() ? "No sites found" : "No sites assigned to you."}
-          </Text>
+          searchQuery.trim() ? (
+            <EmptyState
+              icon="search-outline"
+              title="No sites match your search"
+              actionLabel="Clear search"
+              onAction={() => setSearchQuery("")}
+            />
+          ) : (
+            <EmptyState icon="business-outline" title="No sites assigned" hint="Ask an admin to assign you to a site." />
+          )
         }
         renderItem={({ item }) => (
           <TouchableOpacity
@@ -172,10 +188,15 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
   },
   title: {
-    fontSize: 24,
-    fontWeight: "bold",
-    marginBottom: 16,
+    fontSize: 22,
+    fontWeight: "700",
     color: COLORS.textPrimary,
+  },
+  subtitle: {
+    color: COLORS.textMuted,
+    fontSize: 13,
+    marginTop: 2,
+    marginBottom: 20,
   },
   searchBar: {
     flexDirection: "row",
@@ -185,7 +206,7 @@ const styles = StyleSheet.create({
     ...SHADOW.card,
     borderRadius: RADIUS.md,
     paddingHorizontal: 12,
-    paddingVertical: 10,
+    height: 42,
     marginBottom: 16,
   },
   searchInput: {
@@ -193,14 +214,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
     padding: 0,
     color: COLORS.textPrimary,
-  },
+    outlineStyle: "none",
+  } as any,
   listContent: {
     paddingBottom: 32,
-  },
-  emptyText: {
-    color: COLORS.textMuted,
-    textAlign: "center",
-    marginTop: 32,
   },
   card: {
     backgroundColor: COLORS.foreground,

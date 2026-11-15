@@ -14,7 +14,7 @@ export interface SiteNote {
   author_id: string;
   site_id: string;
   note: string;
-  type: "staff" | "client";
+  type: "staff" | "client" | "admin";
   created_at: string;
   author: NoteAuthor | null;
 }
@@ -62,6 +62,16 @@ export const getClientSiteNotes = async (site_id: string): Promise<SiteNote[]> =
 export const addClientNote = async (site_id: string, note: string): Promise<SiteNote> => {
   try {
     const response = await api.post(`/notes/${site_id}/client`, { note });
+    return response.data.note;
+  } catch (error: any) {
+    const code = error?.response?.data?.code;
+    throw new Error(getErrorMessage(code));
+  }
+};
+
+export const addAdminNote = async (site_id: string, note: string): Promise<SiteNote> => {
+  try {
+    const response = await api.post(`/notes/${site_id}/admin`, { note });
     return response.data.note;
   } catch (error: any) {
     const code = error?.response?.data?.code;

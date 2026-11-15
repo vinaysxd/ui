@@ -51,6 +51,9 @@ const MONTHS = [
 ];
 const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
+const formatClock = (d: Date): string =>
+  `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+
 const formatToday = (): string => {
   const now = new Date();
   return `${DAYS[now.getDay()]}, ${MONTHS[now.getMonth()]} ${now.getDate()}`;
@@ -73,6 +76,7 @@ export default function AdminDashboardScreen() {
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
   const [usingSample, setUsingSample] = useState<boolean>(false);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [filters, setFilters] = useState<AttendanceFilterState>(EMPTY_FILTERS);
   const [selected, setSelected] = useState<Attendance | null>(null);
   const [page, setPage] = useState<number>(1);
@@ -93,6 +97,7 @@ export default function AdminDashboardScreen() {
       if (sample) recent = buildSampleAttendance();
 
       setStats(dashboard);
+      setLastUpdated(new Date());
       setUsingSample(sample);
       setRecentAttendance(sortMostRecent(recent));
     } catch (err: any) {
@@ -151,6 +156,12 @@ export default function AdminDashboardScreen() {
         <Text style={styles.greeting}>Hello, Admin 👋</Text>
         <Text style={styles.dateSubtitle}>{formatToday()}</Text>
       </View>
+      <TouchableOpacity style={styles.liveChip} onPress={onRefresh} accessibilityLabel="Refresh dashboard">
+        <Ionicons name="refresh" size={14} color={COLORS.gold} />
+        <Text style={styles.liveText}>
+          {refreshing ? "Refreshing…" : lastUpdated ? `Refresh · updated ${formatClock(lastUpdated)}` : "Refresh"}
+        </Text>
+      </TouchableOpacity>
     </View>
   );
 
@@ -342,6 +353,18 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 28,
   },
+  liveChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: COLORS.foreground,
+    borderRadius: RADIUS.full,
+    paddingVertical: 7,
+    paddingHorizontal: 12,
+    ...SHADOW.card,
+  },
+  liveDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: COLORS.success },
+  liveText: { color: COLORS.textSecondary, fontSize: 12 },
   greeting: {
     color: COLORS.textPrimary,
     fontSize: 22,

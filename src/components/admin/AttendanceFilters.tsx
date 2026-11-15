@@ -25,6 +25,9 @@ const RANGE_LABEL: Record<DateRange, string> = {
   "30d": "Last 30 days",
 };
 
+export const activeFilterCount = (f: AttendanceFilterState) =>
+  [f.search.trim(), f.staff, f.site, f.status, f.range !== "all" ? f.range : ""].filter(Boolean).length;
+
 export const hasActiveFilters = (f: AttendanceFilterState) =>
   !!(f.search || f.staff || f.site || f.status || f.range !== "all");
 
@@ -104,9 +107,11 @@ interface Props {
   records: Attendance[];
   value: AttendanceFilterState;
   onChange: (next: AttendanceFilterState) => void;
+  /** Hide the staff dropdown (single-staff views). */
+  hideStaff?: boolean;
 }
 
-export default function AttendanceFilters({ records, value, onChange }: Props) {
+export default function AttendanceFilters({ records, value, onChange, hideStaff = false }: Props) {
   const staffOptions = useMemo(() => {
     const names = Array.from(new Set(records.map((r) => r.staff?.full_name).filter(Boolean) as string[])).sort();
     return [{ value: "", label: "All staff" }, ...names.map((n) => ({ value: n, label: n }))];
@@ -124,11 +129,20 @@ export default function AttendanceFilters({ records, value, onChange }: Props) {
 
   return (
     <View style={styles.wrap}>
+      <View style={styles.titleRow}>
+        <Ionicons name="options-outline" size={15} color={COLORS.textSecondary} />
+        <Text style={styles.titleText}>Filters</Text>
+        {activeFilterCount(value) > 0 && (
+          <View style={styles.badge}>
+            <Text style={styles.badgeText}>{activeFilterCount(value)}</Text>
+          </View>
+        )}
+      </View>
       <View style={styles.searchBox}>
         <Ionicons name="search" size={16} color={COLORS.textMuted} />
         <TextInput
           style={styles.searchInput}
-          placeholder="Search staff or site"
+          placeholder={hideStaff ? "Search site" : "Search staff or site"}
           placeholderTextColor={COLORS.textMuted}
           value={value.search}
           onChangeText={(search) => set({ search })}
@@ -142,7 +156,9 @@ export default function AttendanceFilters({ records, value, onChange }: Props) {
         ) : null}
       </View>
       <View style={styles.selects}>
-        <Select label="Staff" value={value.staff} options={staffOptions} onChange={(staff) => set({ staff })} />
+        {!hideStaff && (
+          <Select label="Staff" value={value.staff} options={staffOptions} onChange={(staff) => set({ staff })} />
+        )}
         <Select label="Site" value={value.site} options={siteOptions} onChange={(site) => set({ site })} />
         <Select label="Date" value={value.range} options={rangeOptions} onChange={(range) => set({ range })} />
         <Select label="Status" value={value.status} options={statusOptions} onChange={(status) => set({ status })} />
@@ -158,6 +174,10 @@ export default function AttendanceFilters({ records, value, onChange }: Props) {
 
 const styles = StyleSheet.create({
   wrap: { gap: 10, marginBottom: 14 },
+  titleRow: { flexDirection: "row", alignItems: "center", gap: 6 },
+  titleText: { color: COLORS.textSecondary, fontSize: 12, fontWeight: "600", letterSpacing: 0.5, textTransform: "uppercase" },
+  badge: { minWidth: 18, height: 18, borderRadius: 9, paddingHorizontal: 5, backgroundColor: COLORS.gold, alignItems: "center", justifyContent: "center" },
+  badgeText: { color: "#1A1A1A", fontSize: 11, fontWeight: "800" },
   searchBox: {
     flexDirection: "row",
     alignItems: "center",

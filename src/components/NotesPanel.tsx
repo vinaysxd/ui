@@ -1,17 +1,14 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
-  TextInput,
-  FlatList,
-  RefreshControl,
   TouchableOpacity,
-  Pressable,
+  ScrollView,
+  RefreshControl,
   KeyboardAvoidingView,
   Platform,
   StyleSheet,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
 import {
   getStaffSiteNotes,
   addStaffNote,
@@ -22,10 +19,13 @@ import {
 } from "../services/notes.service";
 import { getUser } from "../store/auth";
 import { showSuccess, showError } from "../utils/toast";
-import { formatDateTime } from "../utils/datetime";
+import { Ionicons } from "@expo/vector-icons";
 import { COLORS, RADIUS, SHADOW } from "../constants/theme";
 import ConfirmModal from "./ConfirmModal";
 import Loader from "./Loader";
+import EmptyState from "./EmptyState";
+import ChatMessages from "./chat/ChatMessages";
+import ChatComposer from "./chat/ChatComposer";
 
 interface NotesPanelProps {
   siteId: string | null;
@@ -38,6 +38,7 @@ const NOTES_API = {
   client: { getNotes: getClientSiteNotes, addNote: addClientNote },
 };
 
+// Site notes presented as a chat: your messages on the right, everyone else's on the left.
 export default function NotesPanel({ siteId, active = true, role = "staff" }: NotesPanelProps) {
   const { getNotes, addNote } = NOTES_API[role];
   const [notes, setNotes] = useState<SiteNote[]>([]);
@@ -51,6 +52,8 @@ export default function NotesPanel({ siteId, active = true, role = "staff" }: No
   const [noteToDelete, setNoteToDelete] = useState<string | null>(null);
   const [deleteModalVisible, setDeleteModalVisible] = useState<boolean>(false);
   const [deleteModalLoading, setDeleteModalLoading] = useState<boolean>(false);
+
+  const scrollRef = useRef<ScrollView>(null);
 
   const fetchNotes = useCallback(async () => {
     if (!siteId) {
@@ -87,11 +90,6 @@ export default function NotesPanel({ siteId, active = true, role = "staff" }: No
     fetchNotes();
   };
 
-  const openDeleteModal = (noteId: string) => {
-    setNoteToDelete(noteId);
-    setDeleteModalVisible(true);
-  };
-
   const closeDeleteModal = () => {
     setDeleteModalVisible(false);
     setNoteToDelete(null);
@@ -107,7 +105,7 @@ export default function NotesPanel({ siteId, active = true, role = "staff" }: No
       setNotes((prev) => prev.filter((n) => n.id !== noteToDelete));
       setDeleteModalVisible(false);
       setNoteToDelete(null);
-      showSuccess("Note deleted");
+      showSuccess("Message deleted");
     } catch (err: any) {
       showError(err.message);
     } finally {
@@ -121,7 +119,6 @@ export default function NotesPanel({ siteId, active = true, role = "staff" }: No
       return;
     }
     if (!noteText.trim()) {
-      showError("Note cannot be empty");
       return;
     }
     setSubmitting(true);
@@ -129,7 +126,6 @@ export default function NotesPanel({ siteId, active = true, role = "staff" }: No
       const note = await addNote(siteId, noteText.trim());
       setNotes((prev) => [note, ...prev]);
       setNoteText("");
-      showSuccess("Note added");
     } catch (err: any) {
       showError(err.message);
     } finally {
@@ -142,59 +138,64 @@ export default function NotesPanel({ siteId, active = true, role = "staff" }: No
       style={styles.container}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
+      <View style={styles.toolbar}>
+        <TouchableOpacity
+          style={[styles.refreshBtn, (loading || refreshing) && { opacity: 0.6 }]}
+          onPress={onRefresh}
+          disabled={loading || refreshing}
+          accessibilityLabel="Refresh messages"
+        >
+          <Ionicons name="refresh" size={14} color={COLORS.gold} />
+          <Text style={styles.refreshText}>{refreshing ? "Refreshing…" : "Refresh"}</Text>
+        </TouchableOpacity>
+      </View>
+
       {loading ? (
         <View style={styles.centered}>
           <Loader size="large" />
         </View>
       ) : (
-        <FlatList keyboardShouldPersistTaps="handled"
-          data={notes}
-          keyExtractor={(item) => item.id}
+        <ScrollView
+          ref={scrollRef}
+          keyboardShouldPersistTaps="handled"
           contentContainerStyle={styles.listContent}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-          ListEmptyComponent={<Text style={styles.emptyText}>No notes yet</Text>}
-          renderItem={({ item }) => (
-            <NoteCard
-              note={item}
-              canDelete={currentUserId != null && item.author_id === currentUserId}
-              onDelete={() => openDeleteModal(item.id)}
+          // Keep the newest message in view on load and after sending.
+          onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: false })}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.gold} />}
+        >
+          {notes.length === 0 ? (
+            <EmptyState
+              icon="chatbubbles-outline"
+              title="No messages yet"
+              hint="Start the conversation below. Staff and the client can both see it."
+            />
+          ) : (
+            <ChatMessages
+              notes={notes}
+              alignBy="author"
+              currentUserId={currentUserId}
+              canDelete={(n) => currentUserId != null && n.author_id === currentUserId}
+              onDelete={(n) => {
+                setNoteToDelete(n.id);
+                setDeleteModalVisible(true);
+              }}
             />
           )}
-        />
+        </ScrollView>
       )}
 
-      <View style={styles.footer}>
-        <View style={styles.composeRow}>
-          <TextInput
-            style={styles.composeInput}
-            value={noteText}
-            onChangeText={setNoteText}
-            placeholder="Write a note..."
-            placeholderTextColor={COLORS.textMuted}
-            multiline
-            editable={!submitting}
-          />
-          <TouchableOpacity
-            style={[
-              styles.sendButton,
-              (submitting || !noteText.trim()) && styles.sendButtonDisabled,
-            ]}
-            onPress={handleSubmitNote}
-            disabled={submitting || !noteText.trim()}
-          >
-            {submitting ? (
-              <Loader tone="dark" />
-            ) : (
-              <Ionicons name="send" size={18} color="#1A1A1A" />
-            )}
-          </TouchableOpacity>
-        </View>
-      </View>
+      <ChatComposer
+        value={noteText}
+        onChangeText={setNoteText}
+        onSend={handleSubmitNote}
+        sending={submitting}
+        placeholder="Type a message…"
+      />
 
       <ConfirmModal
         visible={deleteModalVisible}
-        title="Delete Note"
-        message="Are you sure you want to delete this note?"
+        title="Delete Message"
+        message="Are you sure you want to delete this message?"
         confirmText="Delete"
         confirmStyle="destructive"
         loading={deleteModalLoading}
@@ -205,45 +206,30 @@ export default function NotesPanel({ siteId, active = true, role = "staff" }: No
   );
 }
 
-function NoteCard({
-  note,
-  canDelete,
-  onDelete,
-}: {
-  note: SiteNote;
-  canDelete: boolean;
-  onDelete: () => void;
-}) {
-  const isClient = note.type === "client";
-  return (
-    <View style={[styles.card, isClient ? styles.cardClient : styles.cardStaff]}>
-      <View style={styles.cardHeader}>
-        <Text style={[styles.badgeText, isClient ? styles.badgeTextClient : styles.badgeTextStaff]}>
-          {isClient ? "CLIENT" : "STAFF"}
-        </Text>
-        <Text style={styles.authorName} numberOfLines={1}>
-          {note.author?.full_name ?? "Unknown"}
-        </Text>
-        {canDelete && (
-          <Pressable
-            onPress={onDelete}
-            {...(Platform.OS === "web" ? { onClick: onDelete } : {})}
-            style={styles.deleteNoteButton}
-          >
-            <Ionicons name="trash-outline" size={16} color={COLORS.danger} />
-          </Pressable>
-        )}
-      </View>
-      <Text style={styles.noteText}>{note.note}</Text>
-      <Text style={styles.timeText}>{formatDateTime(note.created_at)}</Text>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  toolbar: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    paddingHorizontal: 16,
+    paddingTop: 10,
+    width: "100%",
+    maxWidth: 820,
+    alignSelf: "center",
+  },
+  refreshBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: COLORS.foreground,
+    borderRadius: RADIUS.md,
+    paddingVertical: 7,
+    paddingHorizontal: 12,
+    ...SHADOW.card,
+  },
+  refreshText: { color: COLORS.gold, fontSize: 12, fontWeight: "600" },
   centered: {
     flex: 1,
     justifyContent: "center",
@@ -251,95 +237,11 @@ const styles = StyleSheet.create({
   },
   listContent: {
     padding: 16,
-    paddingBottom: 32,
+    paddingBottom: 24,
     flexGrow: 1,
-  },
-  emptyText: {
-    color: COLORS.textMuted,
-    textAlign: "center",
-    marginTop: 32,
-  },
-  card: {
-    borderRadius: RADIUS.md,
-    padding: 16,
-    marginBottom: 12,
-  },
-  cardStaff: {
-    backgroundColor: COLORS.foreground,
-    shadowColor: COLORS.shadow,
-    shadowOpacity: COLORS.shadowOpacity,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 3,
-  },
-  cardClient: {
-    backgroundColor: COLORS.accentBg,
-  },
-  cardHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    marginBottom: 8,
-  },
-  badgeText: {
-    fontSize: 11,
-    fontWeight: "700",
-    letterSpacing: 1,
-  },
-  badgeTextStaff: {
-    color: COLORS.textSecondary,
-  },
-  badgeTextClient: {
-    color: COLORS.gold,
-  },
-  authorName: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: COLORS.textPrimary,
-    flexShrink: 1,
-  },
-  deleteNoteButton: {
-    marginLeft: "auto",
-    padding: 2,
-  },
-  noteText: {
-    fontSize: 14,
-    color: COLORS.textPrimary,
-    marginBottom: 8,
-  },
-  timeText: {
-    fontSize: 12,
-    color: COLORS.textMuted,
-  },
-  footer: {
-    padding: 16,
-    backgroundColor: COLORS.surface,
-  },
-  composeRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  composeInput: {
-    flex: 1,
-    height: 44,
-    ...SHADOW.card,
-    borderRadius: RADIUS.md,
-    paddingHorizontal: 12,
-    paddingVertical: 0,
-    textAlignVertical: "center",
-    backgroundColor: COLORS.foreground,
-    color: COLORS.textPrimary,
-  },
-  sendButton: {
-    backgroundColor: COLORS.gold,
-    width: 44,
-    height: 44,
-    borderRadius: RADIUS.md,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  sendButtonDisabled: {
-    opacity: 0.5,
+    justifyContent: "flex-end",
+    width: "100%",
+    maxWidth: 820,
+    alignSelf: "center",
   },
 });

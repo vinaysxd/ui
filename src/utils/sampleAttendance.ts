@@ -62,6 +62,10 @@ export function buildSampleAttendance(now: Date = new Date()): Attendance[] {
       push(staff, (staff + d) % SITES.length, at(d, 0, inMin, now), at(d, 0, inMin + dur, now));
     }
   }
+  // Edge cases: overnight, very short, and a multi-day shift that was left open then closed.
+  push(2, 3, at(2, 22, 5, now), at(1, 6, 20, now));
+  push(5, 0, at(3, 10, 2, now), at(3, 10, 8, now));
+  push(7, 4, at(5, 8, 0, now), at(0, 0, 5, now));
   // One forgotten clock-out from yesterday.
   push(6, 1, at(1, 7, 42, now), null);
 

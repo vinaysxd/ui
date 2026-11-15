@@ -2,7 +2,7 @@ import { Text, View, Pressable, StyleSheet } from "react-native";
 import { Attendance } from "../../services/attendance.service";
 import { COLORS, RADIUS, SHADOW } from "../../constants/theme";
 import { formatClockOut, formatDuration, formatRelativeDateTime } from "../../utils/datetime";
-import { getAttendanceStatus } from "../../utils/attendanceStatus";
+import { getAttendanceStatus, getShiftFlag } from "../../utils/attendanceStatus";
 import StatusPill from "./StatusPill";
 import { isRecent } from "./AttendanceRow";
 
@@ -16,12 +16,19 @@ export default function AttendanceCard({ record, onPress }: AttendanceCardProps)
     ? `${formatRelativeDateTime(record.clock_in)} → ${formatClockOut(record.clock_in, record.clock_out)} · ${formatDuration(record.clock_in, record.clock_out)}`
     : formatRelativeDateTime(record.clock_in);
 
+  const flag = getShiftFlag(record);
+
   return (
     <Pressable onPress={() => onPress?.(record)} style={[styles.card, isRecent(record) && styles.cardRecent]}>
       <View style={styles.info}>
         <Text style={styles.staffName}>{record.staff?.full_name ?? "Unknown staff"}</Text>
         <Text style={styles.siteName}>{record.site?.name ?? "Unknown site"}</Text>
         <Text style={styles.time}>{when}</Text>
+        {flag && (
+          <Text style={[styles.flag, { color: flag.level === "danger" ? COLORS.dangerText : COLORS.warning }]}>
+            ⚠ {flag.label}
+          </Text>
+        )}
       </View>
       <StatusPill status={getAttendanceStatus(record)} />
     </Pressable>
@@ -44,6 +51,7 @@ const styles = StyleSheet.create({
     ...SHADOW.card,
   },
   cardRecent: { borderLeftColor: COLORS.gold },
+  flag: { fontSize: 12, fontWeight: "600", marginTop: 4 },
   info: {
     flex: 1,
     paddingRight: 8,

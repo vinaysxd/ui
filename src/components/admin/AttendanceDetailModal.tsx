@@ -3,8 +3,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { COLORS, RADIUS, SHADOW } from "../../constants/theme";
 import { Attendance } from "../../services/attendance.service";
-import { getAttendanceStatus } from "../../utils/attendanceStatus";
-import { formatClockOut, formatDuration, formatRelativeDateTime } from "../../utils/datetime";
+import { getAttendanceStatus, getShiftFlag } from "../../utils/attendanceStatus";
+import { formatClockOut, formatDuration, formatRelativeDateTime, spansDays } from "../../utils/datetime";
 import StatusPill from "./StatusPill";
 
 interface Props {
@@ -42,13 +42,24 @@ export default function AttendanceDetailModal({ record, onClose }: Props) {
               <StatusPill status={getAttendanceStatus(record)} />
             </View>
 
+            {getShiftFlag(record) && (
+              <Text
+                style={[
+                  styles.flag,
+                  getShiftFlag(record)!.level === "danger" ? styles.flagDanger : styles.flagWarning,
+                ]}
+              >
+                ⚠ {getShiftFlag(record)!.label}
+              </Text>
+            )}
+
             <View style={styles.grid}>
               <Field label="Clock in" value={formatRelativeDateTime(record.clock_in)} />
               <Field
                 label="Clock out"
                 value={record.clock_out ? formatClockOut(record.clock_in, record.clock_out) : "Still clocked in"}
                 hint={
-                  record.clock_out && formatClockOut(record.clock_in, record.clock_out).includes("+")
+                  record.clock_out && spansDays(record.clock_in, record.clock_out)
                     ? "Overnight / multi-day shift"
                     : undefined
                 }
@@ -102,6 +113,9 @@ const styles = StyleSheet.create({
   header: { flexDirection: "row", alignItems: "flex-start", gap: 12, marginBottom: 18 },
   title: { color: COLORS.textPrimary, fontSize: 18, fontWeight: "700" },
   subtitle: { color: COLORS.textSecondary, fontSize: 14, marginTop: 2 },
+  flag: { borderRadius: RADIUS.md, paddingVertical: 8, paddingHorizontal: 12, marginBottom: 16, fontSize: 13, fontWeight: "600" },
+  flagDanger: { backgroundColor: "rgba(220,38,38,0.15)", color: COLORS.dangerText },
+  flagWarning: { backgroundColor: "rgba(245,158,11,0.15)", color: COLORS.warning },
   grid: { flexDirection: "row", flexWrap: "wrap", rowGap: 16, marginBottom: 20 },
   field: { width: "50%", paddingRight: 8 },
   fieldLabel: { color: COLORS.textMuted, fontSize: 11, letterSpacing: 0.8, textTransform: "uppercase" },

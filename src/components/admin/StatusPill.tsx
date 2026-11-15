@@ -3,10 +3,12 @@ import { COLORS, RADIUS } from "../../constants/theme";
 import { AttendanceStatus, STATUS_LABEL } from "../../utils/attendanceStatus";
 
 // green = Clocked In, neutral = Clocked Out, red = Long Shift
+// Background is the same hue as the text at ~22% strength (hex alpha "38"), so pills stand out on dark cards.
+const tint = (fg: string) => ({ bg: `${fg}38`, fg });
 const PILL: Record<AttendanceStatus, { bg: string; fg: string }> = {
-  clocked_in: { bg: COLORS.successBg, fg: COLORS.success },
-  clocked_out: { bg: COLORS.hover, fg: COLORS.textSecondary },
-  long_shift: { bg: COLORS.dangerBg, fg: COLORS.dangerText },
+  clocked_in: tint(COLORS.success),
+  clocked_out: tint(COLORS.textSecondary),
+  long_shift: tint(COLORS.dangerText),
 };
 
 export default function StatusPill({ status }: { status: AttendanceStatus }) {
@@ -26,9 +28,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 6,
     borderRadius: RADIUS.full,
-    paddingVertical: 4,
-    paddingHorizontal: 10,
+    paddingVertical: 5,
+    paddingHorizontal: 11,
   },
   dot: { width: 6, height: 6, borderRadius: 3 },
-  text: { fontSize: 12, fontWeight: "600" },
+  text: { fontSize: 12, fontWeight: "700", letterSpacing: 0.2 },
 });

@@ -5,7 +5,7 @@ import { useRouter } from "expo-router";
 import { Attendance } from "../../services/attendance.service";
 import { COLORS } from "../../constants/theme";
 import { formatClockOut, formatDuration, formatRelativeDateTime } from "../../utils/datetime";
-import { getAttendanceStatus } from "../../utils/attendanceStatus";
+import { getAttendanceStatus, getShiftFlag } from "../../utils/attendanceStatus";
 import StatusPill from "./StatusPill";
 
 interface AttendanceRowProps {
@@ -13,6 +13,8 @@ interface AttendanceRowProps {
   /** Row position, used for zebra striping. */
   index?: number;
   onPress?: (record: Attendance) => void;
+  /** Hide the staff column (used on a single staff member's page). */
+  hideStaff?: boolean;
 }
 
 export const COLUMN_FLEX = {
@@ -31,9 +33,11 @@ export const RECENT_WINDOW_MS = 2 * 60 * 60 * 1000;
 export const isRecent = (record: Attendance, now: number = Date.now()) =>
   now - new Date(record.clock_in).getTime() < RECENT_WINDOW_MS;
 
-export default function AttendanceRow({ record, index = 0, onPress }: AttendanceRowProps) {
+export default function AttendanceRow({ record, index = 0, onPress, hideStaff = false }: AttendanceRowProps) {
   const router = useRouter();
   const [hovered, setHovered] = useState(false);
+  const [focused, setFocused] = useState(false);
+  const flag = getShiftFlag(record);
   const status = getAttendanceStatus(record);
   const striped = index % 2 === 1;
 
@@ -42,16 +46,23 @@ export default function AttendanceRow({ record, index = 0, onPress }: Attendance
       onPress={() => onPress?.(record)}
       onHoverIn={() => setHovered(true)}
       onHoverOut={() => setHovered(false)}
+      onFocus={() => setFocused(true)}
+      onBlur={() => setFocused(false)}
+      accessibilityRole="button"
+      accessibilityLabel={`Open details for ${record.staff?.full_name ?? "attendance record"}`}
       style={[
         styles.row,
         striped && styles.rowStriped,
-        hovered && styles.rowHovered,
+        (hovered || focused) && styles.rowHovered,
+        focused && styles.rowFocused,
         isRecent(record) && styles.rowRecent,
       ]}
     >
-      <Text style={[styles.staffName, { flex: COLUMN_FLEX.staff }]} numberOfLines={1}>
-        {record.staff?.full_name ?? "Unknown staff"}
-      </Text>
+      {!hideStaff && (
+        <Text style={[styles.staffName, { flex: COLUMN_FLEX.staff }]} numberOfLines={1}>
+          {record.staff?.full_name ?? "Unknown staff"}
+        </Text>
+      )}
       <Text style={[styles.siteName, { flex: COLUMN_FLEX.site }]} numberOfLines={1}>
         {record.site?.name ?? "Unknown site"}
       </Text>
@@ -59,22 +70,40 @@ export default function AttendanceRow({ record, index = 0, onPress }: Attendance
       <Text style={[styles.time, { flex: COLUMN_FLEX.time }]}>
         {record.clock_out ? formatClockOut(record.clock_in, record.clock_out) : "—"}
       </Text>
-      <Text style={[styles.time, { flex: COLUMN_FLEX.duration }, !record.clock_out && styles.ongoing]}>
-        {formatDuration(record.clock_in, record.clock_out)}
-      </Text>
+      <View style={[styles.durationCell, { flex: COLUMN_FLEX.duration }]}>
+        {flag && (
+          <Ionicons
+            name="warning"
+            size={14}
+            color={flag.level === "danger" ? COLORS.dangerText : COLORS.warning}
+            accessibilityLabel={flag.label}
+          />
+        )}
+        <Text
+          style={[
+            styles.time,
+            !record.clock_out && styles.ongoing,
+            flag && { color: flag.level === "danger" ? COLORS.dangerText : COLORS.warning, fontWeight: "600" },
+          ]}
+        >
+          {formatDuration(record.clock_in, record.clock_out)}
+        </Text>
+      </View>
       <View style={{ flex: COLUMN_FLEX.status }}>
         <StatusPill status={status} />
       </View>
       <View style={styles.quick}>
         {hovered && (
           <>
-            <TouchableOpacity
-              hitSlop={6}
-              accessibilityLabel="View staff"
-              onPress={() => router.push(`/(admin)/staff/${record.staff_id}` as any)}
-            >
-              <Ionicons name="person-outline" size={16} color={COLORS.gold} />
-            </TouchableOpacity>
+            {!hideStaff && (
+              <TouchableOpacity
+                hitSlop={6}
+                accessibilityLabel="View staff"
+                onPress={() => router.push(`/(admin)/staff/${record.staff_id}` as any)}
+              >
+                <Ionicons name="person-outline" size={16} color={COLORS.gold} />
+              </TouchableOpacity>
+            )}
             <TouchableOpacity
               hitSlop={6}
               accessibilityLabel="View site"
@@ -100,7 +129,9 @@ const styles = StyleSheet.create({
     borderLeftColor: "transparent",
   },
   rowStriped: { backgroundColor: COLORS.zebra },
-  rowHovered: { backgroundColor: COLORS.hover },
+  rowHovered: { backgroundColor: COLORS.hover, cursor: "pointer" } as any,
+  rowFocused: { outlineWidth: 2, outlineColor: COLORS.gold, outlineStyle: "solid", outlineOffset: -2 } as any,
+  durationCell: { flexDirection: "row", alignItems: "center", gap: 5 },
   rowRecent: { borderLeftColor: COLORS.gold },
   staffName: {
     color: COLORS.textPrimary,
