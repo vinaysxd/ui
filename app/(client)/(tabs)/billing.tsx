@@ -530,7 +530,7 @@ const styles = StyleSheet.create({
     shadowOpacity: COLORS.shadowOpacity,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 3 },
-    elevation: 3,
+    elevation: 0,
   },
   summaryLabel: {
     fontSize: 11,
@@ -595,7 +595,7 @@ const styles = StyleSheet.create({
     shadowOpacity: COLORS.shadowOpacity,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 3 },
-    elevation: 3,
+    elevation: 0,
   },
   cardHeader: {
     flexDirection: "row",

@@ -1,6 +1,10 @@
 import { Platform } from "react-native";
 import * as SecureStore from "expo-secure-store";
 
+// Flip to true to bring the card shadows back everywhere.
+export const SHADOWS_ENABLED = false;
+
+
 // ---- Theme mode -----------------------------------------------------------
 // Styles across the app are built once at import time (StyleSheet.create with
 // COLORS), so the mode is read synchronously here and a change takes effect by
@@ -60,7 +64,7 @@ const DARK_MONO = {
   dangerText: "#EF5350",
   // Dark mode: shadow takes the lighter card tone so it reads as a soft halo on the dark page.
   shadow: "#242424",
-  shadowOpacity: 0.6,
+  shadowOpacity: SHADOWS_ENABLED ? 0.6 : 0,
   zebra: "rgba(255,255,255,0.03)",
   hover: "rgba(255,255,255,0.06)",
 };
@@ -90,7 +94,7 @@ const LIGHT_MONO: typeof DARK_MONO = {
   outline: "#8A8A8A",
   dangerText: "#C62828",
   shadow: "#000000",
-  shadowOpacity: 0.14,
+  shadowOpacity: SHADOWS_ENABLED ? 0.14 : 0,
   zebra: "rgba(0,0,0,0.03)",
   hover: "rgba(0,0,0,0.06)",
 };
@@ -119,7 +123,7 @@ export const LIGHT_COLORS: typeof COLORS = {
   accentBg: "#F5EFDA",
   goldTint: "#F0E8CC",
   shadow: "#000000",
-  shadowOpacity: 0.14,
+  shadowOpacity: SHADOWS_ENABLED ? 0.14 : 0,
   zebra: "rgba(0,0,0,0.025)",
   hover: "rgba(0,0,0,0.05)",
   goldInk: "#8A6A25",

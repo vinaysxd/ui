@@ -163,7 +163,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 13,
     ...SHADOW.card,
     shadowRadius: 4,
-    elevation: 1,
+    elevation: 0,
   },
   bubbleOwn: { backgroundColor: COLORS.gold },
   bubbleClient: { backgroundColor: COLORS.accentBg },

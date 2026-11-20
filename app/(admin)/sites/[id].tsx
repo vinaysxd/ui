@@ -1521,7 +1521,7 @@ const styles = StyleSheet.create({
     padding: 24,
     marginBottom: 24,
      
-    elevation: 3,
+    elevation: 0,
   },
   labelRow: {
     flexDirection: "row",
@@ -1532,7 +1532,7 @@ const styles = StyleSheet.create({
   cardShadow: {
     borderRadius: RADIUS.md,
      
-    elevation: 2,
+    elevation: 0,
   },
   clientCard: {
     backgroundColor: COLORS.foreground,
@@ -1544,7 +1544,7 @@ const styles = StyleSheet.create({
     shadowOpacity: COLORS.shadowOpacity,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 3 },
-    elevation: 3,
+    elevation: 0,
   },
   card: {
     backgroundColor: COLORS.foreground,
@@ -1556,7 +1556,7 @@ const styles = StyleSheet.create({
     shadowOpacity: COLORS.shadowOpacity,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 3 },
-    elevation: 3,
+    elevation: 0,
   },
   cardClient: {
     backgroundColor: COLORS.accentBg,
@@ -1567,7 +1567,7 @@ const styles = StyleSheet.create({
     shadowOpacity: COLORS.shadowOpacity,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 3 },
-    elevation: 3,
+    elevation: 0,
   },
   cardHeader: {
     flexDirection: "row",
@@ -1877,7 +1877,7 @@ const styles = StyleSheet.create({
     shadowOpacity: COLORS.shadowOpacity,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 3 },
-    elevation: 3,
+    elevation: 0,
   },
   taskLabel: {
     color: COLORS.textPrimary,
@@ -2035,7 +2035,7 @@ const styles = StyleSheet.create({
     shadowOpacity: COLORS.shadowOpacity,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 3 },
-    elevation: 3,
+    elevation: 0,
   },
   avatarCircle: {
     width: 40,

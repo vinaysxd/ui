@@ -310,7 +310,7 @@ const styles = StyleSheet.create({
     shadowOpacity: COLORS.shadowOpacity,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 3 },
-    elevation: 3,
+    elevation: 0,
   },
   avatarSection: {
     alignItems: "center",

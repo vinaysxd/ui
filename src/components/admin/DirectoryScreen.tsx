@@ -453,7 +453,7 @@ const styles = StyleSheet.create({
   showMoreText: { color: COLORS.gold, fontSize: 13, fontWeight: "600" },
 
   desktopScreen: { flex: 1 },
-  desktopCard: { flex: 1, margin: 24, elevation: 8 },
+  desktopCard: { flex: 1, margin: 24, elevation: 0 },
   webContent: { padding: 32, width: "100%" },
   maxWidthWrap: { width: "100%", maxWidth: 1200, alignSelf: "center" },
   mobileContent: { padding: 16, paddingBottom: 32 },

@@ -452,7 +452,7 @@ const styles = StyleSheet.create({
     flex: 1,
     margin: 24, 
      
-    elevation: 8,
+    elevation: 0,
   },
   webContent: {
     padding: 32,

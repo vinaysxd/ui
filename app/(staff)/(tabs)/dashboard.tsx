@@ -551,9 +551,9 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     shadowColor: COLORS.shadow,
     shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.35,
+    shadowOpacity: 0,
     shadowRadius: 16,
-    elevation: 8,
+    elevation: 0,
   },
   activeName: {
     fontSize: 16,
@@ -599,9 +599,9 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.md,
     shadowColor: "#B91C1C",
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
+    shadowOpacity: 0,
     shadowRadius: 10,
-    elevation: 6,
+    elevation: 0,
   },
   clockOutButtonText: {
     color: "#FFFFFF",
@@ -626,7 +626,7 @@ const styles = StyleSheet.create({
     shadowOpacity: COLORS.shadowOpacity,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 3 },
-    elevation: 3,
+    elevation: 0,
   },
   cardBlocked: {
     opacity: 0.4,
